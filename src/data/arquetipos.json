@@ -1,0 +1,261 @@
+[
+  {
+    "id": "agroindustria",
+    "nome": "Padaria / Agroindústria comunitária",
+    "tipo": "4.1",
+    "tipoNome": "Estrutura produtiva",
+    "danosTipicos": ["renda-trabalho", "seguranca-alimentar"],
+    "palavrasChave": ["padaria", "pão", "agroindústria", "forno", "produção de alimento", "processamento", "fábrica", "conserva", "doce", "polpa"],
+    "linhasOrcamentoSugeridas": [
+      { "categoria": "infraestrutura", "descricao": "Reforma/adequação do galpão de produção" },
+      { "categoria": "equipamento", "descricao": "Fornos, masseiras, câmara fria" },
+      { "categoria": "regularizacao", "descricao": "Alvará sanitário e registro no órgão competente" },
+      { "categoria": "capacitacao", "descricao": "Formação técnica de panificação e gestão" },
+      { "categoria": "capital-giro-inicial", "descricao": "Insumos iniciais (farinha, fermento, embalagens) por até 6 meses", "prazoMaximoMeses": 6 },
+      { "categoria": "equipe-implantacao", "descricao": "Assistência técnica/gerencial temporária de implantação", "prazoMaximoMeses": 6 }
+    ],
+    "vedacoesChave": [
+      "Pagamento permanente de folha de padeiros/gestores sem fonte futura assumida",
+      "Capital de giro além de 6 meses sem justificativa de ciclo produtivo"
+    ],
+    "modeloSustentabilidadeSugerido": "Receita de venda do pão à própria comunidade e ao comércio local cobre insumos e, quando aplicável, folha a partir do mês 7."
+  },
+  {
+    "id": "cozinha-comunitaria",
+    "nome": "Cozinha comunitária",
+    "tipo": "4.2",
+    "tipoNome": "Estrutura comunitária de uso comum",
+    "danosTipicos": ["seguranca-alimentar", "vinculos-comunitarios"],
+    "palavrasChave": ["cozinha", "refeição", "merenda", "cozinha comunitária", "restaurante comunitário", "alimentação coletiva"],
+    "linhasOrcamentoSugeridas": [
+      { "categoria": "infraestrutura", "descricao": "Construção/reforma do espaço da cozinha" },
+      { "categoria": "equipamento", "descricao": "Fogões industriais, utensílios, mobiliário" },
+      { "categoria": "regularizacao", "descricao": "Regularização sanitária" },
+      { "categoria": "capacitacao", "descricao": "Formação de operadores e instância de governança" },
+      { "categoria": "operacao-assistida", "descricao": "Fase piloto de operação (implantação + insumos), preferencialmente até 6 meses", "prazoMaximoMeses": 6 }
+    ],
+    "vedacoesChave": [
+      "Custeio permanente e indeterminado de insumos alimentares para consumo cotidiano, salvo arranjo formal de continuidade",
+      "Financiamento permanente de contas individuais/domiciliares de água, energia, telefonia, internet"
+    ],
+    "modeloSustentabilidadeSugerido": "Contribuição coletiva ou tarifa comunitária simbólica por refeição cobre insumos e manutenção a partir do mês 7; indicar responsável formal pela operação."
+  },
+  {
+    "id": "horta-comunitaria",
+    "nome": "Horta Comunitária",
+    "tipo": "4.2",
+    "tipoNome": "Estrutura comunitária de uso comum (produtiva se a produção for destinada à venda)",
+    "danosTipicos": ["seguranca-alimentar", "meio-ambiente"],
+    "palavrasChave": ["horta comunitária", "horta", "hortaliça", "verdura", "cultivo de hortaliças", "canteiro"],
+    "linhasOrcamentoSugeridas": [
+      { "categoria": "infraestrutura", "descricao": "Preparo de terreno, cercamento, irrigação" },
+      { "categoria": "equipamento", "descricao": "Ferramentas, mangueiras, estufa simples" },
+      { "categoria": "capacitacao", "descricao": "Formação em manejo agroecológico e governança da horta" },
+      { "categoria": "insumos-iniciais", "descricao": "Sementes, mudas e adubo para o primeiro ciclo, por até 6 meses", "prazoMaximoMeses": 6 }
+    ],
+    "vedacoesChave": [
+      "Compra permanente e indeterminada de insumos agrícolas sem fonte futura de custeio",
+      "Se a produção for vendida, capital de giro segue o teto de 6 meses do tipo 4.1"
+    ],
+    "modeloSustentabilidadeSugerido": "Se para consumo próprio: mutirão comunitário sustenta a manutenção. Se para venda: receita da comercialização cobre insumos a partir do mês 7."
+  },
+  {
+    "id": "galpao-reciclagem-artesanato",
+    "nome": "Galpão de Reciclagem com Artesanato",
+    "tipo": "4.1",
+    "tipoNome": "Estrutura produtiva (ou 4.5 se organizado como cooperativa)",
+    "danosTipicos": ["renda-trabalho", "meio-ambiente"],
+    "palavrasChave": ["reciclagem", "reciclável", "catador", "artesanato reciclado", "galpão de reciclagem", "triagem de resíduos", "polo de artesanato"],
+    "linhasOrcamentoSugeridas": [
+      { "categoria": "infraestrutura", "descricao": "Adequação do galpão de triagem e produção artesanal" },
+      { "categoria": "equipamento", "descricao": "Prensa, balança, bancadas, EPIs, ferramentas de artesanato" },
+      { "categoria": "regularizacao", "descricao": "Regularização ambiental e sanitária da cooperativa/associação" },
+      { "categoria": "capacitacao", "descricao": "Formação em triagem, segurança do trabalho e técnicas de artesanato" },
+      { "categoria": "capital-giro-inicial", "descricao": "Insumos iniciais de produção artesanal, por até 6 meses", "prazoMaximoMeses": 6 },
+      { "categoria": "equipe-implantacao", "descricao": "Assistência técnica/gerencial temporária de implantação", "prazoMaximoMeses": 6 }
+    ],
+    "vedacoesChave": [
+      "Pagamento permanente de catadores/artesãos sem fonte futura assumida (renda deve vir da venda do material/produto)",
+      "Capital de giro além de 6 meses sem justificativa de ciclo produtivo"
+    ],
+    "modeloSustentabilidadeSugerido": "Receita da venda de material reciclável e de peças de artesanato cobre insumos e, quando aplicável, remuneração dos cooperados a partir do mês 7."
+  },
+  {
+    "id": "galpao-costura-estamparia",
+    "nome": "Galpão de Costura e Estamparia",
+    "tipo": "4.1",
+    "tipoNome": "Estrutura produtiva",
+    "danosTipicos": ["renda-trabalho"],
+    "palavrasChave": ["costura", "estamparia", "confecção", "ateliê de costura", "serigrafia", "galpão de costura"],
+    "linhasOrcamentoSugeridas": [
+      { "categoria": "infraestrutura", "descricao": "Adequação do galpão/ateliê" },
+      { "categoria": "equipamento", "descricao": "Máquinas de costura, mesa de corte, equipamento de estamparia" },
+      { "categoria": "regularizacao", "descricao": "Regularização documental e fiscal" },
+      { "categoria": "capacitacao", "descricao": "Formação técnica de costura, estamparia e gestão do negócio" },
+      { "categoria": "capital-giro-inicial", "descricao": "Tecidos, linhas e insumos de estamparia iniciais, por até 6 meses", "prazoMaximoMeses": 6 }
+    ],
+    "vedacoesChave": [
+      "Pagamento permanente de costureiras/estampadores sem fonte futura assumida",
+      "Capital de giro além de 6 meses sem justificativa de ciclo produtivo"
+    ],
+    "modeloSustentabilidadeSugerido": "Receita de venda das peças (encomendas, feiras, comércio local) cobre insumos e folha a partir do mês 7."
+  },
+  {
+    "id": "fabrica-materiais-reciclados",
+    "nome": "Fábrica de Materiais de Construção Reciclados",
+    "tipo": "4.1",
+    "tipoNome": "Estrutura produtiva (ou 4.5 se cooperativa/maior porte)",
+    "danosTipicos": ["renda-trabalho", "meio-ambiente"],
+    "palavrasChave": ["material de construção reciclado", "bloco reciclado", "fábrica de materiais reciclados", "reaproveitamento de entulho", "entulho reciclado"],
+    "linhasOrcamentoSugeridas": [
+      { "categoria": "infraestrutura", "descricao": "Adequação do galpão industrial" },
+      { "categoria": "equipamento", "descricao": "Britadeira, prensa de blocos, EPIs" },
+      { "categoria": "regularizacao", "descricao": "Licenciamento ambiental e regularização operacional" },
+      { "categoria": "capacitacao", "descricao": "Formação técnica de produção e segurança do trabalho" },
+      { "categoria": "capital-giro-inicial", "descricao": "Insumos iniciais de produção, por até 6 meses", "prazoMaximoMeses": 6 }
+    ],
+    "vedacoesChave": [
+      "Pagamento permanente de operadores sem fonte futura assumida",
+      "Atenção ao teto de porte do maquinário pesado — pode empurrar o projeto para médio/grande"
+    ],
+    "modeloSustentabilidadeSugerido": "Venda dos materiais reciclados (blocos, agregados) a construtoras e à própria comunidade cobre insumos e folha a partir do mês 7."
+  },
+  {
+    "id": "centro-formacao",
+    "nome": "Centro de Formação",
+    "tipo": "4.3",
+    "tipoNome": "Capacitação, formação e bolsas",
+    "danosTipicos": ["renda-trabalho", "cultura-modo-vida"],
+    "palavrasChave": ["centro de formação", "capacitação profissional", "curso profissionalizante", "oficina de formação", "escola de ofícios"],
+    "linhasOrcamentoSugeridas": [
+      { "categoria": "infraestrutura", "descricao": "Adequação do espaço de formação" },
+      { "categoria": "equipamento", "descricao": "Mobiliário, material didático, equipamentos da área formativa" },
+      { "categoria": "capacitacao", "descricao": "Cursos, oficinas e processos formativos" },
+      { "categoria": "outro", "descricao": "Bolsas temporárias vinculadas ao processo formativo" }
+    ],
+    "vedacoesChave": [
+      "Bolsas só admitidas com finalidade formativa definida, prazo determinado e critérios objetivos — vedado como transferência permanente de renda"
+    ],
+    "modeloSustentabilidadeSugerido": "Parceria com instituições de ensino/SENAI/SENAC ou cobrança simbólica por turma após a fase inicial financiada pelo Anexo."
+  },
+  {
+    "id": "polo-cultural",
+    "nome": "Polo de Projetos Culturais",
+    "tipo": "4.2",
+    "tipoNome": "Estrutura comunitária de uso comum (ou 4.3 se o foco for formação cultural)",
+    "danosTipicos": ["cultura-modo-vida", "vinculos-comunitarios"],
+    "palavrasChave": ["polo cultural", "projeto cultural", "grupo cultural", "manifestação cultural", "festival comunitário", "casa de cultura"],
+    "linhasOrcamentoSugeridas": [
+      { "categoria": "infraestrutura", "descricao": "Adequação do espaço cultural/casa de cultura" },
+      { "categoria": "equipamento", "descricao": "Instrumentos, som, figurinos, materiais de manifestações culturais" },
+      { "categoria": "capacitacao", "descricao": "Oficinas de formação cultural e de gestão de coletivos" },
+      { "categoria": "operacao-assistida", "descricao": "Fase inicial de atividades culturais regulares, por até 6 meses", "prazoMaximoMeses": 6 }
+    ],
+    "vedacoesChave": [
+      "Custeio permanente de eventos/atividades sem fonte futura de captação",
+      "Pagamento permanente de artistas/produtores sem fonte autônoma assumida"
+    ],
+    "modeloSustentabilidadeSugerido": "Editais de fomento cultural, patrocínio local, bilheteria simbólica ou parceria com a Secretaria de Cultura sustentam a atividade após a fase inicial."
+  },
+  {
+    "id": "fabrica-tijolos-ecologicos",
+    "nome": "Fábrica de Tijolos Ecológicos",
+    "tipo": "4.1",
+    "tipoNome": "Estrutura produtiva (ou 4.5 se cooperativa/maior porte)",
+    "danosTipicos": ["renda-trabalho", "meio-ambiente"],
+    "palavrasChave": ["tijolo ecológico", "tijolo de solo-cimento", "fábrica de tijolos", "construção sustentável"],
+    "linhasOrcamentoSugeridas": [
+      { "categoria": "infraestrutura", "descricao": "Adequação do galpão de produção" },
+      { "categoria": "equipamento", "descricao": "Prensa manual/hidráulica de tijolos, misturador, EPIs" },
+      { "categoria": "regularizacao", "descricao": "Regularização operacional e ambiental" },
+      { "categoria": "capacitacao", "descricao": "Formação técnica de produção e controle de qualidade" },
+      { "categoria": "capital-giro-inicial", "descricao": "Insumos iniciais (cimento, solo), por até 6 meses", "prazoMaximoMeses": 6 }
+    ],
+    "vedacoesChave": [
+      "Pagamento permanente de operadores sem fonte futura assumida",
+      "Capital de giro além de 6 meses sem justificativa de ciclo produtivo"
+    ],
+    "modeloSustentabilidadeSugerido": "Venda dos tijolos para obras locais e da própria reconstrução das comunidades atingidas cobre insumos e folha a partir do mês 7."
+  },
+  {
+    "id": "informatica-capacitacao",
+    "nome": "Projeto de Informática (Capacitação)",
+    "tipo": "4.3",
+    "tipoNome": "Capacitação, formação e bolsas",
+    "danosTipicos": ["renda-trabalho", "cultura-modo-vida"],
+    "palavrasChave": ["informática", "curso de informática", "inclusão digital", "capacitação em tecnologia", "laboratório de informática"],
+    "linhasOrcamentoSugeridas": [
+      { "categoria": "infraestrutura", "descricao": "Adequação da sala/laboratório de informática" },
+      { "categoria": "equipamento", "descricao": "Computadores, roteador, mobiliário" },
+      { "categoria": "capacitacao", "descricao": "Cursos de informática básica/avançada e formação de instrutores" }
+    ],
+    "vedacoesChave": [
+      "Pagamento permanente de instrutor sem fonte futura assumida — só admitido enquanto durar o processo formativo, por prazo determinado"
+    ],
+    "modeloSustentabilidadeSugerido": "Parceria com escola pública/biblioteca municipal para uso continuado do laboratório após a fase inicial financiada pelo Anexo, sem custeio permanente de pessoal."
+  },
+  {
+    "id": "plantio-madeira-venda",
+    "nome": "Plantio de Madeira pra Venda",
+    "tipo": "4.1",
+    "tipoNome": "Estrutura produtiva",
+    "danosTipicos": ["renda-trabalho", "meio-ambiente"],
+    "palavrasChave": ["plantio de madeira", "reflorestamento comercial", "eucalipto", "silvicultura", "madeira para venda", "plantio florestal"],
+    "linhasOrcamentoSugeridas": [
+      { "categoria": "infraestrutura", "descricao": "Preparo de área e cercamento" },
+      { "categoria": "equipamento", "descricao": "Ferramentas de plantio e manejo florestal" },
+      { "categoria": "capacitacao", "descricao": "Formação técnica em manejo florestal sustentável" },
+      { "categoria": "insumos-iniciais", "descricao": "Mudas e insumos do plantio inicial", "prazoMaximoMeses": 6 },
+      { "categoria": "capital-giro-inicial", "descricao": "Manutenção do plantio até o primeiro ciclo de corte — ciclo produtivo plurianual, exige justificativa técnica para prazo além de 6 meses", "prazoMaximoMeses": 6 }
+    ],
+    "vedacoesChave": [
+      "Este é o caso central da exceção ao teto de 6 meses do capital de giro (Ofício 46, 4.1 §1º): o ciclo de corte da madeira leva anos, então a justificativa técnica do ciclo produtivo é obrigatória e precisa ser robusta",
+      "Pagamento permanente de mão de obra de manejo sem fonte futura assumida"
+    ],
+    "modeloSustentabilidadeSugerido": "Receita da venda da madeira no corte (após alguns anos) cobre o investimento; até lá, é essencial detalhar o fluxo de caixa plurianual no POS, não só nos primeiros 6 meses."
+  },
+  {
+    "id": "abrigo-animais-banho-tosa",
+    "nome": "Abrigo de Animais com Banho e Tosa",
+    "tipo": "4.1",
+    "tipoNome": "Estrutura produtiva (serviço) — pode ter componente 4.2 se o abrigo em si for de acolhimento comunitário sem cobrança",
+    "danosTipicos": ["renda-trabalho", "saude-fisica-mental", "meio-ambiente"],
+    "palavrasChave": ["abrigo de animais", "abrigo animal", "banho e tosa", "castração", "ong animal", "protetor de animais", "cães e gatos", "resgate de animais", "pet shop comunitário"],
+    "linhasOrcamentoSugeridas": [
+      { "categoria": "infraestrutura", "descricao": "Construção/adequação de baias, canis, área de banho e tosa e isolamento sanitário" },
+      { "categoria": "equipamento", "descricao": "Tosquiadeiras, secadores, mesa de banho/tosa, gaiolas de contenção, freezer para ração" },
+      { "categoria": "regularizacao", "descricao": "Licença sanitária/ambiental e registro junto ao órgão municipal de vigilância/meio ambiente" },
+      { "categoria": "capacitacao", "descricao": "Formação em manejo/bem-estar animal, banho e tosa, e protocolo sanitário (zoonoses)" },
+      { "categoria": "capital-giro-inicial", "descricao": "Ração, medicamentos e insumos veterinários iniciais, por até 6 meses", "prazoMaximoMeses": 6 },
+      { "categoria": "equipe-implantacao", "descricao": "Assistência técnica veterinária de implantação (protocolo sanitário, castração)", "prazoMaximoMeses": 6 }
+    ],
+    "vedacoesChave": [
+      "Custeio permanente de ração/insumos veterinários dos animais abrigados sem fonte futura de custeio assumida",
+      "Pagamento permanente de folha (tratadores/veterinário) sem fonte autônoma, coletiva ou pública futura",
+      "Atenção jurídico-fundiária: abrigo de animais costuma exigir área grande e afastada — regularizar formalmente a cessão/uso do terreno antes de investir em construção"
+    ],
+    "modeloSustentabilidadeSugerido": "Receita do serviço de banho e tosa pago pela comunidade (tabela social) cobre parte da manutenção do abrigo; parcerias com clínicas veterinárias e campanhas de castração/adoção reduzem o custo de insumos a partir do mês 7."
+  },
+  {
+    "id": "tanque-peixes",
+    "nome": "Tanque de Peixes (Piscicultura Comunitária)",
+    "tipo": "4.1",
+    "tipoNome": "Estrutura produtiva",
+    "danosTipicos": ["renda-trabalho", "seguranca-alimentar", "meio-ambiente"],
+    "palavrasChave": ["tanque de peixes", "piscicultura", "criação de peixes", "tanque-rede", "viveiro de peixes", "tilápia", "pesque-pague comunitário"],
+    "linhasOrcamentoSugeridas": [
+      { "categoria": "infraestrutura", "descricao": "Construção/impermeabilização de tanques ou instalação de tanques-rede" },
+      { "categoria": "equipamento", "descricao": "Aeradores, bombas, redes de manejo, balanças" },
+      { "categoria": "regularizacao", "descricao": "Outorga de uso da água e licença ambiental (piscicultura depende de recurso hídrico — atenção redobrada dado o contexto da bacia do Paraopeba)" },
+      { "categoria": "capacitacao", "descricao": "Formação técnica em manejo de piscicultura e qualidade da água" },
+      { "categoria": "insumos-iniciais", "descricao": "Alevinos e ração do primeiro ciclo de engorda", "prazoMaximoMeses": 6 },
+      { "categoria": "capital-giro-inicial", "descricao": "Ração até o primeiro despesque — ciclo produtivo de meses, pode exigir justificativa técnica se além de 6 meses", "prazoMaximoMeses": 6 }
+    ],
+    "vedacoesChave": [
+      "Compra permanente e indeterminada de ração/alevinos sem fonte futura de custeio",
+      "Licenciamento de uso da água é pré-requisito legal — não iniciar a obra do tanque sem a outorga formal, especialmente dado o histórico de contaminação hídrica da bacia do Paraopeba",
+      "Pagamento permanente de mão de obra de manejo sem fonte futura assumida"
+    ],
+    "modeloSustentabilidadeSugerido": "Receita da venda dos peixes (direta ou via pesque-pague comunitário) cobre ração e manutenção a partir do primeiro despesque; ciclo de produção deve ser detalhado no POS por ser sazonal, não mensal constante."
+  }
+]

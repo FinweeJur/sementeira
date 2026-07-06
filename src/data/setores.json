@@ -1,0 +1,9 @@
+[
+  { "id": "geral", "nome": "População atingida em geral", "cota": false },
+  { "id": "pessoas-mais-pobres", "nome": "Pessoas mais pobres", "cota": true },
+  { "id": "pct", "nome": "Povos e Comunidades Tradicionais (PCT)", "cota": true, "fundoReserva": true },
+  { "id": "mulheres", "nome": "Mulheres", "cota": true },
+  { "id": "familiares-vitimas", "nome": "Familiares de Vítimas Fatais", "cota": true },
+  { "id": "zona-quente", "nome": "Zona Quente", "cota": true },
+  { "id": "pcd", "nome": "Pessoas com Deficiência", "cota": false }
+]

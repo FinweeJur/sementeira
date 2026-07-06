@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+:root {
+  --sm-bg: #0f1410;
+  --sm-panel: #171d17;
+  --sm-border: #2a332a;
+  --sm-text: #e9efe6;
+  --sm-text-dim: #9fae9b;
+  --sm-green: #4caf50;
+  --sm-yellow: #d4a017;
+  --sm-red: #d1453b;
+  --sm-accent: #6fae55;
+
+  --sm-space-sm: 8px;
+  --sm-space-md: 16px;
+  --sm-space-lg: 24px;
+  --sm-radius: 8px;
+  --sm-transition-fast: 150ms ease-out;
+  --sm-transition-step: 200ms ease-out;
+  --sm-font-scale: 1;
+}
+
+/* Temas: só troca o conjunto de variáveis — nenhum componente referencia cor fixa. */
+:root[data-tema="claro"] {
+  --sm-bg: #f4f6f2;
+  --sm-panel: #ffffff;
+  --sm-border: #d7ddd2;
+  --sm-text: #1c241c;
+  --sm-text-dim: #5c6b57;
+  --sm-green: #2f8132;
+  --sm-yellow: #a0730a;
+  --sm-red: #b23227;
+  --sm-accent: #3f7a2c;
+}
+
+:root[data-tema="alto-contraste"] {
+  --sm-bg: #000000;
+  --sm-panel: #0a0a0a;
+  --sm-border: #ffffff;
+  --sm-text: #ffffff;
+  --sm-text-dim: #d8d8d8;
+  --sm-green: #4caf50;
+  --sm-yellow: #ffd400;
+  --sm-red: #ff5c4d;
+  --sm-accent: #7fd858;
+}
+
+html {
+  font-size: calc(16px * var(--sm-font-scale));
+}
+
+body {
+  background: var(--sm-bg);
+  color: var(--sm-text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.sm-fade {
+  transition: opacity var(--sm-transition-fast), background-color var(--sm-transition-fast), border-color var(--sm-transition-fast);
+}
+
+.sm-sprout {
+  transition: transform var(--sm-transition-step);
+}
+
+@keyframes sm-bloom {
+  0% { transform: scale(0); opacity: 0; }
+  40% { transform: scale(1.3); opacity: 1; }
+  60% { transform: scale(1); }
+  85% { opacity: 1; }
+  100% { transform: scale(1); opacity: 0; }
+}
+.sm-bloom {
+  display: inline-block;
+  animation: sm-bloom 2.5s ease-out forwards;
+}
+
+@keyframes sm-fluir {
+  to { stroke-dashoffset: -28; }
+}
+.sm-trilha {
+  stroke-dasharray: 8 6;
+  animation: sm-fluir 1.4s linear infinite;
+}
+.sm-anel {
+  animation: sm-fluir 3s linear infinite;
+}
+
+@keyframes sm-etapa-pulso {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+.sm-etapa-pulsando {
+  animation: sm-etapa-pulso 1.1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sm-bloom { animation: none; opacity: 1; }
+  .sm-fade, .sm-sprout { transition: none; }
+  .sm-trilha, .sm-anel { animation: none; }
+  .sm-etapa-pulsando { animation: none; opacity: 1; }
+}

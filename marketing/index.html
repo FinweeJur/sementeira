@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sementeira — ferramenta para projetos do Anexo I.1</title>
+<style>
+  :root {
+    --sm-bg: #0f1410;
+    --sm-panel: #171d17;
+    --sm-border: #2a332a;
+    --sm-text: #e9efe6;
+    --sm-text-dim: #9fae9b;
+    --sm-green: #4caf50;
+    --sm-yellow: #d4a017;
+    --sm-red: #d1453b;
+    --sm-accent: #6fae55;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--sm-bg);
+    color: var(--sm-text);
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.55;
+  }
+  a { color: var(--sm-accent); }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 0 24px; }
+
+  header.hero {
+    border-bottom: 1px solid var(--sm-border);
+    padding: 72px 0 56px;
+    background: radial-gradient(ellipse at top, rgba(111,174,85,0.14), transparent 60%);
+  }
+  .eyebrow {
+    display: inline-block;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--sm-accent);
+    border: 1px solid var(--sm-border);
+    border-radius: 999px;
+    padding: 4px 12px;
+    margin-bottom: 18px;
+  }
+  h1 {
+    font-size: clamp(28px, 4vw, 44px);
+    margin: 0 0 14px;
+    letter-spacing: -0.02em;
+  }
+  .lede {
+    font-size: 18px;
+    color: var(--sm-text-dim);
+    max-width: 640px;
+    margin: 0 0 28px;
+  }
+  .cta-row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn {
+    display: inline-block;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid var(--sm-border);
+  }
+  .btn-primary { background: rgba(111,174,85,0.18); border-color: var(--sm-accent); color: var(--sm-text); }
+  .btn-secondary { color: var(--sm-text-dim); }
+
+  section { padding: 48px 0; border-bottom: 1px solid var(--sm-border); }
+  section:last-of-type { border-bottom: none; }
+  h2 { font-size: 22px; margin: 0 0 8px; }
+  .section-sub { color: var(--sm-text-dim); font-size: 14px; margin: 0 0 28px; max-width: 640px; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: var(--sm-panel);
+    border: 1px solid var(--sm-border);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .card .num {
+    font-size: 12px;
+    color: var(--sm-text-dim);
+    letter-spacing: 0.06em;
+  }
+  .card h3 { font-size: 16px; margin: 6px 0 8px; }
+  .card p { font-size: 14px; color: var(--sm-text-dim); margin: 0; }
+
+  .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .badge {
+    font-size: 12px;
+    border-radius: 999px;
+    padding: 3px 10px;
+    border: 1px solid var(--sm-border);
+  }
+  .badge-ok { color: var(--sm-green); border-color: var(--sm-green); }
+  .badge-warn { color: var(--sm-yellow); border-color: var(--sm-yellow); }
+  .badge-block { color: var(--sm-red); border-color: var(--sm-red); }
+
+  .not-list, .roadmap-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+  }
+  .not-list li, .roadmap-list li {
+    font-size: 14px;
+    color: var(--sm-text-dim);
+    padding-left: 22px;
+    position: relative;
+  }
+  .not-list li::before { content: "✕"; position: absolute; left: 0; color: var(--sm-red); }
+  .roadmap-list li::before { content: "◐"; position: absolute; left: 0; color: var(--sm-yellow); }
+
+  .context-box {
+    background: var(--sm-panel);
+    border: 1px solid var(--sm-border);
+    border-radius: 10px;
+    padding: 20px;
+    font-size: 14px;
+    color: var(--sm-text-dim);
+  }
+
+  footer {
+    padding: 32px 0 56px;
+    color: var(--sm-text-dim);
+    font-size: 13px;
+  }
+
+  code {
+    background: var(--sm-border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow">Anexo I.1 · Reparação Brumadinho / bacia do Paraopeba</span>
+    <h1>🌱 Sementeira</h1>
+    <p class="lede">
+      Ferramenta desktop, offline-first, que ajuda uma pessoa atingida a transformar uma ideia em um projeto comunitário completo — do dano coletivo ao Plano de Sustentabilidade — pronto para chegar à Governança Popular.
+    </p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="#o-que-faz">Ver o que o app faz →</a>
+      <a class="btn btn-secondary" href="#nao-e">O que a Sementeira não é</a>
+    </div>
+  </div>
+</header>
+
+<section id="o-que-faz">
+  <div class="wrap">
+    <h2>O que o app faz, concretamente</h2>
+    <p class="section-sub">Oito capacidades reais, na ordem em que uma pessoa usaria — da ideia solta até o documento pronto para exportar.</p>
+    <div class="grid">
+      <div class="card">
+        <div class="num">01</div>
+        <h3>Começa pela ideia</h3>
+        <p>Digite com suas palavras (ou grave um áudio). Um copiloto de IA — DeepSeek, Maritaca/Sabiá ou um modelo local via Ollama, sem depender de internet — sugere o dano e o arquétipo mais próximo.</p>
+      </div>
+      <div class="card">
+        <div class="num">02</div>
+        <h3>Rascunho com pesquisa real</h3>
+        <p>Objetivo, justificativa, metas e orçamento gerados com dados públicos de verdade (IBGE, preços de mercado, editais) e fonte citada. Sem internet, o app avisa — nunca inventa.</p>
+      </div>
+      <div class="card">
+        <div class="num">03</div>
+        <h3>Conformidade em tempo real</h3>
+        <p>Cada linha do projeto é checada contra os Ofícios 45 e 46/2026.</p>
+        <div class="badge-row">
+          <span class="badge badge-ok">🟢 ok</span>
+          <span class="badge badge-warn">🟡 atenção</span>
+          <span class="badge badge-block">🔴 bloqueio</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="num">04</div>
+        <h3>Simula "o dia seguinte"</h3>
+        <p>Três cenários (otimista/realista/pessimista), com depreciação de equipamentos incluída — sem inflar a sustentabilidade. Gera o POS automaticamente.</p>
+      </div>
+      <div class="card">
+        <div class="num">05</div>
+        <h3>Ciclo de lapidação por IA</h3>
+        <p>Seis agentes revisam o projeto (texto, orçamento, crítica, riscos, sugestões, compilação) — inclusive leitura jurídico-fundiária, sociológica e psicológica. Nada aplica sem confirmação; toda versão é reversível.</p>
+      </div>
+      <div class="card">
+        <div class="num">06</div>
+        <h3>Cronograma, dinheiro e território</h3>
+        <p>Fluxo de caixa em 12 meses, Gantt de implantação, mapa vivo do ecossistema e mapa geográfico real dos ~26 municípios da bacia do Paraopeba.</p>
+      </div>
+      <div class="card">
+        <div class="num">07</div>
+        <h3>Economia circular entre projetos</h3>
+        <p>Complementaridades entre projetos, Fundo Rotativo Solidário simulado, cotação de fornecedores (priorizando a própria rede) e clube de benefícios.</p>
+      </div>
+      <div class="card">
+        <div class="num">08</div>
+        <h3>Documentos prontos</h3>
+        <p>Exportação em .docx/.xlsx/.pdf, e minutas de estatuto, ata de fundação e regimento — sempre com aviso de revisão jurídica antes de assinar.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="nao-e">
+  <div class="wrap">
+    <h2>O que a Sementeira não é</h2>
+    <p class="section-sub">Para evitar expectativa errada sobre o que a ferramenta cobre.</p>
+    <ul class="not-list">
+      <li>Não é um app de denúncia, mobilização ou convocação de atos.</li>
+      <li>Não substitui as Comissões de Atingidos, as assembleias ou a Governança Popular.</li>
+      <li>Não tem versão mobile nem está publicada num link público até o momento.</li>
+      <li>Não decide nada sozinha — toda sugestão de IA é revisável, e o motor de conformidade determinístico é sempre a palavra final.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="roadmap">
+  <div class="wrap">
+    <h2>Em desenvolvimento</h2>
+    <p class="section-sub">Ainda não disponível — listado aqui para não prometer o que não está pronto.</p>
+    <ul class="roadmap-list">
+      <li>Cadastro de voluntários por habilidade/projeto de interesse.</li>
+      <li>Orientação mensal automática de acompanhamento do projeto.</li>
+      <li>Copiloto-agente que executa tarefas do app por comando de texto.</li>
+      <li>Comparação lado a lado de projetos.</li>
+      <li>Exportação em PDF nativo (hoje via impressão do sistema).</li>
+      <li>Entrada de ideia por áudio, transcrito localmente.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="contexto">
+  <div class="wrap">
+    <h2>Por trás da ferramenta</h2>
+    <div class="context-box">
+      A Sementeira nasce da luta do Movimento dos Atingidos por Barragens (MAB) pela reparação integral depois do rompimento da barragem da Vale em Brumadinho — mais de seis anos de espera, comunidades destruídas e reconstruídas, famílias sem resposta. A Proposta Definitiva do Acordo já previa uma
+      <em>"Sementeira de Ideias"</em> para as pessoas atingidas sugerirem projetos de forma simplificada; este aplicativo é a versão digital, guiada e ciente das regras dessa Sementeira — uma ferramenta a mais na caixa de ferramentas da organização popular, não uma substituta dela.
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    App desktop (Windows), roda offline com <code>Ollama</code> local ou com provedores de IA configuráveis (DeepSeek, Maritaca/Sabiá). Dados ficam no computador de quem usa.
+  </div>
+</footer>
+
+</body>
+</html>

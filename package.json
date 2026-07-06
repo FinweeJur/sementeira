@@ -1,0 +1,63 @@
+{
+  "name": "sementeira",
+  "productName": "Sementeira",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Construtor guiado de projetos do Anexo I.1 com motor de conformidade e simulador de autossustentabilidade.",
+  "author": "",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev:renderer": "vite --host 127.0.0.1 --port 5183",
+    "dev:electron": "wait-on http://127.0.0.1:5183 && cross-env SEMENTEIRA_DEV_SERVER=http://127.0.0.1:5183 electron .",
+    "dev": "concurrently -k \"npm:dev:renderer\" \"npm:dev:electron\"",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc -p . --noEmit",
+    "dist": "npm run build && electron-builder"
+  },
+  "build": {
+    "appId": "com.sementeira.app",
+    "productName": "Sementeira",
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "build/icon.png",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "dependencies": {
+    "docx": "^9.1.1",
+    "exceljs": "^4.4.0",
+    "mammoth": "^1.12.0",
+    "pdfjs-dist": "^6.1.200",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.4",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@types/three": "^0.170.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.0",
+    "cross-env": "^7.0.3",
+    "electron": "^40.10.2",
+    "electron-builder": "^26.8.1",
+    "tailwindcss": "^4.2.4",
+    "typescript": "^5.7.2",
+    "vite": "^6.3.6",
+    "wait-on": "^8.0.1"
+  }
+}

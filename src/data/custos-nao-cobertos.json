@@ -1,0 +1,11 @@
+[
+  { "id": "terreno", "nome": "Terreno (aquisição/cessão)", "categoria": "instalacao", "referenciaPorPorte": { "pequeno": 0, "medio": 0, "grande": 0 } },
+  { "id": "construcao-civil", "nome": "Construção civil além do escopo do projeto", "categoria": "instalacao", "referenciaPorPorte": { "pequeno": 0, "medio": 0, "grande": 0 } },
+  { "id": "agua", "nome": "Conta de água (uso permanente)", "categoria": "consumo-vedado", "referenciaPorPorte": { "pequeno": 80, "medio": 250, "grande": 600 } },
+  { "id": "energia", "nome": "Conta de energia (uso permanente)", "categoria": "consumo-vedado", "referenciaPorPorte": { "pequeno": 200, "medio": 700, "grande": 2000 } },
+  { "id": "internet", "nome": "Internet (uso permanente)", "categoria": "consumo-vedado", "referenciaPorPorte": { "pequeno": 100, "medio": 200, "grande": 400 } },
+  { "id": "telefone", "nome": "Telefone (uso permanente)", "categoria": "consumo-vedado", "referenciaPorPorte": { "pequeno": 60, "medio": 120, "grande": 250 } },
+  { "id": "contabilidade", "nome": "Contabilidade / serviços fiscais", "categoria": "administrativo", "referenciaPorPorte": { "pequeno": 300, "medio": 800, "grande": 2000 } },
+  { "id": "juridico", "nome": "Assessoria jurídica contínua", "categoria": "administrativo", "referenciaPorPorte": { "pequeno": 0, "medio": 500, "grande": 1500 } },
+  { "id": "propaganda", "nome": "Propaganda / divulgação contínua", "categoria": "administrativo", "referenciaPorPorte": { "pequeno": 100, "medio": 300, "grande": 800 } }
+]
