@@ -24,6 +24,7 @@ export function ProjectList({
   onAbrirEcossistema,
   onAbrirClube,
   onAbrirVoluntarios,
+  onAbrirComparacao,
   llmConfig,
   onLlmConfigChange,
 }: {
@@ -37,6 +38,7 @@ export function ProjectList({
   onAbrirEcossistema: () => void;
   onAbrirClube: () => void;
   onAbrirVoluntarios: () => void;
+  onAbrirComparacao: () => void;
   llmConfig: ProviderConfig;
   onLlmConfigChange: (c: ProviderConfig) => void;
 }) {
@@ -130,6 +132,11 @@ export function ProjectList({
         {projects.length > 0 && (
           <button onClick={() => setAgenteAberto(true)} className="rounded border border-[color:var(--sm-border)] px-3 py-2 text-xs hover:border-[color:var(--sm-accent)]">
             🤖 Copiloto de portfólio
+          </button>
+        )}
+        {projects.length >= 2 && (
+          <button onClick={onAbrirComparacao} className="rounded border border-[color:var(--sm-border)] px-3 py-2 text-xs hover:border-[color:var(--sm-accent)]">
+            ⚖ Comparar projetos
           </button>
         )}
         {projects.length > 0 && (

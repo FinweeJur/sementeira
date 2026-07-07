@@ -6,6 +6,7 @@ import { ProjectWizard } from "./pages/ProjectWizard";
 import { Ecossistema } from "./pages/Ecossistema";
 import { ClubeBeneficios } from "./pages/ClubeBeneficios";
 import { Voluntarios } from "./pages/Voluntarios";
+import { CompareProjects } from "./pages/CompareProjects";
 import { Onboarding } from "./components/Onboarding";
 import { NavBar } from "./components/NavBar";
 import {
@@ -31,6 +32,7 @@ export function App() {
   const [mostrarEcossistema, setMostrarEcossistema] = useState(false);
   const [mostrarClube, setMostrarClube] = useState(false);
   const [mostrarVoluntarios, setMostrarVoluntarios] = useState(false);
+  const [mostrarComparacao, setMostrarComparacao] = useState(false);
   const [mostrarOnboarding, setMostrarOnboarding] = useState(false);
   const [fontScale, setFontScale] = useState<FontScale>("normal");
   const [tema, setTema] = useState<Tema>("escuro");
@@ -130,6 +132,17 @@ export function App() {
     conteudo = <ClubeBeneficios projects={projects} onVoltar={() => setMostrarClube(false)} />;
   } else if (mostrarVoluntarios) {
     conteudo = <Voluntarios projects={projects} onVoltar={() => setMostrarVoluntarios(false)} />;
+  } else if (mostrarComparacao) {
+    conteudo = (
+      <CompareProjects
+        projects={projects}
+        onVoltar={() => setMostrarComparacao(false)}
+        onAbrirProjeto={(id) => {
+          setMostrarComparacao(false);
+          setOpenId(id);
+        }}
+      />
+    );
   } else {
     conteudo = (
       <ProjectList
@@ -143,6 +156,7 @@ export function App() {
         onAbrirEcossistema={() => setMostrarEcossistema(true)}
         onAbrirClube={() => setMostrarClube(true)}
         onAbrirVoluntarios={() => setMostrarVoluntarios(true)}
+        onAbrirComparacao={() => setMostrarComparacao(true)}
         llmConfig={llmConfig}
         onLlmConfigChange={handleLlmConfigChange}
       />
