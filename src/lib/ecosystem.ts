@@ -4,6 +4,7 @@ import { carregarConfigLLM, enviarMensagemLLM } from "./providers";
 import { extrairBlocoJson } from "./json-parsing";
 import arquetipos from "../data/arquetipos.json";
 import danos from "../data/danos.json";
+import setores from "../data/setores.json";
 
 function nomeArquetipo(id: string): string {
   return arquetipos.find((a) => a.id === id)?.nome ?? "(sem arquétipo)";
@@ -25,6 +26,48 @@ export function calcularSaldosRealistas(projects: Project[]): SaldoRealista[] {
     const realista = simulacoes.find((s) => s.cenario === "realista");
     return { projectId: p.id, titulo: p.titulo || "(sem título)", saldoMensalRealista: realista?.saldoMensal ?? 0 };
   });
+}
+
+const META_COTA_EQUIDADE = 0.3;
+
+export interface CotaEquidadeResultado {
+  valorPrioritario: number;
+  valorTotal: number;
+  percentual: number;
+  meta: number;
+  atingida: boolean;
+  projetosPrioritarios: { projectId: string; titulo: string; motivo: string }[];
+}
+
+/**
+ * Cota de equidade agregada do portfólio (Proposta pág. 53): mínimo 30% dos
+ * recursos para pessoas mais pobres, PCTs, mulheres, Familiares de Vítimas
+ * Fatais, Zona Quente. Um projeto conta para a cota se o setor/público
+ * selecionado tiver `cota: true` OU se `coordenacaoFeminina` estiver marcado
+ * (critério ortogonal ao setor, ver seção "Autoria e equidade" do plano) —
+ * nesse caso o orçamento TOTAL do projeto conta, não uma fração.
+ */
+export function calcularCotaEquidade(projects: Project[]): CotaEquidadeResultado {
+  let valorPrioritario = 0;
+  let valorTotal = 0;
+  const projetosPrioritarios: { projectId: string; titulo: string; motivo: string }[] = [];
+
+  for (const p of projects) {
+    const totalProjeto = p.orcamento.reduce((s, l) => s + l.valor, 0);
+    valorTotal += totalProjeto;
+
+    const setor = setores.find((s) => s.id === p.setorId);
+    const contaPeloSetor = setor?.cota === true;
+    const contaPelaCoordenacao = p.coordenacaoFeminina === true;
+    if (contaPeloSetor || contaPelaCoordenacao) {
+      valorPrioritario += totalProjeto;
+      const motivos = [contaPeloSetor ? setor!.nome : null, contaPelaCoordenacao ? "coordenação por mulher(es)" : null].filter(Boolean).join(" + ");
+      projetosPrioritarios.push({ projectId: p.id, titulo: p.titulo || "(sem título)", motivo: motivos });
+    }
+  }
+
+  const percentual = valorTotal > 0 ? valorPrioritario / valorTotal : 0;
+  return { valorPrioritario, valorTotal, percentual, meta: META_COTA_EQUIDADE, atingida: percentual >= META_COTA_EQUIDADE, projetosPrioritarios };
 }
 
 export interface AnaliseEcossistema {

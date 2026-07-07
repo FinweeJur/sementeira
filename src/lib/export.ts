@@ -4,7 +4,7 @@ import type { Project } from "./types";
 import { avaliarConformidade } from "./compliance-engine";
 import { simularTodos, exigenciaPOS, calcularDepreciacaoMensal } from "./simulator";
 import { montarChecklistFinal } from "./checklist";
-import { calcularSaldosRealistas, type AnaliseEcossistema, type FundoRotativoResultado } from "./ecosystem";
+import { calcularSaldosRealistas, calcularCotaEquidade, type AnaliseEcossistema, type FundoRotativoResultado } from "./ecosystem";
 import type { ClubeBeneficios } from "./clube-beneficios";
 import arquetipos from "../data/arquetipos.json";
 import danos from "../data/danos.json";
@@ -297,6 +297,7 @@ export async function exportarProjetoPdf(project: Project): Promise<{ ok: boolea
 
 export async function exportarEcossistemaDocx(projects: Project[], analise: AnaliseEcossistema | null, fundo: FundoRotativoResultado): Promise<void> {
   const saldos = calcularSaldosRealistas(projects);
+  const cota = calcularCotaEquidade(projects);
 
   const doc = new Document({
     sections: [
@@ -304,6 +305,12 @@ export async function exportarEcossistemaDocx(projects: Project[], analise: Anal
         children: [
           new Paragraph({ text: "Documento do Ecossistema de Projetos", heading: HeadingLevel.TITLE }),
           new Paragraph({ text: `${projects.length} projeto(s) cadastrado(s).` }),
+
+          new Paragraph({ text: "Cota de equidade agregada (Proposta pág. 53 — mínimo 30%)", heading: HeadingLevel.HEADING_1 }),
+          new Paragraph({
+            text: `${(cota.percentual * 100).toFixed(1)}% do orçamento do portfólio (R$ ${cota.valorPrioritario.toFixed(2)} de R$ ${cota.valorTotal.toFixed(2)}) — meta ${(cota.meta * 100).toFixed(0)}% — ${cota.atingida ? "atingida" : "abaixo da meta"}.`,
+          }),
+          ...cota.projetosPrioritarios.map((p) => new Paragraph({ text: `• ${p.titulo} — ${p.motivo}` })),
 
           new Paragraph({ text: "Saldo mensal por projeto (cenário realista)", heading: HeadingLevel.HEADING_1 }),
           ...saldos.map((s) => new Paragraph({ text: `${s.titulo}: R$ ${s.saldoMensalRealista.toFixed(2)}/mês` })),

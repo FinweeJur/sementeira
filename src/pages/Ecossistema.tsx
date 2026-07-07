@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Project } from "../lib/types";
-import { calcularSaldosRealistas, analisarEcossistemaComIA, simularFundoRotativo, carregarAnaliseEcossistema, salvarAnaliseEcossistema, type AnaliseEcossistema } from "../lib/ecosystem";
+import { calcularSaldosRealistas, analisarEcossistemaComIA, simularFundoRotativo, carregarAnaliseEcossistema, salvarAnaliseEcossistema, calcularCotaEquidade, type AnaliseEcossistema } from "../lib/ecosystem";
 import { lapidarEcossistema, ETAPAS_PORTFOLIO_ROTULO, type ResultadoLapidacaoEcossistema } from "../lib/refinement-ecosystem";
 import { exportarEcossistemaDocx } from "../lib/export";
 import { carregarClube } from "../lib/clube-beneficios";
@@ -33,6 +33,7 @@ export function Ecossistema({
 
   const saldos = useMemo(() => calcularSaldosRealistas(projects), [projects]);
   const fundo = useMemo(() => simularFundoRotativo(projects, percentual), [projects, percentual]);
+  const cota = useMemo(() => calcularCotaEquidade(projects), [projects]);
 
   const alertasLogistica = useMemo(() => {
     const conexoes = derivarConexoes(projects);
@@ -141,6 +142,26 @@ export function Ecossistema({
 
       {aba === "lista" && (
       <>
+      <Section title="Cota de equidade agregada (Proposta pág. 53 — mínimo 30%)">
+        <p className="text-xs text-[color:var(--sm-text-dim)]">
+          % do orçamento total do portfólio alocado a projetos com público prioritário (pessoas mais pobres, PCTs, mulheres, Familiares de Vítimas Fatais, Zona Quente) — conta também projeto marcado
+          como "coordenação por mulher(es)", mesmo com outro setor selecionado.
+        </p>
+        <p className="text-sm">
+          <strong className={cota.atingida ? "text-[color:var(--sm-green)]" : "text-[color:var(--sm-red)]"}>{(cota.percentual * 100).toFixed(1)}%</strong>
+          {" "}do orçamento (R$ {cota.valorPrioritario.toFixed(2)} de R$ {cota.valorTotal.toFixed(2)}) — meta: {(cota.meta * 100).toFixed(0)}%
+          {cota.atingida ? " ✅ atingida" : " 🔴 abaixo da meta"}
+        </p>
+        {cota.projetosPrioritarios.length > 0 && (
+          <ul className="space-y-0.5 text-xs text-[color:var(--sm-text-dim)]">
+            {cota.projetosPrioritarios.map((p) => (
+              <li key={p.projectId}>
+                • {p.titulo} — {p.motivo}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Section>
       {alertasLogistica.length > 0 && (
         <Section title="🟡 Alerta de logística frágil entre projetos integrados">
           <ul className="space-y-1 text-sm">
