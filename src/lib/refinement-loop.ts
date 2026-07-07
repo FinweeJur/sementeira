@@ -1,4 +1,4 @@
-import type { AcessoLogistico, BudgetLine, CategoriaLinha, EquipeMembro, MesCronograma, NivelRisco, Project, RiskItem, VersaoSnapshot } from "./types";
+import type { AcessoLogistico, BudgetLine, CategoriaLinha, EquipeMembro, Indicador, MesCronograma, NivelRisco, Project, RiskItem, VersaoSnapshot } from "./types";
 import { calcularCronogramaImplantacao } from "./cronograma-gantt";
 import { avaliarConformidade } from "./compliance-engine";
 import { montarChecklistFinal } from "./checklist";
@@ -28,6 +28,7 @@ export interface LapidacaoDados {
   objetivo?: string;
   justificativa?: string;
   metas?: string[];
+  indicadores?: Indicador[];
   comoComunidadeAjuda?: string;
   missaoImpacto?: string;
   cronograma?: string;
@@ -143,6 +144,7 @@ function resumoProjeto(p: Project): string {
       objetivo: p.objetivo,
       justificativa: p.justificativa,
       metas: p.metas,
+      indicadores: p.indicadores,
       comoComunidadeAjuda: p.comoComunidadeAjuda,
       missaoImpacto: p.missaoImpacto,
       cronograma: p.cronograma,
@@ -166,6 +168,7 @@ function contextoBase(): string {
   return [
     "Contexto: projeto comunitário do Anexo I.1 (reparação Brumadinho/bacia do Paraopeba). Regras duras do Ofício 46: vedado custeio permanente sem fonte futura; capital de giro/insumos preferencialmente ≤6 meses (exceção só com justificativa de ciclo produtivo); política pública exige anuência do ente público; todo projeto precisa se sustentar sozinho após o repasse (POS).",
     "Diretrizes locais do usuário (obrigatórias): (1) o foco é qualidade e realismo do projeto, não rapidez; (2) todo projeto tem porte mínimo de R$ 100.000,00 — o orçamento deve corresponder a esse valor detalhando bem os itens, sem inflar valores artificialmente; (3) todo projeto deve prever a liberação de pelo menos 2 pessoas por 6 meses (equipe de implantação/operação inicial); (4) economia circular entre os projetos da rede é diretriz: sempre que possível, prefira que insumos, serviços e mão de obra venham de outros projetos comunitários da rede (isso não precisa cobrir todo o orçamento, mas deve ser considerado).",
+    "PADRÃO MÍNIMO DE DETALHAMENTO (calibrado contra projetos técnicos reais do setor, não um rascunho superficial): além do Ofício 46, cite as normas técnicas/órgãos de classe aplicáveis ao TIPO de atividade do arquétipo quando existirem (ex.: vigilância sanitária municipal, ABNT NBR aplicável, conselho profissional da área, RDC ANVISA se houver resíduos/saúde envolvidos) — sem inventar norma que não exista; se não souber uma norma específica, diga que a legislação municipal/setorial deve ser consultada em vez de inventar um nome de norma.",
     ...(aprendizado ? [aprendizado] : []),
     "Responda SEMPRE em português simples. Responda SOMENTE com o bloco json pedido, sem nenhum texto fora dele.",
   ].join("\n");
@@ -177,8 +180,9 @@ function promptEscritor(p: Project): string {
     "Papel: ESCRITOR. Melhore a clareza e a especificidade dos textos do projeto abaixo, sem inventar fatos, números ou locais novos — só reescreva melhor o que já existe (mais concreto, menos genérico).",
     "EXIGÊNCIA DE PROFUNDIDADE: `objetivo` e `justificativa` devem ter PELO MENOS 2 PARÁGRAFOS BEM DESENVOLVIDOS cada (nunca 1 frase só) — detalhamento concreto ligado ao dano/local/arquétipo, sem generalidades vazias. `comoComunidadeAjuda` e `missaoImpacto` devem ter pelo menos 1-2 parágrafos.",
     "METAS REALISTAS NA ORIGEM: revise `metas` para serem proporcionais ao orçamento e ao porte informados — nunca números desproporcionalmente grandes para o tamanho real do projeto; prefira metas mensuráveis e plausíveis dentro do prazo do cronograma.",
+    "INDICADORES (padrão marco lógico, exigido em editais/financiadores reais): se `metas` não tiver `indicadores` correspondentes, ou se estiverem incompletos, gere/complete `indicadores` — cada um com indicador mensurável, meta verificável, meio de verificação concreto (ex.: livro de registro, relatório fotográfico, nota fiscal, lista de presença) e frequência de medição. Sem meio de verificação, a meta não é auditável.",
     "Projeto:", resumoProjeto(p),
-    'Formato: ```json\n{"objetivo": "...", "justificativa": "...", "metas": ["..."], "comoComunidadeAjuda": "...", "missaoImpacto": "..."}\n``` (omita campos que já estão bons e profundos o suficiente).',
+    'Formato: ```json\n{"objetivo": "...", "justificativa": "...", "metas": ["..."], "indicadores": [{"id": "id-existente-ou-omitir-se-novo", "nome": "...", "meta": "...", "meioVerificacao": "...", "frequencia": "..."}], "comoComunidadeAjuda": "...", "missaoImpacto": "..."}\n``` (omita campos que já estão bons e profundos o suficiente; `indicadores` vem COMPLETO — existentes mantidos/melhorados + novos).',
   ].join("\n\n");
 }
 
@@ -249,7 +253,7 @@ function promptCompilador(p: Project, saidas: { escritor: unknown; orcamentista:
     "Com base nas notas do Crítico e nas diretrizes/metas do contexto, escreva um RESUMO AVALIATIVO curto (2-4 frases: onde a versão está forte, onde ainda está fraca) e diga se vale rodar MAIS UMA volta de lapidação (recomendaNovaVolta: true só se ainda houver ganho claro a extrair; false se a versão já está madura ou se os problemas restantes exigem decisão humana, não IA).",
     "Saída do Analista de Riscos:", JSON.stringify(saidas.riscos ?? {}),
     "Sugestões do Sugestor:", JSON.stringify(saidas.sugestor),
-    'Formato: ```json\n{"objetivo": "...", "justificativa": "...", "metas": ["..."], "comoComunidadeAjuda": "...", "missaoImpacto": "...", "cronograma": "...", "cronogramaMensal": [{"mes": 1, "atividades": ["..."]}], "formasArrecadacao": ["..."], "orcamento": [...mesma estrutura do orçamentista...], "equipe": [{"id": "id-existente-ou-omitir-se-nova", "nome": "...", "formacaoNecessaria": "...", "horasSemanais": 20, "duracaoMeses": 6, "planoTrabalho": "..."}], "riscos": [...mesma estrutura do analista...], "posCompleto": {"responsavelOperacao": "...", "fonteCusteioFuturoGeral": "...", "metodologiaTransicao": "...", "indicadoresAutonomia": "..."}, "planoImplementacao": ["passo 1 na ordem de execução", "passo 2", "..."], "espacoLogistica": {"areaM2": null, "tipoEspaco": null, "observacoes": null}, "fonteReposicaoEquipamentos": null, "avaliacaoResumo": "resumo avaliativo em 2-4 frases", "recomendaNovaVolta": false, "changelog": ["o que mudou e por quê, frase completa em português simples — máximo 10 itens"]}\n``` — `equipe` deve vir COMPLETA (existentes mantidas/melhoradas + novas). Omita os demais campos sem mudança; changelog obrigatório.',
+    'Formato: ```json\n{"objetivo": "...", "justificativa": "...", "metas": ["..."], "indicadores": [{"id": "id-existente-ou-omitir-se-novo", "nome": "...", "meta": "...", "meioVerificacao": "...", "frequencia": "..."}], "comoComunidadeAjuda": "...", "missaoImpacto": "...", "cronograma": "...", "cronogramaMensal": [{"mes": 1, "atividades": ["..."]}], "formasArrecadacao": ["..."], "orcamento": [...mesma estrutura do orçamentista...], "equipe": [{"id": "id-existente-ou-omitir-se-nova", "nome": "...", "formacaoNecessaria": "...", "horasSemanais": 20, "duracaoMeses": 6, "planoTrabalho": "..."}], "riscos": [...mesma estrutura do analista...], "posCompleto": {"responsavelOperacao": "...", "fonteCusteioFuturoGeral": "...", "metodologiaTransicao": "...", "indicadoresAutonomia": "..."}, "planoImplementacao": ["passo 1 na ordem de execução", "passo 2", "..."], "espacoLogistica": {"areaM2": null, "tipoEspaco": null, "observacoes": null}, "fonteReposicaoEquipamentos": null, "avaliacaoResumo": "resumo avaliativo em 2-4 frases", "recomendaNovaVolta": false, "changelog": ["o que mudou e por quê, frase completa em português simples — máximo 10 itens"]}\n``` — `equipe` e `indicadores` (um por meta) devem vir COMPLETOS (existentes mantidos/melhorados + novos). Omita os demais campos sem mudança; changelog obrigatório.',
   ].join("\n\n");
 }
 
@@ -333,6 +337,29 @@ function sanitizarEquipe(bruto: unknown, original: EquipeMembro[]): EquipeMembro
   return membros.length > 0 ? membros : undefined;
 }
 
+/** Indicadores no padrão marco lógico gerados/refinados pelo Escritor ou Compilador — mesmo padrão defensivo de sanitizarEquipe (preserva id de indicadores já existentes). */
+function sanitizarIndicadores(bruto: unknown, original: Indicador[] = []): Indicador[] | undefined {
+  if (!Array.isArray(bruto) || bruto.length === 0) return undefined;
+  const idsOriginais = new Set(original.map((i) => i.id));
+  const indicadores: Indicador[] = [];
+  for (const item of bruto) {
+    if (!item || typeof item !== "object") continue;
+    const o = item as Record<string, unknown>;
+    const nome = typeof o.nome === "string" ? o.nome.trim() : "";
+    const meta = typeof o.meta === "string" ? o.meta.trim() : "";
+    if (!nome || !meta) continue;
+    const idExistente = typeof o.id === "string" && idsOriginais.has(o.id) ? o.id : null;
+    indicadores.push({
+      id: idExistente ?? crypto.randomUUID(),
+      nome,
+      meta,
+      meioVerificacao: typeof o.meioVerificacao === "string" && o.meioVerificacao.trim() ? o.meioVerificacao : undefined,
+      frequencia: typeof o.frequencia === "string" && o.frequencia.trim() ? o.frequencia : undefined,
+    });
+  }
+  return indicadores.length > 0 ? indicadores : undefined;
+}
+
 function sanitizarCronogramaMensal(bruto: unknown): MesCronograma[] | undefined {
   if (!Array.isArray(bruto) || bruto.length === 0) return undefined;
   const meses: MesCronograma[] = [];
@@ -405,6 +432,7 @@ function sanitizarCompilado(bruto: Record<string, unknown>, original: Project): 
     objetivo: stringOpcional(bruto.objetivo),
     justificativa: stringOpcional(bruto.justificativa),
     metas: listaDeStrings(bruto.metas),
+    indicadores: sanitizarIndicadores(bruto.indicadores, original.indicadores),
     comoComunidadeAjuda: stringOpcional(bruto.comoComunidadeAjuda),
     missaoImpacto: stringOpcional(bruto.missaoImpacto),
     cronograma: stringOpcional(bruto.cronograma),
@@ -429,6 +457,7 @@ export function aplicarLapidacao(project: Project, dados: LapidacaoDados): Proje
     objetivo: dados.objetivo ?? project.objetivo,
     justificativa: dados.justificativa ?? project.justificativa,
     metas: dados.metas ?? project.metas,
+    indicadores: dados.indicadores ?? project.indicadores,
     comoComunidadeAjuda: dados.comoComunidadeAjuda ?? project.comoComunidadeAjuda,
     missaoImpacto: dados.missaoImpacto ?? project.missaoImpacto,
     cronograma: dados.cronograma ?? project.cronograma,

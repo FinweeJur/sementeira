@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { BudgetLine, CategoriaLinha, Cenario, CustoNaoCobertoItem, EquipeMembro, EspacoLogistica, PropostaFornecedor, Project, RiskItem } from "../lib/types";
+import type { BudgetLine, CategoriaLinha, Cenario, CustoNaoCobertoItem, EquipeMembro, EspacoLogistica, Indicador, PropostaFornecedor, Project, RiskItem } from "../lib/types";
 import { PORTE_POR_ABRANGENCIA, CONSELHO_POR_ABRANGENCIA } from "../lib/types";
 import { avaliarConformidade } from "../lib/compliance-engine";
 import { simularTodos, exigenciaPOS, calcularDepreciacaoMensal } from "../lib/simulator";
@@ -265,6 +265,17 @@ export function ProjectWizard({
     setRevisao(null);
   }
 
+  function adicionarIndicador() {
+    const novo: Indicador = { id: crypto.randomUUID(), nome: "", meta: "" };
+    update("indicadores", [...(project.indicadores ?? []), novo]);
+  }
+  function updateIndicador(id: string, patch: Partial<Indicador>) {
+    update("indicadores", (project.indicadores ?? []).map((i) => (i.id === id ? { ...i, ...patch } : i)));
+  }
+  function removerIndicador(id: string) {
+    update("indicadores", (project.indicadores ?? []).filter((i) => i.id !== id));
+  }
+
   function updateEspacoLogistica(patch: Partial<EspacoLogistica>) {
     update("espacoLogistica", { ...project.espacoLogistica, ...patch });
   }
@@ -482,6 +493,47 @@ export function ProjectWizard({
                 </li>
               ))}
             </ul>
+          </Field>
+          <Field
+            label="Indicadores (padrão marco lógico)"
+            hint="Para cada meta acima, o que exatamente vai ser medido, como (meio de verificação) e com que frequência — é o que uma Governança/financiador vai cobrar depois."
+          >
+            <div className="space-y-2">
+              {(project.indicadores ?? []).map((ind) => (
+                <div key={ind.id} className="grid grid-cols-12 gap-2 rounded border border-[color:var(--sm-border)] p-2">
+                  <input
+                    className={`${inputClass} col-span-4`}
+                    placeholder="Indicador (ex.: nº de famílias atendidas)"
+                    value={ind.nome}
+                    onChange={(e) => updateIndicador(ind.id, { nome: e.target.value })}
+                  />
+                  <input
+                    className={`${inputClass} col-span-3`}
+                    placeholder="Meta (ex.: 20 até o mês 12)"
+                    value={ind.meta}
+                    onChange={(e) => updateIndicador(ind.id, { meta: e.target.value })}
+                  />
+                  <input
+                    className={`${inputClass} col-span-3`}
+                    placeholder="Meio de verificação (ex.: livro de registro)"
+                    value={ind.meioVerificacao ?? ""}
+                    onChange={(e) => updateIndicador(ind.id, { meioVerificacao: e.target.value })}
+                  />
+                  <input
+                    className={`${inputClass} col-span-1`}
+                    placeholder="Frequência"
+                    value={ind.frequencia ?? ""}
+                    onChange={(e) => updateIndicador(ind.id, { frequencia: e.target.value })}
+                  />
+                  <button onClick={() => removerIndicador(ind.id)} className="col-span-1 text-xs text-[color:var(--sm-red)]">
+                    x
+                  </button>
+                </div>
+              ))}
+              <button onClick={adicionarIndicador} className="rounded border border-dashed border-[color:var(--sm-border)] px-3 py-1.5 text-sm hover:border-[color:var(--sm-accent)]">
+                + Adicionar indicador
+              </button>
+            </div>
           </Field>
           <Field label="Como as pessoas da comunidade podem ajudar?" hint='Ex.: "galpão de reciclagem: moradores separam lixo orgânico do reciclável em casa". Mutirão/trabalho voluntário é uma forma legítima de reduzir custo sem virar folha permanente vedada.'>
             <textarea className={inputClass} rows={2} value={project.comoComunidadeAjuda ?? ""} onChange={(e) => update("comoComunidadeAjuda", e.target.value)} />

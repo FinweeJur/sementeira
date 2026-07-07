@@ -114,12 +114,37 @@ export function ProjectDocumento({
         </p>
         {project.metas.length > 0 && (
           <div>
-            <p className="text-sm font-medium">Metas / indicadores</p>
+            <p className="text-sm font-medium">Metas</p>
             <ul className="list-disc pl-5 text-sm">
               {project.metas.map((m, i) => (
                 <li key={i}>{m}</li>
               ))}
             </ul>
+          </div>
+        )}
+        {(project.indicadores?.length ?? 0) > 0 && (
+          <div>
+            <p className="text-sm font-medium">Indicadores (marco lógico)</p>
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="text-xs text-[color:var(--sm-text-dim)]">
+                  <th className="pr-2">Indicador</th>
+                  <th className="pr-2">Meta</th>
+                  <th className="pr-2">Meio de verificação</th>
+                  <th>Frequência</th>
+                </tr>
+              </thead>
+              <tbody>
+                {project.indicadores!.map((ind) => (
+                  <tr key={ind.id} className="border-t border-[color:var(--sm-border)]">
+                    <td className="pr-2">{ind.nome || "-"}</td>
+                    <td className="pr-2">{ind.meta || "-"}</td>
+                    <td className="pr-2">{ind.meioVerificacao || "-"}</td>
+                    <td>{ind.frequencia || "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
         {project.comoComunidadeAjuda && (

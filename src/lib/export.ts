@@ -55,6 +55,27 @@ export async function exportarProjetoDocx(project: Project): Promise<void> {
           new Paragraph({ text: "Metas", heading: HeadingLevel.HEADING_1 }),
           ...(project.metas.length ? project.metas.map((m) => new Paragraph({ text: `• ${m}` })) : [new Paragraph({ text: "-" })]),
 
+          ...((project.indicadores?.length ?? 0) > 0
+            ? [
+                new Paragraph({ text: "Indicadores (marco lógico)", heading: HeadingLevel.HEADING_1 }),
+                new Table({
+                  rows: [
+                    new TableRow({
+                      children: ["Indicador", "Meta", "Meio de verificação", "Frequência"].map(
+                        (t) => new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: t, bold: true })] })] }),
+                      ),
+                    }),
+                    ...project.indicadores!.map(
+                      (ind) =>
+                        new TableRow({
+                          children: [ind.nome, ind.meta, ind.meioVerificacao ?? "-", ind.frequencia ?? "-"].map((t) => new TableCell({ children: [new Paragraph(t)] })),
+                        }),
+                    ),
+                  ],
+                }),
+              ]
+            : []),
+
           new Paragraph({ text: "Orçamento por item", heading: HeadingLevel.HEADING_1 }),
           new Table({
             rows: [

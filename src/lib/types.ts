@@ -94,6 +94,20 @@ export interface MesCronograma {
   atividades: string[];
 }
 
+/**
+ * Indicador de resultado no padrão marco lógico (indicador + meta numérica/verificável
+ * + meio de verificação + frequência) — complementa `Project.metas` (texto livre)
+ * com o mínimo de rigor que editais e financiadores exigem para medir se o
+ * projeto está indo bem, não só o que ele promete.
+ */
+export interface Indicador {
+  id: string;
+  nome: string;
+  meta: string;
+  meioVerificacao?: string;
+  frequencia?: string;
+}
+
 export type AcessoLogistico = "asfalto" | "estrada-terra" | "transporte-publico-proximo" | "dificil";
 
 /** Previsão de espaço físico e logística — usada no plano de implementação e para estimar custo/risco de deslocamento entre projetos da rede (economia circular). */
@@ -167,6 +181,8 @@ export interface Project {
   objetivo: string;
   justificativa: string;
   metas: string[];
+  /** Indicadores no padrão marco lógico (meta + meio de verificação + frequência) — complementa `metas` com o rigor que editais/financiadores exigem. */
+  indicadores?: Indicador[];
   setorId: string;
   local: string;
   /** Município da bacia do Paraopeba, para geocodificação offline (mapa regional + cálculo de distância/rota entre projetos da rede). */
