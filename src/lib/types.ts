@@ -73,6 +73,21 @@ export interface EquipeMembro {
   planoTrabalho?: string;
 }
 
+/** Pessoa cadastrada como voluntária no portfólio (Fase 14a) — trabalho pontual/mutirão, nunca substitui posto de folha permanente (o motor de conformidade não é relaxado por isso). */
+export interface Voluntario {
+  id: string;
+  nome: string;
+  telefone?: string;
+  email?: string;
+  /** Texto livre, uma habilidade por item (ex.: "pedreiro", "cozinha", "redes sociais"). */
+  habilidades?: string[];
+  disponibilidadeHorasSemana?: number;
+  /** Ids de Project que a pessoa declarou (ou foi associada) como interesse. */
+  projetosDeInteresse?: string[];
+  observacoes?: string;
+  cadastradoEm: string;
+}
+
 /** Um mês do cronograma detalhado, gerado pelo compilador da lapidação — complementa o resumo livre de `Project.cronograma`. */
 export interface MesCronograma {
   mes: number;
@@ -182,6 +197,8 @@ export interface Project {
   fonteReposicaoEquipamentos?: string;
   /** Contagem de lapidações aplicadas (v1, v2, v3...) — 0/undefined = nunca lapidado. */
   versaoLapidacao?: number;
+  /** Data (ISO) em que o projeto REALMENTE saiu do papel — marcada manualmente pelo usuário, nunca estimada. Base para a orientação mensal de acompanhamento (Fase 14b). */
+  dataInicioReal?: string;
   /** Últimas versões anteriores (máx. 8, mais antiga sai primeiro) — permite reverter uma lapidação aplicada. */
   historicoVersoes?: VersaoSnapshot[];
   criadoEm: string;

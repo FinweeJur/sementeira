@@ -5,6 +5,7 @@ import { ProjectList } from "./pages/ProjectList";
 import { ProjectWizard } from "./pages/ProjectWizard";
 import { Ecossistema } from "./pages/Ecossistema";
 import { ClubeBeneficios } from "./pages/ClubeBeneficios";
+import { Voluntarios } from "./pages/Voluntarios";
 import { Onboarding } from "./components/Onboarding";
 import { NavBar } from "./components/NavBar";
 import {
@@ -29,6 +30,7 @@ export function App() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [mostrarEcossistema, setMostrarEcossistema] = useState(false);
   const [mostrarClube, setMostrarClube] = useState(false);
+  const [mostrarVoluntarios, setMostrarVoluntarios] = useState(false);
   const [mostrarOnboarding, setMostrarOnboarding] = useState(false);
   const [fontScale, setFontScale] = useState<FontScale>("normal");
   const [tema, setTema] = useState<Tema>("escuro");
@@ -126,6 +128,8 @@ export function App() {
     );
   } else if (mostrarClube) {
     conteudo = <ClubeBeneficios projects={projects} onVoltar={() => setMostrarClube(false)} />;
+  } else if (mostrarVoluntarios) {
+    conteudo = <Voluntarios projects={projects} onVoltar={() => setMostrarVoluntarios(false)} />;
   } else {
     conteudo = (
       <ProjectList
@@ -138,6 +142,7 @@ export function App() {
         onVerTutorial={() => setMostrarOnboarding(true)}
         onAbrirEcossistema={() => setMostrarEcossistema(true)}
         onAbrirClube={() => setMostrarClube(true)}
+        onAbrirVoluntarios={() => setMostrarVoluntarios(true)}
         llmConfig={llmConfig}
         onLlmConfigChange={handleLlmConfigChange}
       />

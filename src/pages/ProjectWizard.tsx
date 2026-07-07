@@ -1191,7 +1191,7 @@ export function ProjectWizard({
   }, [passoAtual, project, copilotoAberto]);
 
   if (verDocumento) {
-    return <ProjectDocumento project={project} onFechar={() => setVerDocumento(false)} onIrParaPasso={irParaPassoPorId} />;
+    return <ProjectDocumento project={project} onFechar={() => setVerDocumento(false)} onIrParaPasso={irParaPassoPorId} onAtualizar={onChange} />;
   }
 
   return (

@@ -508,6 +508,8 @@ export interface OpcoesLapidacao {
   /** Provedor alternativo (Fase 11b): se informado, roda Crítico+Compilador também com ele, só para comparação lado a lado — nunca decide a progressão do ciclo. */
   compararConfig?: ProviderConfig;
   onProgressoComparacao?: (volta: number, etapa: "critico" | "compilador") => void;
+  /** Diretriz/documento citado só nesta chamada (Fase 14c, chat-agente) — vale só para esta lapidação, nunca vira diretriz global permanente. */
+  diretrizExtra?: string;
 }
 
 /**
@@ -520,15 +522,19 @@ export async function lapidarProjeto(original: Project, opcoes: OpcoesLapidacao)
   let atual = original;
   const totalVoltas = Math.max(1, Math.min(3, opcoes.voltas));
 
+  const sufixoDiretrizExtra = opcoes.diretrizExtra?.trim()
+    ? `\n\nDIRETRIZ EXTRA PARA ESTA CHAMADA (citada pelo usuário no chat-agente, vale só desta vez — nunca vira diretriz global permanente): ${opcoes.diretrizExtra.trim()}`
+    : "";
+
   for (let volta = 1; volta <= totalVoltas; volta++) {
     const scoreAntes = calcularScore(atual);
 
     const etapas: { etapa: EtapaLapidacao; prompt: string }[] = [
-      { etapa: "escritor", prompt: promptEscritor(atual) },
-      { etapa: "orcamentista", prompt: promptOrcamentista(atual) },
-      { etapa: "critico", prompt: promptCritico(atual) },
-      { etapa: "riscos", prompt: promptRiscos(atual) },
-      { etapa: "sugestor", prompt: promptSugestor(atual) },
+      { etapa: "escritor", prompt: promptEscritor(atual) + sufixoDiretrizExtra },
+      { etapa: "orcamentista", prompt: promptOrcamentista(atual) + sufixoDiretrizExtra },
+      { etapa: "critico", prompt: promptCritico(atual) + sufixoDiretrizExtra },
+      { etapa: "riscos", prompt: promptRiscos(atual) + sufixoDiretrizExtra },
+      { etapa: "sugestor", prompt: promptSugestor(atual) + sufixoDiretrizExtra },
     ];
 
     const saidas: Record<string, unknown> = {};
@@ -556,7 +562,7 @@ export async function lapidarProjeto(original: Project, opcoes: OpcoesLapidacao)
         consideracoes,
         riscos: saidas.riscos,
         sugestor: sugestoes,
-      }),
+      }) + sufixoDiretrizExtra,
     );
     if (!respostaCompilador.ok) return { ok: false, erro: `Compilador: ${respostaCompilador.erro}`, voltas, convergiu: false };
 

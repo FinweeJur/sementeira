@@ -7,6 +7,7 @@ import { Badge } from "../components/Badge";
 import { FluxoCaixaChart } from "../components/cronograma/FluxoCaixaChart";
 import { CronogramaGantt } from "../components/cronograma/CronogramaGantt";
 import { exportarEstatutoAssociacaoDocx, exportarAtaFundacaoDocx, exportarRegimentoSimplesDocx } from "../lib/formalizacao";
+import { mesAtualDoProjeto, orientacaoDoMes } from "../lib/acompanhamento";
 import danos from "../data/danos.json";
 import setores from "../data/setores.json";
 import arquetipos from "../data/arquetipos.json";
@@ -15,7 +16,17 @@ import arquetipos from "../data/arquetipos.json";
  * Visão de leitura do projeto inteiro, na mesma ordem da exportação .docx —
  * permite revisar tudo sem exportar e serve de base para o futuro PDF real.
  */
-export function ProjectDocumento({ project, onFechar, onIrParaPasso }: { project: Project; onFechar: () => void; onIrParaPasso: (passoId: string) => void }) {
+export function ProjectDocumento({
+  project,
+  onFechar,
+  onIrParaPasso,
+  onAtualizar,
+}: {
+  project: Project;
+  onFechar: () => void;
+  onIrParaPasso: (passoId: string) => void;
+  onAtualizar?: (p: Project) => void;
+}) {
   const dano = danos.find((d) => d.id === project.danoId);
   const arquetipo = arquetipos.find((a) => a.id === project.arquetipoId);
   const setor = setores.find((s) => s.id === project.setorId);
@@ -27,6 +38,8 @@ export function ProjectDocumento({ project, onFechar, onIrParaPasso }: { project
   const checklist = montarChecklistFinal(project, null);
   const depreciacaoMensal = calcularDepreciacaoMensal(project);
   const espaco = project.espacoLogistica;
+  const mesAtual = mesAtualDoProjeto(project);
+  const atividadesDoMes = mesAtual != null ? orientacaoDoMes(project, mesAtual) : [];
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
@@ -38,6 +51,35 @@ export function ProjectDocumento({ project, onFechar, onIrParaPasso }: { project
           📄 Documento completo{(project.versaoLapidacao ?? 0) > 0 && <span className="ml-2 text-sm text-[color:var(--sm-text-dim)]">v{project.versaoLapidacao}</span>}
         </h1>
       </div>
+
+      {onAtualizar && (
+        <div className="rounded border border-[color:var(--sm-accent)]/40 bg-[color:var(--sm-accent)]/5 p-3 text-sm">
+          {project.dataInicioReal ? (
+            <>
+              📅 <strong>Mês {mesAtual} de implantação</strong>
+              {atividadesDoMes.length > 0 ? (
+                <ul className="mt-1 list-disc pl-5 text-xs text-[color:var(--sm-text-dim)]">
+                  {atividadesDoMes.map((a, i) => (
+                    <li key={i}>{a}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-1 text-xs text-[color:var(--sm-text-dim)]">Sem cronograma mensal ainda para este mês — rode a lapidação para detalhar.</p>
+              )}
+            </>
+          ) : (
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs text-[color:var(--sm-text-dim)]">Marque quando o projeto sair do papel de verdade para receber orientação mês a mês aqui.</p>
+              <button
+                onClick={() => onAtualizar({ ...project, dataInicioReal: new Date().toISOString() })}
+                className="shrink-0 rounded border border-[color:var(--sm-accent)] px-3 py-1.5 text-xs hover:bg-[color:var(--sm-accent)]/20"
+              >
+                ▶ Marcar como iniciado hoje
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       <Bloco titulo="Identificação" onEditar={() => onIrParaPasso("identificacao")}>
         <p className="text-lg font-medium">{project.titulo || "(sem título)"}</p>

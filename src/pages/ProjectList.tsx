@@ -6,6 +6,7 @@ import { ConfirmDialog } from "../components/ConfirmDialog";
 import { SettingsModal } from "../components/SettingsModal";
 import { HistoricoVersoesModal } from "../components/HistoricoVersoesModal";
 import { RevisaoGeralModal } from "../components/RevisaoGeralModal";
+import { AgentePortfolioChat } from "../components/AgentePortfolioChat";
 import type { ProviderConfig } from "../lib/providers";
 import { PROVEDORES, configuracaoLLMPronta } from "../lib/providers";
 import { avaliarConformidade } from "../lib/compliance-engine";
@@ -22,6 +23,7 @@ export function ProjectList({
   onVerTutorial,
   onAbrirEcossistema,
   onAbrirClube,
+  onAbrirVoluntarios,
   llmConfig,
   onLlmConfigChange,
 }: {
@@ -34,6 +36,7 @@ export function ProjectList({
   onVerTutorial: () => void;
   onAbrirEcossistema: () => void;
   onAbrirClube: () => void;
+  onAbrirVoluntarios: () => void;
   llmConfig: ProviderConfig;
   onLlmConfigChange: (c: ProviderConfig) => void;
 }) {
@@ -43,6 +46,7 @@ export function ProjectList({
   const [tituloEmEdicao, setTituloEmEdicao] = useState("");
   const [historicoDeId, setHistoricoDeId] = useState<string | null>(null);
   const [revisaoGeralAberta, setRevisaoGeralAberta] = useState(false);
+  const [agenteAberto, setAgenteAberto] = useState(false);
   const [checklistDispensado, setChecklistDispensado] = useState(() => localStorage.getItem(CHECKLIST_DISPENSADO_KEY) === "1");
   const provedorAtual = PROVEDORES.find((p) => p.id === llmConfig.providerId);
 
@@ -120,6 +124,14 @@ export function ProjectList({
         <button onClick={onAbrirClube} className="rounded border border-[color:var(--sm-border)] px-3 py-2 text-xs hover:border-[color:var(--sm-accent)]">
           🎟 Clube de benefícios
         </button>
+        <button onClick={onAbrirVoluntarios} className="rounded border border-[color:var(--sm-border)] px-3 py-2 text-xs hover:border-[color:var(--sm-accent)]">
+          🙋 Voluntários
+        </button>
+        {projects.length > 0 && (
+          <button onClick={() => setAgenteAberto(true)} className="rounded border border-[color:var(--sm-border)] px-3 py-2 text-xs hover:border-[color:var(--sm-accent)]">
+            🤖 Copiloto de portfólio
+          </button>
+        )}
         {projects.length > 0 && (
           <button onClick={() => setRevisaoGeralAberta(true)} className="rounded border border-[color:var(--sm-border)] px-3 py-2 text-xs hover:border-[color:var(--sm-accent)]">
             🔁 Revisão geral
@@ -209,6 +221,10 @@ export function ProjectList({
       )}
 
       {configAberta && <SettingsModal config={llmConfig} onChange={onLlmConfigChange} onFechar={() => setConfigAberta(false)} />}
+
+      {agenteAberto && (
+        <AgentePortfolioChat projects={projects} onAtualizarProjeto={onAtualizarProjeto} onAbrirProjeto={onOpen} onClose={() => setAgenteAberto(false)} />
+      )}
 
       {revisaoGeralAberta && (
         <RevisaoGeralModal
