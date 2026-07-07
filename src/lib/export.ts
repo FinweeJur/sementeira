@@ -46,8 +46,15 @@ export async function exportarProjetoDocx(project: Project): Promise<void> {
           new Paragraph({ text: `Público/setor: ${nomeSetor(project.setorId)}` }),
           new Paragraph({ text: `Exigência de POS: ${exigenciaPOS(project)}` }),
 
-          new Paragraph({ text: "Objetivo", heading: HeadingLevel.HEADING_1 }),
+          new Paragraph({ text: "Objetivo geral", heading: HeadingLevel.HEADING_1 }),
           new Paragraph({ text: project.objetivo || "-" }),
+
+          ...((project.objetivosEspecificos?.length ?? 0) > 0
+            ? [
+                new Paragraph({ text: "Objetivos específicos", heading: HeadingLevel.HEADING_1 }),
+                ...project.objetivosEspecificos!.map((o, i) => new Paragraph({ text: `${i + 1}. ${o}` })),
+              ]
+            : []),
 
           new Paragraph({ text: "Justificativa", heading: HeadingLevel.HEADING_1 }),
           new Paragraph({ text: project.justificativa || "-" }),
@@ -126,6 +133,13 @@ export async function exportarProjetoDocx(project: Project): Promise<void> {
 
           new Paragraph({ text: "Missão / impacto na vida das pessoas", heading: HeadingLevel.HEADING_1 }),
           new Paragraph({ text: project.missaoImpacto || "-" }),
+
+          ...((project.boasPraticas?.length ?? 0) > 0
+            ? [
+                new Paragraph({ text: "Boas práticas adotadas", heading: HeadingLevel.HEADING_1 }),
+                ...project.boasPraticas!.map((b) => new Paragraph({ text: `• ${b}` })),
+              ]
+            : []),
 
           new Paragraph({ text: "Coordenado por mulher(es)?", heading: HeadingLevel.HEADING_1 }),
           new Paragraph({ text: project.coordenacaoFeminina ? "Sim" : "Não" }),

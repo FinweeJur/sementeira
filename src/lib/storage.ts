@@ -22,6 +22,8 @@ function migrarProjeto(project: Project): Project {
     equipe: migrarEquipe(project.equipe),
     cronogramaMensal: project.cronogramaMensal ?? [],
     indicadores: project.indicadores ?? [],
+    objetivosEspecificos: project.objetivosEspecificos ?? [],
+    boasPraticas: project.boasPraticas ?? [],
   };
 }
 

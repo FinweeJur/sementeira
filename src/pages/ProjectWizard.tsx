@@ -454,8 +454,16 @@ export function ProjectWizard({
       info: { id: "objetivo", titulo: "Objetivo e metas" },
       conteudo: (
         <Section title="Objetivo, justificativa e metas">
-          <Field label="Objetivo">
+          <Field label="Objetivo geral">
             <textarea className={inputClass} rows={2} value={project.objetivo} onChange={(e) => update("objetivo", e.target.value)} />
+          </Field>
+          <Field label="Objetivos específicos (um por linha)" hint="Numerados e mensuráveis — cada um deve poder virar um indicador. Ex.: 'Capacitar 30 mulheres em triagem e artesanato até o mês 5'.">
+            <textarea
+              className={inputClass}
+              rows={4}
+              value={(project.objetivosEspecificos ?? []).join("\n")}
+              onChange={(e) => update("objetivosEspecificos", e.target.value.split("\n").map((l) => l.trim()).filter(Boolean))}
+            />
           </Field>
           <Field label="Justificativa" hint="Amarre ao dano selecionado no passo anterior.">
             <textarea className={inputClass} rows={2} value={project.justificativa} onChange={(e) => update("justificativa", e.target.value)} />
@@ -545,6 +553,14 @@ export function ProjectWizard({
           </Field>
           <Field label="Qual a missão do projeto — como ele melhora a vida das pessoas?" hint="Deve ter relação com as metas e o objetivo acima.">
             <textarea className={inputClass} rows={2} value={project.missaoImpacto ?? ""} onChange={(e) => update("missaoImpacto", e.target.value)} />
+          </Field>
+          <Field label="Boas práticas adotadas (uma por linha)" hint="Governança, ambientais, financeiras, segurança. Ex.: 'Conta coletiva com dupla assinatura'; 'Ciclo fechado de nutrientes (esterco vira biofertilizante)'.">
+            <textarea
+              className={inputClass}
+              rows={3}
+              value={(project.boasPraticas ?? []).join("\n")}
+              onChange={(e) => update("boasPraticas", e.target.value.split("\n").map((l) => l.trim()).filter(Boolean))}
+            />
           </Field>
         </Section>
       ),

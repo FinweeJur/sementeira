@@ -7,9 +7,11 @@ export interface RascunhoDados {
   danoId?: string;
   arquetipoId?: string;
   objetivo?: string;
+  objetivosEspecificos?: string[];
   justificativa?: string;
   metas?: string[];
   indicadores?: Indicador[];
+  boasPraticas?: string[];
   comoComunidadeAjuda?: string;
   missaoImpacto?: string;
   equipe?: EquipeMembro[];
@@ -71,9 +73,9 @@ export function montarPromptRascunho(project: Project): string {
     '```json\n{"perguntas": ["pergunta 1", "pergunta 2", "pergunta 3"]}\n```',
     "",
     "OPÇÃO B — se já der para rascunhar com razoável confiança, responda SOMENTE com um bloco json neste formato, sem mais nada, sem inventar dados fora do que foi informado:",
-    '```json\n{"danoId": "um id da lista de danos abaixo", "arquetipoId": "um id da lista de arquétipos abaixo (ou omita se nenhum combinar bem)", "objetivo": "pelo menos 2 parágrafos", "justificativa": "pelo menos 2 parágrafos ligando ao dano", "metas": ["meta 1", "meta 2"], "indicadores": [{"nome": "o que medir", "meta": "valor/prazo verificável", "meioVerificacao": "como comprovar (livro de registro, foto, recibo...)", "frequencia": "mensal/trimestral/..."}], "comoComunidadeAjuda": "1-2 parágrafos", "missaoImpacto": "1-2 parágrafos", "equipe": [{"nome": "papel/função", "formacaoNecessaria": "...", "horasSemanais": 20, "duracaoMeses": 6, "planoTrabalho": "o que a pessoa faz"}]}\n```',
+    '```json\n{"danoId": "um id da lista de danos abaixo", "arquetipoId": "um id da lista de arquétipos abaixo (ou omita se nenhum combinar bem)", "objetivo": "objetivo GERAL, pelo menos 2 parágrafos", "objetivosEspecificos": ["objetivo específico 1 mensurável", "objetivo específico 2"], "justificativa": "pelo menos 2 parágrafos ligando ao dano", "metas": ["meta 1", "meta 2"], "indicadores": [{"nome": "o que medir", "meta": "valor/prazo verificável", "meioVerificacao": "como comprovar (livro de registro, foto, recibo...)", "frequencia": "mensal/trimestral/..."}], "boasPraticas": ["prática de governança/ambiental/financeira/segurança 1", "prática 2"], "comoComunidadeAjuda": "1-2 parágrafos", "missaoImpacto": "1-2 parágrafos", "equipe": [{"nome": "papel/função", "formacaoNecessaria": "...", "horasSemanais": 20, "duracaoMeses": 6, "planoTrabalho": "o que a pessoa faz"}]}\n```',
     "",
-    "IMPORTANTE — profundidade exigida (padrão mínimo observado em editais e projetos técnicos reais, não um rascunho superficial): `objetivo` e `justificativa` devem ter PELO MENOS 2 PARÁGRAFOS BEM DESENVOLVIDOS cada, com detalhamento concreto (números, local, contexto real ligados ao que foi informado) — nunca frases genéricas de 1 linha. `metas` devem ser REALISTAS e proporcionais ao porte/orçamento típico do arquétipo escolhido — nunca números desproporcionalmente grandes. Para CADA meta, gere um `indicadores` correspondente no padrão marco lógico (indicador mensurável + meta verificável + meio de verificação, ex.: livro de registro, relatório, foto, contrato + frequência de medição) — sem isso a meta não é auditável. `equipe` deve ter PELO MENOS 2 PESSOAS (diretriz local de equipe mínima), cada uma com papel, formação necessária e plano de trabalho coerente com o arquétipo — nunca invente nomes próprios reais, use papéis/funções (ex.: \"Coordenador(a) geral\").",
+    "IMPORTANTE — profundidade exigida (padrão mínimo observado em editais e projetos técnicos reais, não um rascunho superficial): o `objetivo` é o objetivo GERAL (2+ parágrafos); `objetivosEspecificos` são 3 a 6 objetivos numeráveis e MENSURÁVEIS, cada um casável com um indicador (ex.: \"Capacitar 30 mulheres em triagem e artesanato até o mês 5\"). `justificativa` deve ter PELO MENOS 2 PARÁGRAFOS com detalhamento concreto (números, local, contexto real) — nunca frases genéricas. `metas` REALISTAS e proporcionais ao porte/orçamento do arquétipo. Para CADA meta, gere um `indicadores` no padrão marco lógico (indicador mensurável + meta verificável + meio de verificação + frequência). `boasPraticas`: 3 a 6 práticas concretas de governança (ex.: conta coletiva com dupla assinatura, alternância de liderança), ambientais, financeiras e de segurança — não genéricas. `equipe` com PELO MENOS 2 PESSOAS, cada uma com papel, formação e plano de trabalho — nunca invente nomes próprios, use papéis/funções.",
     "",
     "IMPORTANTE: `danoId` e `arquetipoId` DEVEM ser exatamente um dos ids das listas abaixo — nunca invente um id novo.",
     "",
@@ -96,9 +98,11 @@ export function interpretarRespostaRascunho(texto: string): RascunhoResultado {
       danoId: danoValido ? obj.danoId : undefined,
       arquetipoId: arquetipoValido ? obj.arquetipoId : undefined,
       objetivo: typeof obj.objetivo === "string" ? obj.objetivo : undefined,
+      objetivosEspecificos: Array.isArray(obj.objetivosEspecificos) ? obj.objetivosEspecificos.filter((o: unknown) => typeof o === "string") : undefined,
       justificativa: typeof obj.justificativa === "string" ? obj.justificativa : undefined,
       metas: Array.isArray(obj.metas) ? obj.metas.filter((m: unknown) => typeof m === "string") : undefined,
       indicadores: sanitizarIndicadoresRascunho(obj.indicadores),
+      boasPraticas: Array.isArray(obj.boasPraticas) ? obj.boasPraticas.filter((b: unknown) => typeof b === "string") : undefined,
       comoComunidadeAjuda: typeof obj.comoComunidadeAjuda === "string" ? obj.comoComunidadeAjuda : undefined,
       missaoImpacto: typeof obj.missaoImpacto === "string" ? obj.missaoImpacto : undefined,
       equipe: sanitizarEquipeRascunho(obj.equipe),
@@ -119,9 +123,11 @@ export function aplicarRascunhoAoProjeto(project: Project, dados: RascunhoDados)
     danoId: dados.danoId ?? project.danoId,
     arquetipoId: dados.arquetipoId ?? project.arquetipoId,
     objetivo: dados.objetivo ?? project.objetivo,
+    objetivosEspecificos: dados.objetivosEspecificos && dados.objetivosEspecificos.length > 0 ? dados.objetivosEspecificos : project.objetivosEspecificos,
     justificativa: dados.justificativa ?? project.justificativa,
     metas: dados.metas && dados.metas.length > 0 ? dados.metas : project.metas,
     indicadores: dados.indicadores && dados.indicadores.length > 0 ? dados.indicadores : project.indicadores,
+    boasPraticas: dados.boasPraticas && dados.boasPraticas.length > 0 ? dados.boasPraticas : project.boasPraticas,
     comoComunidadeAjuda: dados.comoComunidadeAjuda ?? project.comoComunidadeAjuda,
     missaoImpacto: dados.missaoImpacto ?? project.missaoImpacto,
     equipe: dados.equipe && dados.equipe.length > 0 ? dados.equipe : project.equipe,

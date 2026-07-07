@@ -156,8 +156,18 @@ export function ProjectDocumento({
 
       <Bloco titulo="Objetivo, justificativa e metas" onEditar={() => onIrParaPasso("objetivo")}>
         <p className="text-sm">
-          <strong>Objetivo:</strong> {project.objetivo || "-"}
+          <strong>Objetivo geral:</strong> {project.objetivo || "-"}
         </p>
+        {(project.objetivosEspecificos?.length ?? 0) > 0 && (
+          <div>
+            <p className="text-sm font-medium">Objetivos específicos</p>
+            <ol className="list-decimal pl-5 text-sm">
+              {project.objetivosEspecificos!.map((o, i) => (
+                <li key={i}>{o}</li>
+              ))}
+            </ol>
+          </div>
+        )}
         <p className="text-sm">
           <strong>Justificativa:</strong> {project.justificativa || "-"}
         </p>
@@ -205,6 +215,16 @@ export function ProjectDocumento({
           <p className="text-sm">
             <strong>Missão/impacto:</strong> {project.missaoImpacto}
           </p>
+        )}
+        {(project.boasPraticas?.length ?? 0) > 0 && (
+          <div>
+            <p className="text-sm font-medium">Boas práticas adotadas</p>
+            <ul className="list-disc pl-5 text-sm">
+              {project.boasPraticas!.map((b, i) => (
+                <li key={i}>{b}</li>
+              ))}
+            </ul>
+          </div>
         )}
       </Bloco>
 

@@ -179,10 +179,14 @@ export interface Project {
   arquetipoId: string;
   danoId: string;
   objetivo: string;
+  /** Objetivos específicos numerados e mensuráveis — padrão de proposta formal (todo modelo de referência abre com objetivo geral + específicos). Cada um casa naturalmente com um indicador. */
+  objetivosEspecificos?: string[];
   justificativa: string;
   metas: string[];
   /** Indicadores no padrão marco lógico (meta + meio de verificação + frequência) — complementa `metas` com o rigor que editais/financiadores exigem. */
   indicadores?: Indicador[];
+  /** Boas práticas adotadas (governança, ambientais, financeiras, segurança) — seção dedicada esperada em proposta formal. */
+  boasPraticas?: string[];
   setorId: string;
   local: string;
   /** Município da bacia do Paraopeba, para geocodificação offline (mapa regional + cálculo de distância/rota entre projetos da rede). */

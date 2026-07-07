@@ -29,6 +29,8 @@ export interface LapidacaoDados {
   justificativa?: string;
   metas?: string[];
   indicadores?: Indicador[];
+  objetivosEspecificos?: string[];
+  boasPraticas?: string[];
   comoComunidadeAjuda?: string;
   missaoImpacto?: string;
   cronograma?: string;
@@ -142,9 +144,11 @@ function resumoProjeto(p: Project): string {
       local: p.local,
       abrangencia: p.abrangencia,
       objetivo: p.objetivo,
+      objetivosEspecificos: p.objetivosEspecificos,
       justificativa: p.justificativa,
       metas: p.metas,
       indicadores: p.indicadores,
+      boasPraticas: p.boasPraticas,
       comoComunidadeAjuda: p.comoComunidadeAjuda,
       missaoImpacto: p.missaoImpacto,
       cronograma: p.cronograma,
@@ -181,8 +185,9 @@ function promptEscritor(p: Project): string {
     "EXIGÊNCIA DE PROFUNDIDADE: `objetivo` e `justificativa` devem ter PELO MENOS 2 PARÁGRAFOS BEM DESENVOLVIDOS cada (nunca 1 frase só) — detalhamento concreto ligado ao dano/local/arquétipo, sem generalidades vazias. `comoComunidadeAjuda` e `missaoImpacto` devem ter pelo menos 1-2 parágrafos.",
     "METAS REALISTAS NA ORIGEM: revise `metas` para serem proporcionais ao orçamento e ao porte informados — nunca números desproporcionalmente grandes para o tamanho real do projeto; prefira metas mensuráveis e plausíveis dentro do prazo do cronograma.",
     "INDICADORES (padrão marco lógico, exigido em editais/financiadores reais): se `metas` não tiver `indicadores` correspondentes, ou se estiverem incompletos, gere/complete `indicadores` — cada um com indicador mensurável, meta verificável, meio de verificação concreto (ex.: livro de registro, relatório fotográfico, nota fiscal, lista de presença) e frequência de medição. Sem meio de verificação, a meta não é auditável.",
+    "ESTRUTURA DE PROPOSTA FORMAL: `objetivo` é o objetivo GERAL; `objetivosEspecificos` são 3 a 6 objetivos numeráveis e mensuráveis (cada um casável com um indicador). `boasPraticas` são 3 a 6 práticas concretas de governança/ambiental/financeira/segurança (ex.: conta coletiva com dupla assinatura, alternância de liderança semestral, ciclo fechado de nutrientes, EPIs) — nunca genéricas.",
     "Projeto:", resumoProjeto(p),
-    'Formato: ```json\n{"objetivo": "...", "justificativa": "...", "metas": ["..."], "indicadores": [{"id": "id-existente-ou-omitir-se-novo", "nome": "...", "meta": "...", "meioVerificacao": "...", "frequencia": "..."}], "comoComunidadeAjuda": "...", "missaoImpacto": "..."}\n``` (omita campos que já estão bons e profundos o suficiente; `indicadores` vem COMPLETO — existentes mantidos/melhorados + novos).',
+    'Formato: ```json\n{"objetivo": "...", "objetivosEspecificos": ["..."], "justificativa": "...", "metas": ["..."], "indicadores": [{"id": "id-existente-ou-omitir-se-novo", "nome": "...", "meta": "...", "meioVerificacao": "...", "frequencia": "..."}], "boasPraticas": ["..."], "comoComunidadeAjuda": "...", "missaoImpacto": "..."}\n``` (omita campos que já estão bons; `indicadores`, `objetivosEspecificos` e `boasPraticas` vêm COMPLETOS — existentes mantidos/melhorados + novos).',
   ].join("\n\n");
 }
 
@@ -253,7 +258,7 @@ function promptCompilador(p: Project, saidas: { escritor: unknown; orcamentista:
     "Com base nas notas do Crítico e nas diretrizes/metas do contexto, escreva um RESUMO AVALIATIVO curto (2-4 frases: onde a versão está forte, onde ainda está fraca) e diga se vale rodar MAIS UMA volta de lapidação (recomendaNovaVolta: true só se ainda houver ganho claro a extrair; false se a versão já está madura ou se os problemas restantes exigem decisão humana, não IA).",
     "Saída do Analista de Riscos:", JSON.stringify(saidas.riscos ?? {}),
     "Sugestões do Sugestor:", JSON.stringify(saidas.sugestor),
-    'Formato: ```json\n{"objetivo": "...", "justificativa": "...", "metas": ["..."], "indicadores": [{"id": "id-existente-ou-omitir-se-novo", "nome": "...", "meta": "...", "meioVerificacao": "...", "frequencia": "..."}], "comoComunidadeAjuda": "...", "missaoImpacto": "...", "cronograma": "...", "cronogramaMensal": [{"mes": 1, "atividades": ["..."]}], "formasArrecadacao": ["..."], "orcamento": [...mesma estrutura do orçamentista...], "equipe": [{"id": "id-existente-ou-omitir-se-nova", "nome": "...", "formacaoNecessaria": "...", "horasSemanais": 20, "duracaoMeses": 6, "planoTrabalho": "..."}], "riscos": [...mesma estrutura do analista...], "posCompleto": {"responsavelOperacao": "...", "fonteCusteioFuturoGeral": "...", "metodologiaTransicao": "...", "indicadoresAutonomia": "..."}, "planoImplementacao": ["passo 1 na ordem de execução", "passo 2", "..."], "espacoLogistica": {"areaM2": null, "tipoEspaco": null, "observacoes": null}, "fonteReposicaoEquipamentos": null, "avaliacaoResumo": "resumo avaliativo em 2-4 frases", "recomendaNovaVolta": false, "changelog": ["o que mudou e por quê, frase completa em português simples — máximo 10 itens"]}\n``` — `equipe` e `indicadores` (um por meta) devem vir COMPLETOS (existentes mantidos/melhorados + novos). Omita os demais campos sem mudança; changelog obrigatório.',
+    'Formato: ```json\n{"objetivo": "...", "objetivosEspecificos": ["..."], "justificativa": "...", "metas": ["..."], "indicadores": [{"id": "id-existente-ou-omitir-se-novo", "nome": "...", "meta": "...", "meioVerificacao": "...", "frequencia": "..."}], "boasPraticas": ["..."], "comoComunidadeAjuda": "...", "missaoImpacto": "...", "cronograma": "...", "cronogramaMensal": [{"mes": 1, "atividades": ["..."]}], "formasArrecadacao": ["..."], "orcamento": [...mesma estrutura do orçamentista...], "equipe": [{"id": "id-existente-ou-omitir-se-nova", "nome": "...", "formacaoNecessaria": "...", "horasSemanais": 20, "duracaoMeses": 6, "planoTrabalho": "..."}], "riscos": [...mesma estrutura do analista...], "posCompleto": {"responsavelOperacao": "...", "fonteCusteioFuturoGeral": "...", "metodologiaTransicao": "...", "indicadoresAutonomia": "..."}, "planoImplementacao": ["passo 1 na ordem de execução", "passo 2", "..."], "espacoLogistica": {"areaM2": null, "tipoEspaco": null, "observacoes": null}, "fonteReposicaoEquipamentos": null, "avaliacaoResumo": "resumo avaliativo em 2-4 frases", "recomendaNovaVolta": false, "changelog": ["o que mudou e por quê, frase completa em português simples — máximo 10 itens"]}\n``` — `equipe`, `indicadores` (um por meta), `objetivosEspecificos` e `boasPraticas` devem vir COMPLETOS (existentes mantidos/melhorados + novos). Omita os demais campos sem mudança; changelog obrigatório.',
   ].join("\n\n");
 }
 
@@ -433,6 +438,8 @@ function sanitizarCompilado(bruto: Record<string, unknown>, original: Project): 
     justificativa: stringOpcional(bruto.justificativa),
     metas: listaDeStrings(bruto.metas),
     indicadores: sanitizarIndicadores(bruto.indicadores, original.indicadores),
+    objetivosEspecificos: listaDeStrings(bruto.objetivosEspecificos),
+    boasPraticas: listaDeStrings(bruto.boasPraticas),
     comoComunidadeAjuda: stringOpcional(bruto.comoComunidadeAjuda),
     missaoImpacto: stringOpcional(bruto.missaoImpacto),
     cronograma: stringOpcional(bruto.cronograma),
@@ -458,6 +465,8 @@ export function aplicarLapidacao(project: Project, dados: LapidacaoDados): Proje
     justificativa: dados.justificativa ?? project.justificativa,
     metas: dados.metas ?? project.metas,
     indicadores: dados.indicadores ?? project.indicadores,
+    objetivosEspecificos: dados.objetivosEspecificos ?? project.objetivosEspecificos,
+    boasPraticas: dados.boasPraticas ?? project.boasPraticas,
     comoComunidadeAjuda: dados.comoComunidadeAjuda ?? project.comoComunidadeAjuda,
     missaoImpacto: dados.missaoImpacto ?? project.missaoImpacto,
     cronograma: dados.cronograma ?? project.cronograma,
