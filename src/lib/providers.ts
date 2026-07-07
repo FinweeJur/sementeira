@@ -85,6 +85,12 @@ export interface WebSearchResposta {
   erro?: string;
 }
 
+export interface ExportarPdfResposta {
+  ok: boolean;
+  caminho?: string;
+  erro?: string;
+}
+
 /** Superfície IPC completa exposta pelo preload — centralizada aqui para evitar declarações `Window` conflitantes entre módulos. */
 declare global {
   interface Window {
@@ -93,6 +99,7 @@ declare global {
       llmChat: (request: LLMRequest) => Promise<LLMResponse>;
       listarModelosOllama: (baseUrl: string) => Promise<ListarModelosResposta>;
       webSearch: (request: WebSearchRequest) => Promise<WebSearchResposta>;
+      exportarPdf: (sugestaoNomeArquivo?: string) => Promise<ExportarPdfResposta>;
     };
   }
 }

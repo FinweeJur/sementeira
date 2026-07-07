@@ -278,10 +278,21 @@ export async function exportarProjetoXlsx(project: Project): Promise<void> {
   baixarArquivo(new Blob([buffer]), `${project.titulo || "projeto"}.xlsx`);
 }
 
-export function exportarProjetoPdf(): void {
-  // MVP: usa a impressão nativa do Chromium/Electron (Ctrl+P → Salvar como PDF)
-  // sobre uma visão de impressão dedicada. Fase 2 troca por webContents.printToPDF via IPC.
+/**
+ * PDF real via `webContents.printToPDF` (main process) — chame isso a partir
+ * da visão "Documento completo" (limpa, sem botões), não do wizard, para o
+ * PDF sair correto. Fora do Electron (preview no navegador), cai para a
+ * impressão nativa do Chromium como fallback.
+ */
+export async function exportarProjetoPdf(project: Project): Promise<{ ok: boolean; erro?: string }> {
+  if (window.sementeira?.exportarPdf) {
+    const nomeArquivo = `${(project.titulo || "projeto").replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.pdf`;
+    const resultado = await window.sementeira.exportarPdf(nomeArquivo);
+    if (!resultado.ok && resultado.erro === "cancelado") return { ok: true };
+    return resultado;
+  }
   window.print();
+  return { ok: true };
 }
 
 export async function exportarEcossistemaDocx(projects: Project[], analise: AnaliseEcossistema | null, fundo: FundoRotativoResultado): Promise<void> {

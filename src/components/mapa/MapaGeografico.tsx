@@ -1,32 +1,25 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import type { Project } from "../../lib/types";
-import { MUNICIPIOS_PARAOPEBA, distanciaHaversineKm, type Municipio } from "../../lib/geografia";
+import { MUNICIPIOS_PARAOPEBA, distanciaHaversineKm } from "../../lib/geografia";
 import { derivarConexoes } from "../../lib/mapa-estagios";
 
-const LARGURA = 640;
-const ALTURA = 420;
-const MARGEM = 24;
-
-function projetar(m: Municipio, bounds: { latMin: number; latMax: number; lonMin: number; lonMax: number }) {
-  const x = MARGEM + ((m.lon - bounds.lonMin) / (bounds.lonMax - bounds.lonMin)) * (LARGURA - MARGEM * 2);
-  const y = MARGEM + ((bounds.latMax - m.lat) / (bounds.latMax - bounds.latMin)) * (ALTURA - MARGEM * 2);
-  return { x, y };
-}
+const COR_ACCENT = "#6fae55";
+const COR_DIM = "#6b7a67";
 
 /**
- * Mapa geográfico real (offline) dos ~26 municípios da bacia do Paraopeba —
- * complementa o mapa simbólico isométrico. Projeção equirretangular simples
- * (sem lib de mapas), coordenadas aproximadas — ver `municipios-paraopeba.json`.
+ * Mapa geográfico real dos ~26 municípios da bacia do Paraopeba — tiles reais
+ * do OpenStreetMap (via Leaflet) como base, com marcadores de município e de
+ * projeto por cima. Exige internet para o mapa de fundo carregar; sem
+ * internet, os pontos continuam funcionando sobre um fundo em branco (nunca
+ * quebra a tela, só perde a imagem do mapa).
  */
 export function MapaGeografico({ projects, onAbrirProjeto }: { projects: Project[]; onAbrirProjeto: (id: string) => void }) {
   const [selecionadoId, setSelecionadoId] = useState<string | null>(null);
-
-  const bounds = useMemo(() => {
-    const lats = MUNICIPIOS_PARAOPEBA.map((m) => m.lat);
-    const lons = MUNICIPIOS_PARAOPEBA.map((m) => m.lon);
-    const pad = 0.08;
-    return { latMin: Math.min(...lats) - pad, latMax: Math.max(...lats) + pad, lonMin: Math.min(...lons) - pad, lonMax: Math.max(...lons) + pad };
-  }, []);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapaRef = useRef<L.Map | null>(null);
+  const [semInternet] = useState(() => typeof navigator !== "undefined" && navigator.onLine === false);
 
   const projetosPorMunicipio = useMemo(() => {
     const mapa = new Map<string, Project[]>();
@@ -41,57 +34,118 @@ export function MapaGeografico({ projects, onAbrirProjeto }: { projects: Project
 
   const conexoes = useMemo(() => derivarConexoes(projects), [projects]);
   const projetoPorId = useMemo(() => new Map(projects.map((p) => [p.id, p])), [projects]);
-
   const semMunicipio = projects.filter((p) => !p.municipioId).length;
+
+  const relacoesDoSelecionado = useMemo(() => {
+    if (!selecionadoId) return [];
+    return conexoes
+      .filter((c) => c.deId === selecionadoId || c.paraId === selecionadoId)
+      .map((c) => {
+        const outroId = c.deId === selecionadoId ? c.paraId : c.deId;
+        const outro = projetoPorId.get(outroId);
+        const mA = MUNICIPIOS_PARAOPEBA.find((m) => m.id === projetoPorId.get(selecionadoId)?.municipioId);
+        const mB = MUNICIPIOS_PARAOPEBA.find((m) => m.id === outro?.municipioId);
+        const distancia = mA && mB ? distanciaHaversineKm(mA, mB) * 1.4 : null;
+        return { direcao: c.deId === selecionadoId ? ("de" as const) : ("para" as const), rotulo: c.rotulo, outroTitulo: outro?.titulo ?? "(removido)", distancia };
+      });
+  }, [selecionadoId, conexoes, projetoPorId]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const lats = MUNICIPIOS_PARAOPEBA.map((m) => m.lat);
+    const lons = MUNICIPIOS_PARAOPEBA.map((m) => m.lon);
+    const bounds = L.latLngBounds(
+      [Math.min(...lats), Math.min(...lons)],
+      [Math.max(...lats), Math.max(...lons)],
+    );
+
+    const mapa = L.map(container, { attributionControl: true, zoomControl: true }).fitBounds(bounds, { padding: [24, 24] });
+    mapaRef.current = mapa;
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors',
+    }).addTo(mapa);
+
+    return () => {
+      mapa.remove();
+      mapaRef.current = null;
+    };
+  }, []);
+
+  // (Re)desenha marcadores/linhas sempre que os dados mudam — sem recriar o mapa/tiles.
+  useEffect(() => {
+    const mapa = mapaRef.current;
+    if (!mapa) return;
+
+    const camada = L.layerGroup().addTo(mapa);
+
+    for (const m of MUNICIPIOS_PARAOPEBA) {
+      const temProjeto = (projetosPorMunicipio.get(m.id)?.length ?? 0) > 0;
+      L.circleMarker([m.lat, m.lon], {
+        radius: temProjeto ? 5 : 3,
+        color: temProjeto ? COR_ACCENT : COR_DIM,
+        fillColor: temProjeto ? COR_ACCENT : COR_DIM,
+        fillOpacity: temProjeto ? 0.9 : 0.5,
+        weight: 1,
+      })
+        .bindTooltip(m.nome, { direction: "top" })
+        .addTo(camada);
+    }
+
+    for (const c of conexoes) {
+      const de = projetoPorId.get(c.deId);
+      const para = projetoPorId.get(c.paraId);
+      if (!de?.municipioId || !para?.municipioId) continue;
+      const mDe = MUNICIPIOS_PARAOPEBA.find((m) => m.id === de.municipioId);
+      const mPara = MUNICIPIOS_PARAOPEBA.find((m) => m.id === para.municipioId);
+      if (!mDe || !mPara) continue;
+      const destacada = selecionadoId != null && (de.id === selecionadoId || para.id === selecionadoId);
+      L.polyline(
+        [
+          [mDe.lat, mDe.lon],
+          [mPara.lat, mPara.lon],
+        ],
+        { color: COR_ACCENT, weight: destacada ? 3 : 1.5, opacity: destacada ? 0.9 : 0.4, dashArray: "4 4" },
+      ).addTo(camada);
+    }
+
+    for (const p of projects) {
+      if (!p.municipioId) continue;
+      const m = MUNICIPIOS_PARAOPEBA.find((mm) => mm.id === p.municipioId);
+      if (!m) continue;
+      const irmaos = projetosPorMunicipio.get(m.id) ?? [];
+      const indice = irmaos.findIndex((ir) => ir.id === p.id);
+      const angulo = (indice / Math.max(1, irmaos.length)) * Math.PI * 2;
+      const offset = irmaos.length > 1 ? 0.01 : 0;
+      const lat = m.lat + Math.sin(angulo) * offset;
+      const lon = m.lon + Math.cos(angulo) * offset;
+      const marcador = L.circleMarker([lat, lon], {
+        radius: 8,
+        color: COR_ACCENT,
+        weight: selecionadoId === p.id ? 3 : 1.5,
+        fillColor: "#171d17",
+        fillOpacity: 0.95,
+      })
+        .bindTooltip(p.titulo || "(sem título)")
+        .on("click", () => setSelecionadoId((atual) => (atual === p.id ? null : p.id)));
+      marcador.addTo(camada);
+    }
+
+    return () => {
+      camada.remove();
+    };
+  }, [projects, conexoes, projetosPorMunicipio, projetoPorId, selecionadoId]);
 
   return (
     <div className="space-y-2 rounded border border-[color:var(--sm-border)] bg-[color:var(--sm-panel)] p-3">
-      <svg viewBox={`0 0 ${LARGURA} ${ALTURA}`} className="w-full" role="img" aria-label="Mapa geográfico dos municípios da bacia do Paraopeba">
-        {MUNICIPIOS_PARAOPEBA.map((m) => {
-          const { x, y } = projetar(m, bounds);
-          const temProjeto = (projetosPorMunicipio.get(m.id)?.length ?? 0) > 0;
-          return (
-            <g key={m.id}>
-              <circle cx={x} cy={y} r={temProjeto ? 4 : 2.2} fill={temProjeto ? "var(--sm-accent)" : "var(--sm-text-dim)"} opacity={temProjeto ? 1 : 0.5} />
-              <text x={x + 6} y={y + 3} fontSize={8} fill="var(--sm-text-dim)">
-                {m.nome}
-              </text>
-            </g>
-          );
-        })}
-
-        {conexoes.map((c, i) => {
-          const de = projetoPorId.get(c.deId);
-          const para = projetoPorId.get(c.paraId);
-          if (!de?.municipioId || !para?.municipioId) return null;
-          const mDe = MUNICIPIOS_PARAOPEBA.find((m) => m.id === de.municipioId);
-          const mPara = MUNICIPIOS_PARAOPEBA.find((m) => m.id === para.municipioId);
-          if (!mDe || !mPara) return null;
-          const a = projetar(mDe, bounds);
-          const b = projetar(mPara, bounds);
-          const destacada = selecionadoId != null && (de.id === selecionadoId || para.id === selecionadoId);
-          return <line key={i} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="var(--sm-accent)" strokeWidth={destacada ? 2 : 1} strokeDasharray="3 3" opacity={destacada ? 0.9 : 0.35} />;
-        })}
-
-        {projects
-          .filter((p) => p.municipioId)
-          .map((p) => {
-            const m = MUNICIPIOS_PARAOPEBA.find((mm) => mm.id === p.municipioId)!;
-            const irmaos = projetosPorMunicipio.get(m.id) ?? [];
-            const indiceNoMunicipio = irmaos.findIndex((ir) => ir.id === p.id);
-            const angulo = (indiceNoMunicipio / Math.max(1, irmaos.length)) * Math.PI * 2;
-            const raio = irmaos.length > 1 ? 12 : 0;
-            const { x, y } = projetar(m, bounds);
-            const px = x + Math.cos(angulo) * raio;
-            const py = y + Math.sin(angulo) * raio;
-            return (
-              <g key={p.id} className="cursor-pointer" onClick={() => setSelecionadoId((atual) => (atual === p.id ? null : p.id))}>
-                <circle cx={px} cy={py} r={6} fill="var(--sm-panel)" stroke="var(--sm-accent)" strokeWidth={selecionadoId === p.id ? 2.5 : 1.5} />
-                <title>{p.titulo || "(sem título)"}</title>
-              </g>
-            );
-          })}
-      </svg>
+      {semInternet && (
+        <p className="rounded border border-[color:var(--sm-yellow)]/40 bg-[color:var(--sm-yellow)]/10 p-2 text-xs">
+          Sem internet detectada — o mapa de fundo (OpenStreetMap) pode não carregar; os pontos dos municípios/projetos continuam funcionando.
+        </p>
+      )}
+      <div ref={containerRef} className="h-[480px] w-full overflow-hidden rounded" />
 
       {semMunicipio > 0 && (
         <p className="text-xs text-[color:var(--sm-text-dim)]">
@@ -103,22 +157,13 @@ export function MapaGeografico({ projects, onAbrirProjeto }: { projects: Project
         <div className="space-y-1 rounded border border-[color:var(--sm-accent)]/50 p-2 text-xs">
           <p className="font-medium">{projetoPorId.get(selecionadoId)!.titulo || "(sem título)"}</p>
           <ul className="space-y-0.5">
-            {conexoes
-              .filter((c) => c.deId === selecionadoId || c.paraId === selecionadoId)
-              .map((c, i) => {
-                const outroId = c.deId === selecionadoId ? c.paraId : c.deId;
-                const outro = projetoPorId.get(outroId);
-                const mA = MUNICIPIOS_PARAOPEBA.find((m) => m.id === projetoPorId.get(selecionadoId!)?.municipioId);
-                const mB = MUNICIPIOS_PARAOPEBA.find((m) => m.id === outro?.municipioId);
-                const distancia = mA && mB ? distanciaHaversineKm(mA, mB) * 1.4 : null;
-                return (
-                  <li key={i}>
-                    {c.deId === selecionadoId ? "→" : "←"} <strong>{outro?.titulo ?? "(removido)"}</strong>: {c.rotulo}
-                    {distancia != null && ` · ~${distancia.toFixed(0)} km (estimativa offline)`}
-                  </li>
-                );
-              })}
-            {conexoes.filter((c) => c.deId === selecionadoId || c.paraId === selecionadoId).length === 0 && <li className="text-[color:var(--sm-text-dim)]">Sem conexões diretas.</li>}
+            {relacoesDoSelecionado.map((r, i) => (
+              <li key={i}>
+                {r.direcao === "de" ? "→" : "←"} <strong>{r.outroTitulo}</strong>: {r.rotulo}
+                {r.distancia != null && ` · ~${r.distancia.toFixed(0)} km (estimativa offline)`}
+              </li>
+            ))}
+            {relacoesDoSelecionado.length === 0 && <li className="text-[color:var(--sm-text-dim)]">Sem conexões diretas.</li>}
           </ul>
           <button onClick={() => onAbrirProjeto(selecionadoId)} className="rounded border border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/20 px-2 py-1 hover:bg-[color:var(--sm-accent)]/30">
             Abrir projeto →
@@ -127,7 +172,8 @@ export function MapaGeografico({ projects, onAbrirProjeto }: { projects: Project
       )}
 
       <p className="text-[10px] text-[color:var(--sm-text-dim)]">
-        Coordenadas aproximadas (geocodificação offline por município, não por endereço exato) — distâncias mostradas aqui são estimativa em linha reta × 1,4, não rota real.
+        Coordenadas aproximadas (geocodificação offline por município, não por endereço exato) — distâncias mostradas aqui são estimativa em linha reta × 1,4, não rota real. Mapa de fundo: ©
+        OpenStreetMap.
       </p>
     </div>
   );

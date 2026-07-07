@@ -37,8 +37,10 @@
     }
   },
   "dependencies": {
+    "@types/leaflet": "^1.9.21",
     "docx": "^9.1.1",
     "exceljs": "^4.4.0",
+    "leaflet": "^1.9.4",
     "mammoth": "^1.12.0",
     "pdfjs-dist": "^6.1.200",
     "react": "^19.2.0",

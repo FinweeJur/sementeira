@@ -19,7 +19,7 @@ export function NavBar({
   onFontScale: (s: FontScale) => void;
 }) {
   return (
-    <div className="sticky top-0 z-40 flex items-center justify-between border-b border-[color:var(--sm-border)] bg-[color:var(--sm-panel)] px-4 py-1.5">
+    <div className="no-print sticky top-0 z-40 flex items-center justify-between border-b border-[color:var(--sm-border)] bg-[color:var(--sm-panel)] px-4 py-1.5">
       <span className="text-xs font-medium text-[color:var(--sm-text-dim)]">🌱 Sementeira</span>
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-1">

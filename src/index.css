@@ -100,3 +100,10 @@ body {
   .sm-trilha, .sm-anel { animation: none; }
   .sm-etapa-pulsando { animation: none; opacity: 1; }
 }
+
+/* PDF real (webContents.printToPDF) e impressão via Ctrl+P — some com a navegação/botões, mantém só o conteúdo do documento. */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

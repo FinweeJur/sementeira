@@ -1,5 +1,6 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("node:path");
+const fs = require("node:fs/promises");
 
 let mainWindow = null;
 
@@ -128,6 +129,25 @@ ipcMain.handle("sementeira:websearch", async (_event, request) => {
   try {
     const resultados = await buscarWebTavily(request);
     return { ok: true, resultados };
+  } catch (erro) {
+    return { ok: false, erro: erro instanceof Error ? erro.message : String(erro) };
+  }
+});
+
+/** PDF real via webContents.printToPDF — imprime exatamente a página atual (o renderer deve estar na visão "Documento completo" antes de chamar isso). */
+ipcMain.handle("sementeira:pdf:exportar", async (event, sugestaoNomeArquivo) => {
+  try {
+    const janela = BrowserWindow.fromWebContents(event.sender);
+    if (!janela) return { ok: false, erro: "Janela não encontrada." };
+    const resultado = await dialog.showSaveDialog(janela, {
+      title: "Exportar PDF",
+      defaultPath: sugestaoNomeArquivo || "documento.pdf",
+      filters: [{ name: "PDF", extensions: ["pdf"] }],
+    });
+    if (resultado.canceled || !resultado.filePath) return { ok: false, erro: "cancelado" };
+    const dadosPdf = await janela.webContents.printToPDF({ printBackground: true });
+    await fs.writeFile(resultado.filePath, dadosPdf);
+    return { ok: true, caminho: resultado.filePath };
   } catch (erro) {
     return { ok: false, erro: erro instanceof Error ? erro.message : String(erro) };
   }

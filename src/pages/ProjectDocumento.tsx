@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import type { Project } from "../lib/types";
 import { PORTE_POR_ABRANGENCIA, CONSELHO_POR_ABRANGENCIA } from "../lib/types";
 import { avaliarConformidade } from "../lib/compliance-engine";
@@ -7,6 +8,7 @@ import { Badge } from "../components/Badge";
 import { FluxoCaixaChart } from "../components/cronograma/FluxoCaixaChart";
 import { CronogramaGantt } from "../components/cronograma/CronogramaGantt";
 import { exportarEstatutoAssociacaoDocx, exportarAtaFundacaoDocx, exportarRegimentoSimplesDocx } from "../lib/formalizacao";
+import { exportarProjetoDocx, exportarProjetoXlsx, exportarProjetoPdf } from "../lib/export";
 import { mesAtualDoProjeto, orientacaoDoMes } from "../lib/acompanhamento";
 import danos from "../data/danos.json";
 import setores from "../data/setores.json";
@@ -14,19 +16,50 @@ import arquetipos from "../data/arquetipos.json";
 
 /**
  * Visão de leitura do projeto inteiro, na mesma ordem da exportação .docx —
- * permite revisar tudo sem exportar e serve de base para o futuro PDF real.
+ * permite revisar tudo sem exportar e é a visão usada pelo PDF real
+ * (webContents.printToPDF captura exatamente o que está na tela).
  */
 export function ProjectDocumento({
   project,
   onFechar,
   onIrParaPasso,
   onAtualizar,
+  autoExportarPdf,
+  onPdfExportadoOuCancelado,
 }: {
   project: Project;
   onFechar: () => void;
   onIrParaPasso: (passoId: string) => void;
   onAtualizar?: (p: Project) => void;
+  /** Se true, dispara a exportação de PDF automaticamente ao montar (vindo do botão "Exportar .pdf" do wizard). */
+  autoExportarPdf?: boolean;
+  onPdfExportadoOuCancelado?: () => void;
 }) {
+  const [exportandoPdf, setExportandoPdf] = useState(false);
+  const [erroPdf, setErroPdf] = useState<string | null>(null);
+  const jaDisparouAutoExport = useRef(false);
+
+  async function exportarPdf() {
+    setExportandoPdf(true);
+    setErroPdf(null);
+    const resultado = await exportarProjetoPdf(project);
+    setExportandoPdf(false);
+    if (!resultado.ok) setErroPdf(resultado.erro ?? "Não foi possível exportar o PDF.");
+  }
+
+  useEffect(() => {
+    if (!autoExportarPdf || jaDisparouAutoExport.current) return;
+    jaDisparouAutoExport.current = true;
+    (async () => {
+      setExportandoPdf(true);
+      setErroPdf(null);
+      const resultado = await exportarProjetoPdf(project);
+      setExportandoPdf(false);
+      if (!resultado.ok) setErroPdf(resultado.erro ?? "Não foi possível exportar o PDF.");
+      onPdfExportadoOuCancelado?.();
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoExportarPdf]);
   const dano = danos.find((d) => d.id === project.danoId);
   const arquetipo = arquetipos.find((a) => a.id === project.arquetipoId);
   const setor = setores.find((s) => s.id === project.setorId);
@@ -43,14 +76,30 @@ export function ProjectDocumento({
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
-      <div className="flex items-center justify-between">
+      <div className="no-print flex items-center justify-between">
         <button onClick={onFechar} className="text-sm text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]">
           ← Voltar ao wizard
         </button>
         <h1 className="text-lg font-semibold">
           📄 Documento completo{(project.versaoLapidacao ?? 0) > 0 && <span className="ml-2 text-sm text-[color:var(--sm-text-dim)]">v{project.versaoLapidacao}</span>}
         </h1>
+        <div className="flex gap-2">
+          <button onClick={() => exportarProjetoDocx(project)} className="rounded border border-[color:var(--sm-border)] px-3 py-1.5 text-sm hover:border-[color:var(--sm-accent)]">
+            Exportar .docx
+          </button>
+          <button onClick={() => exportarProjetoXlsx(project)} className="rounded border border-[color:var(--sm-border)] px-3 py-1.5 text-sm hover:border-[color:var(--sm-accent)]">
+            Exportar .xlsx
+          </button>
+          <button
+            onClick={exportarPdf}
+            disabled={exportandoPdf}
+            className="rounded border border-[color:var(--sm-border)] px-3 py-1.5 text-sm hover:border-[color:var(--sm-accent)] disabled:opacity-40"
+          >
+            {exportandoPdf ? "Gerando PDF..." : "Exportar .pdf"}
+          </button>
+        </div>
       </div>
+      {erroPdf && <p className="no-print text-xs text-[color:var(--sm-red)]">{erroPdf}</p>}
 
       {onAtualizar && (
         <div className="rounded border border-[color:var(--sm-accent)]/40 bg-[color:var(--sm-accent)]/5 p-3 text-sm">
@@ -414,7 +463,7 @@ function Bloco({ titulo, onEditar, children }: { titulo: string; onEditar?: () =
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-[color:var(--sm-accent)]">{titulo}</h2>
         {onEditar && (
-          <button onClick={onEditar} className="text-xs text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-accent)]">
+          <button onClick={onEditar} className="no-print text-xs text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-accent)]">
             ✎ editar
           </button>
         )}

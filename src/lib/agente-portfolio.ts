@@ -108,7 +108,7 @@ export async function executarAcaoAgente(comando: ComandoInterpretado, contexto:
       if (!projeto) return `⚠ Não encontrei nenhum projeto chamado "${titulo}".`;
       const formato = typeof parametros.formato === "string" ? parametros.formato : "docx";
       if (formato === "xlsx") await exportarProjetoXlsx(projeto);
-      else if (formato === "pdf") exportarProjetoPdf();
+      else if (formato === "pdf") await exportarProjetoPdf(projeto);
       else await exportarProjetoDocx(projeto);
       return `✅ Documento .${formato} de "${projeto.titulo}" exportado.`;
     }

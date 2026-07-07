@@ -3,7 +3,7 @@ import type { BudgetLine, CategoriaLinha, Cenario, CustoNaoCobertoItem, EquipeMe
 import { PORTE_POR_ABRANGENCIA, CONSELHO_POR_ABRANGENCIA } from "../lib/types";
 import { avaliarConformidade } from "../lib/compliance-engine";
 import { simularTodos, exigenciaPOS, calcularDepreciacaoMensal } from "../lib/simulator";
-import { exportarProjetoDocx, exportarProjetoXlsx, exportarProjetoPdf } from "../lib/export";
+import { exportarProjetoDocx, exportarProjetoXlsx } from "../lib/export";
 import { exportarSolicitacaoCotacaoDocx, sugerirFornecedoresRede } from "../lib/cotacao";
 import { derivarConexoes } from "../lib/mapa-estagios";
 import { MUNICIPIOS_PARAOPEBA, estimarDistanciaRota, custoLogisticoMensalEstimado, type EstimativaRota } from "../lib/geografia";
@@ -61,6 +61,11 @@ export function ProjectWizard({
   const [copilotoAberto, setCopilotoAberto] = useState(false);
   const [lapidacaoAberta, setLapidacaoAberta] = useState(false);
   const [verDocumento, setVerDocumento] = useState(false);
+  const [pdfPendente, setPdfPendente] = useState(false);
+  function setVerDocumentoParaExportarPdf(v: boolean) {
+    setPdfPendente(v);
+    setVerDocumento(true);
+  }
   const [autoGerarRascunho, setAutoGerarRascunho] = useState(false);
   const [pesquisandoJustificativa, setPesquisandoJustificativa] = useState(false);
   const [erroJustificativa, setErroJustificativa] = useState<string | null>(null);
@@ -1243,7 +1248,16 @@ export function ProjectWizard({
   }, [passoAtual, project, copilotoAberto]);
 
   if (verDocumento) {
-    return <ProjectDocumento project={project} onFechar={() => setVerDocumento(false)} onIrParaPasso={irParaPassoPorId} onAtualizar={onChange} />;
+    return (
+      <ProjectDocumento
+        project={project}
+        onFechar={() => setVerDocumento(false)}
+        onIrParaPasso={irParaPassoPorId}
+        onAtualizar={onChange}
+        autoExportarPdf={pdfPendente}
+        onPdfExportadoOuCancelado={() => setPdfPendente(false)}
+      />
+    );
   }
 
   return (
@@ -1280,7 +1294,10 @@ export function ProjectWizard({
             <button onClick={() => exportarProjetoXlsx(project)} className="rounded border border-[color:var(--sm-border)] px-3 py-1.5 text-sm hover:border-[color:var(--sm-accent)]">
               Exportar .xlsx
             </button>
-            <button onClick={() => exportarProjetoPdf()} className="rounded border border-[color:var(--sm-border)] px-3 py-1.5 text-sm hover:border-[color:var(--sm-accent)]">
+            <button
+              onClick={() => setVerDocumentoParaExportarPdf(true)}
+              className="rounded border border-[color:var(--sm-border)] px-3 py-1.5 text-sm hover:border-[color:var(--sm-accent)]"
+            >
               Exportar .pdf
             </button>
           </div>
