@@ -136,11 +136,7 @@ export function App() {
     conteudo = (
       <CompareProjects
         projects={projects}
-        onVoltar={() => setMostrarComparacao(false)}
-        onAbrirProjeto={(id) => {
-          setMostrarComparacao(false);
-          setOpenId(id);
-        }}
+        onFechar={() => setMostrarComparacao(false)}
       />
     );
   } else {

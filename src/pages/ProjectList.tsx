@@ -118,6 +118,11 @@ export function ProjectList({
         >
           🌱 Novo projeto
         </button>
+        {projects.length > 1 && (
+          <button onClick={onAbrirComparacao} className="rounded border border-[color:var(--sm-border)] px-3 py-2 text-xs hover:border-[color:var(--sm-accent)]">
+            ⚖️ Comparar
+          </button>
+        )}
         {projects.length > 0 && (
           <button onClick={onAbrirEcossistema} className="rounded border border-[color:var(--sm-border)] px-3 py-2 text-xs hover:border-[color:var(--sm-accent)]">
             🌐 Ecossistema
