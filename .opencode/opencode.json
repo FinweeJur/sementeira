@@ -1,0 +1,9 @@
+{
+  "name": "Sementeira",
+  "type": "electron",
+  "dev": "npm run dev",
+  "build": "npm run dist",
+  "typecheck": "npm run typecheck",
+  "stage": "active-development",
+  "description": "Electron app para reparação comunitária — Anexo I.1 do acordo judicial de Brumadinho"
+}
