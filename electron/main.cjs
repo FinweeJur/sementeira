@@ -1,6 +1,13 @@
 const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
 const path = require("node:path");
 const fs = require("node:fs/promises");
+// electron-updater só funciona no app empacotado (não no dev) — require protegido.
+let autoUpdater = null;
+try {
+  autoUpdater = require("electron-updater").autoUpdater;
+} catch {
+  // Em desenvolvimento o módulo pode não resolver — tudo bem, update só roda em produção.
+}
 
 let mainWindow = null;
 
@@ -198,7 +205,43 @@ ipcMain.handle("sementeira:documento:abrir", async (_event, caminho) => {
   }
 });
 
-app.whenReady().then(createWindow);
+/**
+ * Auto-update via GitHub Releases — verifica silenciosamente se há versão nova
+ * ao abrir o app. Se houver, baixa em background e pergunta se reinicia ao
+ * terminar. Em desenvolvimento (electron . direto) o electron-updater não
+ * funciona — só roda no app empacotado. Sem internet, falha silenciosamente
+ * (o app é offline-first, não pode depender disto pra abrir).
+ */
+function configurarAutoUpdate() {
+  if (!autoUpdater) return;
+  autoUpdater.logger = console;
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on("update-downloaded", () => {
+    if (!mainWindow) return;
+    dialog
+      .showMessageBox(mainWindow, {
+        type: "info",
+        title: "Atualização pronta",
+        message: "Uma nova versão da Sementeira foi baixada.",
+        detail:
+          "Reiniciar agora para aplicar? Você também pode continuar usando — a atualização será aplicada na próxima vez que fechar o app.",
+        buttons: ["Reiniciar agora", "Depois"],
+      })
+      .then((resultado) => {
+        if (resultado.response === 0) autoUpdater.quitAndInstall();
+      });
+  });
+
+  // Verifica update ao abrir — silencioso (só notifica se houver e terminar o download).
+  autoUpdater.checkForUpdatesAndNotify().catch(() => {});
+}
+
+app.whenReady().then(() => {
+  createWindow();
+  configurarAutoUpdate();
+});
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();

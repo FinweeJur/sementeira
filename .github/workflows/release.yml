@@ -27,8 +27,13 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Build installer
-        run: npm run dist
+      - name: Build installer and publish to GitHub Releases
+        # --publish always faz o electron-builder publicar TODOS os artefatos
+        # no release da tag automaticamente: .exe + latest.yml + .blockmap.
+        # latest.yml é o manifest que o electron-updater lê pra checar versão nova.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run dist -- --publish always
 
       - name: Get version from tag
         id: tag_name
@@ -36,30 +41,11 @@ jobs:
           $version = "${{ github.ref }}".Replace('refs/tags/', '')
           echo "version=$version" >> $env:GITHUB_OUTPUT
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ steps.tag_name.outputs.version }}
-          name: Sementeira ${{ steps.tag_name.outputs.version }}
-          files: |
-            release/Sementeira*.exe
-          draft: false
-          prerelease: false
-          body: |
-            ## 📦 Release Assets
-            - **Sementeira Setup** — Instalador Windows (.exe)
-
-            ## 📝 Notas
-            Para instalar, baixe o `.exe` e execute. A aplicação instalará todos os arquivos necessários.
-
-            ---
-            **Build automático via GitHub Actions**
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload artifacts
+      - name: Upload build artifacts (debug)
         uses: actions/upload-artifact@v4
         with:
           name: sementeira-build-${{ steps.tag_name.outputs.version }}
-          path: release/
+          path: |
+            release/
+            !release/win-unpacked*
           retention-days: 30

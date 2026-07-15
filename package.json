@@ -34,11 +34,17 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "FinweeJur",
+      "repo": "sementeira"
     }
   },
   "dependencies": {
     "@types/leaflet": "^1.9.21",
     "docx": "^9.1.1",
+    "electron-updater": "^6.8.9",
     "exceljs": "^4.4.0",
     "leaflet": "^1.9.4",
     "mammoth": "^1.12.0",

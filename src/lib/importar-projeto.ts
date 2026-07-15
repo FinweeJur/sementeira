@@ -129,7 +129,6 @@ export async function importarProjetoDeArquivo(arquivo: File, projetoBase: Proje
 
   // 7. Salva o binário original no disco via IPC — falha aqui não aborta o projeto.
   let caminhoArquivo: string | undefined;
-  let erroSalvamento: string | undefined;
   try {
     if (window.sementeira?.salvarDocumento) {
       const base64 = await arquivoParaBase64(arquivo);
@@ -140,12 +139,10 @@ export async function importarProjetoDeArquivo(arquivo: File, projetoBase: Proje
       });
       if (salvamento?.ok && salvamento.caminho) {
         caminhoArquivo = salvamento.caminho;
-      } else if (salvamento && !salvamento.ok) {
-        erroSalvamento = salvamento.erro;
       }
     }
-  } catch (e) {
-    erroSalvamento = e instanceof Error ? e.message : String(e);
+  } catch {
+    // Se falhar ao salvar o binário, o projeto ainda é válido com o texto extraído.
   }
   // documentoOrigem sempre fica com o texto extraído, mesmo se o binário não salvou.
 
