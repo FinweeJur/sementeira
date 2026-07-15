@@ -9,6 +9,9 @@ import { Voluntarios } from "./pages/Voluntarios";
 import { CompareProjects } from "./pages/CompareProjects";
 import { Onboarding } from "./components/Onboarding";
 import { NavBar } from "./components/NavBar";
+import { TaskProvider } from "./lib/task-context";
+import { TaskIndicator } from "./components/TaskIndicator";
+import { TaskSidebar } from "./components/TaskSidebar";
 import {
   onboardingVisto,
   marcarOnboardingVisto,
@@ -34,6 +37,7 @@ export function App() {
   const [mostrarVoluntarios, setMostrarVoluntarios] = useState(false);
   const [mostrarComparacao, setMostrarComparacao] = useState(false);
   const [mostrarOnboarding, setMostrarOnboarding] = useState(false);
+  const [sidebarTarefasAberta, setSidebarTarefasAberta] = useState(false);
   const [fontScale, setFontScale] = useState<FontScale>("normal");
   const [tema, setTema] = useState<Tema>("escuro");
   const [llmConfig, setLlmConfig] = useState<ProviderConfig>(carregarConfigLLM());
@@ -160,9 +164,19 @@ export function App() {
   }
 
   return (
-    <>
+    <TaskProvider>
       <NavBar tema={tema} onTema={handleTema} fontScale={fontScale} onFontScale={handleFontScale} />
       {conteudo}
-    </>
+      <TaskIndicator onAbrir={() => setSidebarTarefasAberta(true)} />
+      {sidebarTarefasAberta && (
+        <TaskSidebar
+          onFechar={() => setSidebarTarefasAberta(false)}
+          onAbrirProjeto={(id) => {
+            setSidebarTarefasAberta(false);
+            setOpenId(id);
+          }}
+        />
+      )}
+    </TaskProvider>
   );
 }

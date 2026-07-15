@@ -84,7 +84,7 @@ export function MapaGeografico({ projects, onAbrirProjeto }: { projects: Project
     for (const m of MUNICIPIOS_PARAOPEBA) {
       const temProjeto = (projetosPorMunicipio.get(m.id)?.length ?? 0) > 0;
       L.circleMarker([m.lat, m.lon], {
-        radius: temProjeto ? 5 : 3,
+        radius: temProjeto ? 9 : 6,
         color: temProjeto ? COR_ACCENT : COR_DIM,
         fillColor: temProjeto ? COR_ACCENT : COR_DIM,
         fillOpacity: temProjeto ? 0.9 : 0.5,
@@ -122,15 +122,27 @@ export function MapaGeografico({ projects, onAbrirProjeto }: { projects: Project
       const lat = m.lat + Math.sin(angulo) * offset;
       const lon = m.lon + Math.cos(angulo) * offset;
       const marcador = L.circleMarker([lat, lon], {
-        radius: 8,
+        radius: 13,
         color: COR_ACCENT,
-        weight: selecionadoId === p.id ? 3 : 1.5,
+        weight: selecionadoId === p.id ? 4 : 2,
         fillColor: "#171d17",
         fillOpacity: 0.95,
       })
         .bindTooltip(p.titulo || "(sem título)")
         .on("click", () => setSelecionadoId((atual) => (atual === p.id ? null : p.id)));
       marcador.addTo(camada);
+
+      // Anel pulsante no projeto selecionado — destaque visual
+      if (selecionadoId === p.id) {
+        L.circleMarker([lat, lon], {
+          radius: 20,
+          color: COR_ACCENT,
+          weight: 2,
+          fillColor: COR_ACCENT,
+          fillOpacity: 0.15,
+          className: "sm-marcador-pulso",
+        }).addTo(camada);
+      }
     }
 
     return () => {

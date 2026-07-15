@@ -5,6 +5,8 @@ import { carregarChat, salvarChat } from "../lib/chat-storage";
 import { interpretarComando, executarAcaoAgente } from "../lib/agente-portfolio";
 import { gerarMensagensProativas } from "../lib/acompanhamento";
 import { extrairTextoDeArquivo } from "../lib/file-extraction";
+import { ThinkingIndicator } from "./ThinkingIndicator";
+import { useTasks } from "../lib/task-context";
 
 const CHAT_ID = "agente-portfolio";
 
@@ -31,6 +33,7 @@ export function AgentePortfolioChat({
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const fimRef = useRef<HTMLDivElement>(null);
+  const { registrar, concluir, falhar } = useTasks();
 
   useEffect(() => {
     fimRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -73,14 +76,19 @@ export function AgentePortfolioChat({
     setCarregando(true);
     setErro(null);
 
+    const taskId = registrar("agente-portfolio", "Copiloto de portfólio processando...");
+
     const resultado = await interpretarComando(mensagemUsuario, mensagens, projects);
     setCarregando(false);
     if (!resultado.ok || !resultado.dado) {
-      setErro(resultado.erro ?? "Não consegui interpretar sua mensagem.");
+      const erro = resultado.erro ?? "Não consegui interpretar sua mensagem.";
+      setErro(erro);
+      falhar(taskId, erro);
       return;
     }
 
     const confirmacao = await executarAcaoAgente(resultado.dado, { projects, onAtualizarProjeto, onAbrirProjeto });
+    concluir(taskId, undefined, resultado.dado.resposta ? "✅ Ação executada" : undefined);
     const textoResposta = [resultado.dado.resposta, confirmacao].filter(Boolean).join("\n\n");
     const comResposta: ChatMessage[] = [...novasMensagens, { role: "assistant", content: textoResposta }];
     setMensagens(comResposta);
@@ -89,7 +97,7 @@ export function AgentePortfolioChat({
 
   return (
     <div
-      className="fixed inset-y-0 right-0 z-40 flex w-full max-w-sm flex-col border-l border-[color:var(--sm-border)] bg-[color:var(--sm-panel)] p-4"
+      className="flex h-[calc(100vh-37px)] w-80 shrink-0 flex-col border-l border-[color:var(--sm-border)] bg-[color:var(--sm-panel)] p-4"
       onKeyDown={(e) => {
         if (e.key === "Escape") onClose();
       }}
@@ -116,7 +124,11 @@ export function AgentePortfolioChat({
             <p className="whitespace-pre-wrap">{m.content}</p>
           </div>
         ))}
-        {carregando && <p className="text-xs text-[color:var(--sm-text-dim)]">Pensando...</p>}
+        {carregando && (
+          <div className="rounded p-2">
+            <ThinkingIndicator />
+          </div>
+        )}
         {erro && <p className="text-xs text-[color:var(--sm-red)]">{erro}</p>}
         <div ref={fimRef} />
       </div>

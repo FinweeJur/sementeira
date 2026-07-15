@@ -6,6 +6,8 @@ import { ProviderSettings } from "./ProviderSettings";
 import { montarPromptRascunho, interpretarRespostaRascunho, formatarPerguntas, type RascunhoDados } from "../lib/draft-generation";
 import { extrairTextoDeArquivo } from "../lib/file-extraction";
 import { montarBlocoDiretrizesGlobais } from "../lib/diretrizes-globais";
+import { ThinkingIndicator } from "./ThinkingIndicator";
+import { useTasks } from "../lib/task-context";
 import danos from "../data/danos.json";
 import arquetipos from "../data/arquetipos.json";
 
@@ -54,6 +56,7 @@ export function CopilotoChat({
   const [aguardandoRespostaPerguntas, setAguardandoRespostaPerguntas] = useState(false);
   const [copiadoIndice, setCopiadoIndice] = useState<number | null>(null);
   const fimRef = useRef<HTMLDivElement>(null);
+  const { registrar, concluir, falhar } = useTasks();
 
   useEffect(() => {
     fimRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -84,6 +87,8 @@ export function CopilotoChat({
     setCarregando(true);
     setErro(null);
 
+    const taskId = registrar("copiloto-chat", `Copiloto conversando sobre "${project.titulo || "projeto"}"...`, project.id);
+
     const systemContent = usarPromptRascunho
       ? montarPromptSistema(project) + "\n\n" + montarPromptRascunho(project)
       : montarPromptSistema(project);
@@ -92,9 +97,12 @@ export function CopilotoChat({
     setCarregando(false);
 
     if (!resposta.ok) {
-      setErro(resposta.erro ?? "Falha ao conversar com o provedor de IA.");
+      const erro = resposta.erro ?? "Falha ao conversar com o provedor de IA.";
+      setErro(erro);
+      falhar(taskId, erro);
       return;
     }
+    concluir(taskId);
 
     const textoResposta = resposta.conteudo ?? "";
     let conteudoExibido = textoResposta;
@@ -172,7 +180,7 @@ export function CopilotoChat({
 
   return (
     <div
-      className="fixed inset-y-0 right-0 z-40 flex w-full max-w-sm flex-col border-l border-[color:var(--sm-border)] bg-[color:var(--sm-panel)] p-4"
+      className="flex h-[calc(100vh-37px)] w-80 shrink-0 flex-col border-l border-[color:var(--sm-border)] bg-[color:var(--sm-panel)] p-4"
       onKeyDown={(e) => {
         if (e.key === "Escape") onClose();
       }}
@@ -240,7 +248,11 @@ export function CopilotoChat({
             )}
           </div>
         ))}
-        {carregando && <p className="text-xs text-[color:var(--sm-text-dim)]">Pensando...</p>}
+        {carregando && (
+          <div className="rounded p-2">
+            <ThinkingIndicator />
+          </div>
+        )}
         {erro && <p className="text-xs text-[color:var(--sm-red)]">{erro}</p>}
         <div ref={fimRef} />
       </div>

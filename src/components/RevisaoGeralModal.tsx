@@ -5,6 +5,8 @@ import { lapidarProjeto, commitarVersaoLapidada, calcularScore, type ScoreConfor
 import { lapidarEcossistema, lapidarClube, ETAPAS_PORTFOLIO_ROTULO, type EtapaPortfolio } from "../lib/refinement-ecosystem";
 import { carregarAnaliseEcossistema, salvarAnaliseEcossistema } from "../lib/ecosystem";
 import { carregarClube, salvarClube } from "../lib/clube-beneficios";
+import { ThinkingIndicator } from "./ThinkingIndicator";
+import { useTasks } from "../lib/task-context";
 
 interface ResultadoProjeto {
   projectId: string;
@@ -42,6 +44,7 @@ export function RevisaoGeralModal({
   const [progressoEcossistema, setProgressoEcossistema] = useState<"ok" | "erro" | "pendente" | "pulado">("pendente");
   const [progressoClube, setProgressoClube] = useState<"ok" | "erro" | "pendente" | "pulado">("pendente");
   const canceladoRef = useRef(false);
+  const { registrar, atualizar, concluir, falhar, isCancelada } = useTasks();
 
   function alternarSelecao(id: string) {
     setSelecionados((atual) => {
@@ -68,18 +71,24 @@ export function RevisaoGeralModal({
     // props ficarem defasadas entre uma commitagem e a próxima neste mesmo lote.
     const projetosAtualizados = [...projects];
 
+    const taskId = registrar("revisao-geral", `Revisão geral (${idsSelecionados.length} projeto${idsSelecionados.length > 1 ? "s" : ""})`);
+
     for (let i = 0; i < idsSelecionados.length; i++) {
-      if (canceladoRef.current) break;
+      if (canceladoRef.current || isCancelada(taskId)) break;
       const id = idsSelecionados[i];
       const indiceLocal = projetosAtualizados.findIndex((p) => p.id === id);
       const projetoAtual = projetosAtualizados[indiceLocal];
       setProgressoAtual({ indice: i + 1, total: idsSelecionados.length, titulo: projetoAtual.titulo || "(sem título)" });
+      atualizar(taskId, { progresso: { indice: i + 1, total: idsSelecionados.length, etapaAtual: projetoAtual.titulo || "(sem título)" } });
 
       const scoreAntes = calcularScore(projetoAtual);
       const resultado = await lapidarProjeto(projetoAtual, {
         voltas: 1,
-        onProgresso: (_v, etapaLapidacao) => setProgressoAtual((atual) => (atual ? { ...atual, etapaAtual: etapaLapidacao } : atual)),
-        cancelado: () => canceladoRef.current,
+        onProgresso: (_v, etapaLapidacao) => {
+          setProgressoAtual((atual) => (atual ? { ...atual, etapaAtual: etapaLapidacao } : atual));
+          atualizar(taskId, { progresso: { indice: i + 1, total: idsSelecionados.length, etapaAtual: etapaLapidacao } });
+        },
+        cancelado: () => canceladoRef.current || isCancelada(taskId),
       });
 
       if (!resultado.ok || !resultado.projetoFinal) {
@@ -132,6 +141,18 @@ export function RevisaoGeralModal({
 
     setProgressoAtual(null);
     setEtapa("resultado");
+
+    // Conclui a tarefa no TaskContext com um diff resumido.
+    const okCount = resultadosAcumulados.filter((r) => r.status === "ok").length;
+    if (okCount > 0) {
+      const totalBloqueiosAntes = resultadosAcumulados.reduce((s, r) => s + (r.scoreAntes?.bloqueios ?? 0), 0);
+      const totalBloqueiosDepois = resultadosAcumulados.reduce((s, r) => s + (r.scoreDepois?.bloqueios ?? 0), 0);
+      const totalAtencoesAntes = resultadosAcumulados.reduce((s, r) => s + (r.scoreAntes?.atencoes ?? 0), 0);
+      const totalAtencoesDepois = resultadosAcumulados.reduce((s, r) => s + (r.scoreDepois?.atencoes ?? 0), 0);
+      concluir(taskId, undefined, `${okCount} projeto(s) · 🔴 ${totalBloqueiosAntes}→${totalBloqueiosDepois} · 🟡 ${totalAtencoesAntes}→${totalAtencoesDepois}`);
+    } else {
+      falhar(taskId, "Nenhum projeto pôde ser lapidado.");
+    }
   }
 
   function cancelar() {
@@ -205,6 +226,7 @@ export function RevisaoGeralModal({
               </button>
             </div>
             {progressoAtual?.etapaAtual && <p className="text-xs text-[color:var(--sm-text-dim)]">{progressoAtual.etapaAtual}</p>}
+            <ThinkingIndicator />
             <p className="text-xs text-[color:var(--sm-text-dim)]">A parada acontece assim que o passo atual terminar.</p>
           </div>
         )}

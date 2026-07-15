@@ -9,6 +9,7 @@ import {
   type ResultadoLapidacao,
 } from "../lib/refinement-loop";
 import { carregarConfigComparacao, nomeProvedor, configuracaoLLMPronta } from "../lib/providers";
+import { useTasks } from "../lib/task-context";
 import { Badge } from "./Badge";
 
 const ETAPAS_ORDEM: EtapaLapidacao[] = ["escritor", "orcamentista", "critico", "riscos", "sugestor", "compilador"];
@@ -85,6 +86,7 @@ export function LapidacaoPanel({
   const configComparacao = carregarConfigComparacao();
   const comparacaoPronta = configComparacao ? configuracaoLLMPronta(configComparacao).pronta : false;
   const [comparar, setComparar] = useState(false);
+  const { registrar, atualizar, concluir, falhar, isCancelada } = useTasks();
 
   // Timer ao vivo enquanto roda — mesmo espírito do indicador de streaming do Hermes/Claude Code.
   useEffect(() => {
@@ -105,13 +107,17 @@ export function LapidacaoPanel({
     const inicio = Date.now();
     setInicioEm(inicio);
 
+    // Registra a tarefa no TaskContext — sobrevive se o usuário fechar o panel ou navegar.
+    const taskId = registrar("lapidacao-projeto", `Lapidando "${project.titulo || "projeto"}"...`, project.id);
+
     const r = await lapidarProjeto(project, {
       voltas,
       onProgresso: (v: number, etapa: EtapaLapidacao) => {
         setVolta(v);
         setEtapaAtual(etapa);
+        atualizar(taskId, { progresso: { volta: v, totalVoltas: voltas, etapaAtual: ETAPAS_ROTULO[etapa] } });
       },
-      cancelado: () => canceladoRef.current,
+      cancelado: () => canceladoRef.current || isCancelada(taskId),
       compararConfig: comparar && comparacaoPronta && configComparacao ? configComparacao : undefined,
       onProgressoComparacao: (v: number) => setVolta(v),
     });
@@ -122,7 +128,17 @@ export function LapidacaoPanel({
 
     if (!r.ok) {
       setErro(r.erro ?? "Falha na lapidação.");
+      falhar(taskId, r.erro ?? "Falha na lapidação.");
       if (r.voltas.length === 0) return;
+    } else {
+      // Diff para a sidebar mostrar
+      const scoreInicial = r.voltas[0]?.scoreAntes;
+      const scoreFinal = r.voltas[r.voltas.length - 1]?.scoreDepois;
+      const diff =
+        scoreInicial && scoreFinal
+          ? `🔴 ${scoreInicial.bloqueios}→${scoreFinal.bloqueios} · 🟡 ${scoreInicial.atencoes}→${scoreFinal.atencoes}`
+          : undefined;
+      concluir(taskId, undefined, diff);
     }
     setResultado(r);
   }

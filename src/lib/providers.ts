@@ -91,8 +91,19 @@ export interface ExportarPdfResposta {
   erro?: string;
 }
 
+export interface SalvarDocumentoResposta {
+  ok: boolean;
+  caminho?: string;
+  erro?: string;
+}
+
+export interface AbrirDocumentoResposta {
+  ok: boolean;
+  erro?: string;
+}
+
 /** Superfície IPC completa exposta pelo preload — centralizada aqui para evitar declarações `Window` conflitantes entre módulos. */
-declare global {
+  declare global {
   interface Window {
     sementeira?: {
       ping: () => Promise<unknown>;
@@ -100,6 +111,8 @@ declare global {
       listarModelosOllama: (baseUrl: string) => Promise<ListarModelosResposta>;
       webSearch: (request: WebSearchRequest) => Promise<WebSearchResposta>;
       exportarPdf: (sugestaoNomeArquivo?: string) => Promise<ExportarPdfResposta>;
+      salvarDocumento: (dados: { projectId: string; nomeArquivo: string; conteudoBase64: string }) => Promise<SalvarDocumentoResposta>;
+      abrirDocumento: (caminho: string) => Promise<AbrirDocumentoResposta>;
     };
   }
 }

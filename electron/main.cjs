@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
 const path = require("node:path");
 const fs = require("node:fs/promises");
 
@@ -148,6 +148,51 @@ ipcMain.handle("sementeira:pdf:exportar", async (event, sugestaoNomeArquivo) => 
     const dadosPdf = await janela.webContents.printToPDF({ printBackground: true });
     await fs.writeFile(resultado.filePath, dadosPdf);
     return { ok: true, caminho: resultado.filePath };
+  } catch (erro) {
+    return { ok: false, erro: erro instanceof Error ? erro.message : String(erro) };
+  }
+});
+
+/**
+ * Salva o documento original (PDF/DOCX) anexado ao importar um projeto — guarda
+ * o binário em userData/documentos/<projectId>/ para consulta posterior fiel.
+ * Retorna o caminho absoluto onde o arquivo foi salvo.
+ */
+ipcMain.handle("sementeira:documento:salvar", async (_event, { projectId, nomeArquivo, conteudoBase64 }) => {
+  try {
+    if (!projectId || !nomeArquivo || !conteudoBase64) {
+      return { ok: false, erro: "Dados incompletos para salvar o documento." };
+    }
+    // Sanitiza o nome do arquivo e do projectId para evitar path traversal.
+    const nomeSeguro = path.basename(nomeArquivo).replace(/[^\w.\-]/g, "_");
+    const idSeguro = String(projectId).replace(/[^\w-]/g, "");
+    const dirDocumentos = path.join(app.getPath("userData"), "documentos", idSeguro);
+    await fs.mkdir(dirDocumentos, { recursive: true });
+    const caminhoCompleto = path.join(dirDocumentos, nomeSeguro);
+    await fs.writeFile(caminhoCompleto, Buffer.from(conteudoBase64, "base64"));
+    return { ok: true, caminho: caminhoCompleto };
+  } catch (erro) {
+    return { ok: false, erro: erro instanceof Error ? erro.message : String(erro) };
+  }
+});
+
+/**
+ * Abre o documento original salvo no disco no aplicativo padrão do SO —
+ * para consulta fiel (PDF/DOCX) quando o usuário clica "Ver documento original".
+ */
+ipcMain.handle("sementeira:documento:abrir", async (_event, caminho) => {
+  try {
+    if (!caminho || typeof caminho !== "string") {
+      return { ok: false, erro: "Caminho inválido." };
+    }
+    // Garante que o caminho está dentro do diretório de documentos do app.
+    const dirDocumentos = path.join(app.getPath("userData"), "documentos");
+    const alvoResolvido = path.resolve(caminho);
+    if (!alvoResolvido.startsWith(dirDocumentos)) {
+      return { ok: false, erro: "Acesso negado: o documento está fora do diretório permitido." };
+    }
+    await shell.openPath(alvoResolvido);
+    return { ok: true };
   } catch (erro) {
     return { ok: false, erro: erro instanceof Error ? erro.message : String(erro) };
   }

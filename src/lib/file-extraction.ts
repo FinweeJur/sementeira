@@ -23,7 +23,11 @@ async function extrairPdf(arrayBuffer: ArrayBuffer): Promise<string> {
 }
 
 async function extrairDocx(arrayBuffer: ArrayBuffer): Promise<string> {
-  const resultado = await mammoth.extractRawText({ arrayBuffer });
+  // mammoth aceita tanto `buffer` (Node) quanto `arrayBuffer` (browser).
+  // No renderer do Electron, `arrayBuffer` falha com "Could not find file in
+  // options" em algumas versões — passamos `buffer` (Uint8Array) que sempre funciona.
+  const uint8 = new Uint8Array(arrayBuffer);
+  const resultado = await mammoth.extractRawText({ buffer: uint8 as unknown as Buffer });
   return resultado.value;
 }
 

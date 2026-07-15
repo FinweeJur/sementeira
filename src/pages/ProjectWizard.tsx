@@ -9,6 +9,8 @@ import { derivarConexoes } from "../lib/mapa-estagios";
 import { MUNICIPIOS_PARAOPEBA, estimarDistanciaRota, custoLogisticoMensalEstimado, type EstimativaRota } from "../lib/geografia";
 import { sugerirDeIdeia, derivarTituloDeIdeia } from "../lib/suggestion-engine";
 import { aplicarRascunhoAoProjeto, type RascunhoDados } from "../lib/draft-generation";
+import { abrirDocumentoOrigem } from "../lib/importar-projeto";
+import { useTasks } from "../lib/task-context";
 import { pesquisarJustificativaComReferencia, pesquisarPrecoItem, pesquisarArrecadacaoSugestoes } from "../lib/geracao-assistida";
 import { revisarProjetoComOficios, type RevisaoResultado } from "../lib/revisao-agente";
 import { montarChecklistFinal } from "../lib/checklist";
@@ -82,6 +84,7 @@ export function ProjectWizard({
   const [rotasCalculando, setRotasCalculando] = useState(false);
   const [rotasPorProjeto, setRotasPorProjeto] = useState<Map<string, EstimativaRota>>(new Map());
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const { registrar, concluir, falhar } = useTasks();
 
   const arquetipo = arquetipos.find((a) => a.id === project.arquetipoId);
   const sugestao = useMemo(() => sugerirDeIdeia(project.ideiaTexto), [project.ideiaTexto]);
@@ -255,13 +258,17 @@ export function ProjectWizard({
   async function executarRevisao() {
     setRevisando(true);
     setErroRevisao(null);
+    const taskId = registrar("revisao-ia", `Revisando "${project.titulo || "projeto"}"...`, project.id);
     const resultado = await revisarProjetoComOficios(project);
     setRevisando(false);
     if (!resultado.ok || !resultado.dado) {
-      setErroRevisao(resultado.erro ?? "Não foi possível revisar o projeto.");
+      const erro = resultado.erro ?? "Não foi possível revisar o projeto.";
+      setErroRevisao(erro);
+      falhar(taskId, erro);
       return;
     }
     setRevisao(resultado.dado);
+    concluir(taskId, undefined, resultado.dado.adequado ? "✅ Projeto adequado" : "⚠ Ajustes sugeridos");
   }
 
   function aplicarMudancasDaRevisao() {
@@ -1277,7 +1284,8 @@ export function ProjectWizard({
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4 p-6">
+    <div className="flex w-full">
+    <div className="mx-auto w-full max-w-4xl flex-1 space-y-4 p-6 min-w-0">
       <div className="flex items-center justify-between">
         <button onClick={onVoltar} className="text-sm text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]">
           ← Meus projetos
@@ -1321,6 +1329,16 @@ export function ProjectWizard({
       </div>
 
       <div className="flex items-center gap-2 text-sm">
+        {project.documentoOrigem && (
+          <button
+            onClick={() => project.documentoOrigem?.caminhoArquivo && abrirDocumentoOrigem(project.documentoOrigem.caminhoArquivo)}
+            disabled={!project.documentoOrigem.caminhoArquivo}
+            title={project.documentoOrigem.caminhoArquivo ? "Abrir o documento original no aplicativo padrão" : "Documento original não foi salvo no disco"}
+            className="rounded border border-[color:var(--sm-border)] px-2 py-1 text-xs hover:border-[color:var(--sm-accent)] disabled:opacity-40"
+          >
+            📄 {project.documentoOrigem.nomeArquivo}
+          </button>
+        )}
         {bloqueios > 0 && <Badge severidade="bloqueio" />}
         {bloqueios > 0 && <span>{bloqueios} bloqueio{bloqueios > 1 ? "s" : ""}</span>}
         {atencoes > 0 && <Badge severidade="atencao" />}
@@ -1358,6 +1376,8 @@ export function ProjectWizard({
           Próximo (Alt+→) →
         </button>
       </div>
+
+    </div>
 
       {copilotoAberto && (
         <CopilotoChat

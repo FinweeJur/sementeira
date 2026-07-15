@@ -9,6 +9,7 @@ import { MapaGeografico } from "../components/mapa/MapaGeografico";
 import { derivarConexoes } from "../lib/mapa-estagios";
 import { Section } from "../components/Section";
 import { Field, inputClass } from "../components/Field";
+import { useTasks } from "../lib/task-context";
 
 export function Ecossistema({
   projects,
@@ -30,6 +31,7 @@ export function Ecossistema({
   const [progressoLapidacao, setProgressoLapidacao] = useState<string | null>(null);
   const [lapidacao, setLapidacao] = useState<ResultadoLapidacaoEcossistema | null>(null);
   const [sugestoesAplicadas, setSugestoesAplicadas] = useState<Set<string>>(new Set());
+  const { registrar, atualizar, concluir, falhar } = useTasks();
 
   const saldos = useMemo(() => calcularSaldosRealistas(projects), [projects]);
   const fundo = useMemo(() => simularFundoRotativo(projects, percentual), [projects, percentual]);
@@ -59,29 +61,40 @@ export function Ecossistema({
   async function analisar() {
     setAnalisando(true);
     setErroAnalise(null);
+    const taskId = registrar("analise-ecossistema", "Analisando ecossistema com IA...");
     const resultado = await analisarEcossistemaComIA(projects);
     setAnalisando(false);
     if (!resultado.ok || !resultado.dado) {
-      setErroAnalise(resultado.erro ?? "Não foi possível analisar.");
+      const erro = resultado.erro ?? "Não foi possível analisar.";
+      setErroAnalise(erro);
+      falhar(taskId, erro);
       return;
     }
     setAnalise(resultado.dado);
     salvarAnaliseEcossistema(resultado.dado);
+    concluir(taskId);
   }
 
   async function lapidar() {
     setLapidando(true);
     setLapidacao(null);
     setErroAnalise(null);
-    const resultado = await lapidarEcossistema(projects, analise, (etapa) => setProgressoLapidacao(ETAPAS_PORTFOLIO_ROTULO[etapa]));
+    const taskId = registrar("lapidacao-ecossistema", "Lapidando ecossistema...");
+    const resultado = await lapidarEcossistema(projects, analise, (etapa) => {
+      setProgressoLapidacao(ETAPAS_PORTFOLIO_ROTULO[etapa]);
+      atualizar(taskId, { progresso: { etapaAtual: ETAPAS_PORTFOLIO_ROTULO[etapa] } });
+    });
     setLapidando(false);
     setProgressoLapidacao(null);
     if (!resultado.ok) {
-      setErroAnalise(resultado.erro ?? "Não foi possível lapidar.");
+      const erro = resultado.erro ?? "Não foi possível lapidar.";
+      setErroAnalise(erro);
+      falhar(taskId, erro);
       return;
     }
     setLapidacao(resultado);
     setSugestoesAplicadas(new Set());
+    concluir(taskId);
   }
 
   function aplicarAnaliseLapidada() {

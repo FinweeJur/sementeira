@@ -221,6 +221,13 @@ export interface Project {
   dataInicioReal?: string;
   /** Últimas versões anteriores (máx. 8, mais antiga sai primeiro) — permite reverter uma lapidação aplicada. */
   historicoVersoes?: VersaoSnapshot[];
+  /** Documento original (PDF/DOCX) usado para criar/importar este projeto — guardado para consulta posterior. O texto extraído alimenta o preview/IA; o caminho aponta pro binário no disco (se salvo). */
+  documentoOrigem?: {
+    nomeArquivo: string;
+    textoExtraido: string;
+    anexadoEm: string;
+    caminhoArquivo?: string;
+  };
   criadoEm: string;
   atualizadoEm: string;
 }

@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Sementeira — Apresentação</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  :root {
+    --c-bg: #0f1410;
+    --c-panel: #171d17;
+    --c-border: #2a332a;
+    --c-text: #e9efe6;
+    --c-dim: #9fae9b;
+    --c-accent: #6fae55;
+    --c-green: #4caf50;
+    --c-yellow: #d4a017;
+    --c-red: #d1453b;
+  }
+
+  @page { size: 1280px 720px; margin: 0; }
+  html, body {
+    margin: 0; padding: 0; background: var(--c-bg);
+    font-family: 'Inter', system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--c-text);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .slide {
+    width: 1280px; height: 720px;
+    padding: 64px 80px;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    break-after: page;
+    page-break-after: always;
+  }
+  .slide:last-child { break-after: auto; page-break-after: auto; }
+
+  .slide-num {
+    position: absolute; bottom: 28px; right: 40px;
+    font-size: 13px; color: var(--c-dim); opacity: 0.5;
+    font-weight: 500; letter-spacing: 1px;
+  }
+
+  /* Cover / closing */
+  .cover {
+    justify-content: center; align-items: center; text-align: center;
+    background: radial-gradient(ellipse at 50% 40%, #1a2a1a 0%, var(--c-bg) 70%);
+  }
+  .cover .sprout { font-size: 96px; line-height: 1; margin-bottom: 24px; }
+  .cover h1 { font-size: 72px; font-weight: 900; margin: 0 0 16px; letter-spacing: -2px; }
+  .cover .subtitle { font-size: 28px; color: var(--c-accent); font-weight: 500; max-width: 880px; line-height: 1.4; margin: 0 auto 32px; }
+  .cover .meta { font-size: 18px; color: var(--c-dim); line-height: 1.8; }
+
+  /* Section headers */
+  .kicker {
+    font-size: 14px; font-weight: 700; color: var(--c-accent);
+    text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;
+  }
+  h2 {
+    font-size: 46px; font-weight: 800; margin: 0 0 28px;
+    letter-spacing: -0.5px; line-height: 1.15;
+  }
+  h2 .accent { color: var(--c-accent); }
+  .body-text { font-size: 22px; line-height: 1.7; color: var(--c-text); }
+  .body-text strong { color: var(--c-accent); font-weight: 600; }
+  .body-text.dim { color: var(--c-dim); }
+
+  .quote {
+    border-left: 4px solid var(--c-accent);
+    padding: 12px 0 12px 28px; margin: 24px 0;
+    font-size: 24px; line-height: 1.55; color: var(--c-text);
+    font-style: italic; font-weight: 500;
+  }
+
+  /* Example box — história concreta */
+  .example {
+    background: var(--c-panel); border: 1px solid var(--c-border);
+    border-radius: 12px; padding: 24px 28px; margin: 20px 0;
+  }
+  .example .label {
+    font-size: 13px; font-weight: 700; color: var(--c-yellow);
+    text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px;
+  }
+  .example p { font-size: 21px; line-height: 1.6; margin: 0; }
+  .example p strong { color: var(--c-accent); }
+
+  /* Step cards */
+  .steps { display: flex; flex-direction: column; gap: 16px; }
+  .step {
+    display: flex; gap: 18px; align-items: flex-start;
+    background: var(--c-panel); border: 1px solid var(--c-border);
+    border-radius: 10px; padding: 18px 22px;
+  }
+  .step-num {
+    flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%;
+    background: var(--c-accent); color: var(--c-bg);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 800;
+  }
+  .step-body { font-size: 20px; line-height: 1.5; }
+  .step-body strong { color: var(--c-accent); display: block; margin-bottom: 3px; font-size: 21px; }
+  .step-body .detail { color: var(--c-dim); font-size: 17px; margin-top: 4px; }
+
+  /* Badges */
+  .badges { display: flex; gap: 14px; margin-top: 16px; flex-wrap: wrap; }
+  .badge {
+    padding: 10px 18px; border-radius: 8px; font-size: 18px; font-weight: 600;
+    border: 1px solid var(--c-border);
+  }
+  .badge.green { background: rgba(76,175,80,0.15); border-color: var(--c-green); color: var(--c-green); }
+  .badge.yellow { background: rgba(212,160,23,0.15); border-color: var(--c-yellow); color: var(--c-yellow); }
+  .badge.red { background: rgba(209,69,59,0.15); border-color: var(--c-red); color: var(--c-red); }
+
+  /* Feature grid */
+  .features { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 8px; }
+  .feat {
+    background: var(--c-panel); border: 1px solid var(--c-border);
+    border-radius: 12px; padding: 22px;
+  }
+  .feat .icon { font-size: 34px; margin-bottom: 8px; }
+  .feat h3 { font-size: 21px; font-weight: 700; margin: 0 0 8px; }
+  .feat p { font-size: 17px; line-height: 1.5; color: var(--c-dim); margin: 0; }
+
+  /* X-list */
+  .x-list { list-style: none; padding: 0; margin: 0; }
+  .x-list li { font-size: 22px; line-height: 2; padding-left: 8px; }
+  .x-list li .no { color: var(--c-red); font-weight: 700; margin-right: 10px; }
+
+  /* Closing */
+  .closing { justify-content: center; align-items: center; text-align: center;
+    background: radial-gradient(ellipse at 50% 50%, #1a2a1a 0%, var(--c-bg) 70%); }
+  .closing .big-quote { font-size: 32px; line-height: 1.5; max-width: 920px; margin: 0 auto 48px; font-weight: 400; font-style: italic; color: var(--c-text); }
+  .closing .big-quote .hl { color: var(--c-accent); font-style: normal; font-weight: 600; }
+  .closing .sprout { font-size: 56px; }
+  .closing .tag { font-size: 34px; font-weight: 800; color: var(--c-accent); margin-top: 12px; }
+  .closing .tag-sub { font-size: 22px; color: var(--c-dim); margin-top: 8px; }
+
+  .accent-dots { position: absolute; top: 64px; left: 80px; display: flex; gap: 6px; }
+  .accent-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--c-accent); opacity: 0.6; }
+  .accent-dots span:nth-child(2) { opacity: 0.35; }
+  .accent-dots span:nth-child(3) { opacity: 0.15; }
+</style>
+</head>
+<body>
+
+<!-- SLIDE 1: COVER -->
+<div class="slide cover">
+  <div class="sprout">🌱</div>
+  <h1>Sementeira</h1>
+  <p class="subtitle">Da ideia ao projeto de reparação — uma ferramenta que ajuda a comunidade a chegar preparada.</p>
+  <p class="meta">
+    Programa de computador · funciona sem internet<br>
+    Para pessoas atingidas pelo rompimento da barragem de Brumadinho
+  </p>
+  <div class="slide-num">01</div>
+</div>
+
+<!-- SLIDE 2: O PROBLEMA (empatia, linguagem da comunidade) -->
+<div class="slide">
+  <div class="accent-dots"><span></span><span></span><span></span></div>
+  <div class="kicker">O que muita gente sente</div>
+  <h2>"Eu tenho a ideia, <span class="accent">mas não sei por onde começar."</span></h2>
+  <p class="body-text">
+    A comunidade sabe o que precisa. <strong>Horta, padaria, cozinha, galpão de reciclagem</strong> — a ideia já está lá.
+    Mas colocar no papel, no formato que o acordo exige, com orçamento, sustentabilidade e todas as regras... é outra história.
+  </p>
+  <div class="example">
+    <div class="label">Situação comum</div>
+    <p>"A gente queria montar uma <strong>cozinha comunitária</strong> pra gerar renda pras mulheres. Mas na hora de escrever o projeto, não sabíamos o que podia ou não podia, quanto pedir, como mostrar que ia se sustentar. O projeto ficou parado."</p>
+  </div>
+  <div class="quote">
+    A Sementeira existe pra encurtar esse caminho — do "eu quero" até o projeto pronto.
+  </div>
+  <div class="slide-num">02</div>
+</div>
+
+<!-- SLIDE 3: COMO FUNCILa (passo a passo com exemplo concreto) -->
+<div class="slide">
+  <div class="accent-dots"><span></span><span></span><span></span></div>
+  <div class="kicker">Como funciona</div>
+  <h2>Em <span class="accent">3 passos simples</span></h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>Você conta a ideia</strong>
+        Escreve do seu jeito: "quero uma horta comunitária pras famílias do bairro".
+        <div class="detail">O programa sugere qual dano ela ajuda a reparar e qual tipo de projeto é mais parecido.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>A inteligência artificial preenche o projeto pra você</strong>
+        Objetivo, justificativa, metas, orçamento, equipe — tudo no formato certo, pronto pra revisar.
+        <div class="detail">Você muda o que quiser. Nada é definitivo sem o seu OK.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>O programa avisa o que pode e o que não pode</strong>
+        E simula se o projeto vai se sustentar sozinho depois que o dinheiro acabar.
+        <div class="detail">Depois é só exportar pronto (PDF, Word ou Excel) e levar pra Governança.</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">03</div>
+</div>
+
+<!-- SLIDE 4: EXEMPLO CONCRETO (a história da Dona Maria) -->
+<div class="slide">
+  <div class="accent-dots"><span></span><span></span><span></span></div>
+  <div class="kicker">Exemplo real de uso</div>
+  <h2>A horta <span class="accent">da Dona Maria</span></h2>
+  <div class="example" style="margin-top: 0; padding: 14px 20px;">
+    <div class="label" style="margin-bottom: 6px;">O que ela fez</div>
+    <p style="font-size: 18px;">Maria digitou: <strong>"quero uma horta onde as famílias possam plantar e vender o excedente, pras mulheres terem renda"</strong>.</p>
+  </div>
+  <div class="steps" style="margin-top: 12px; gap: 10px;">
+    <div class="step" style="padding: 12px 18px;">
+      <div class="step-body" style="font-size: 18px;">
+        <strong style="font-size: 19px;">🪄 O programa gerou tudo:</strong> vinculou ao dano "perda de renda", escolheu "Horta Comunitária", preencheu objetivo, metas, orçamento e equipe de 3 pessoas.
+      </div>
+    </div>
+    <div class="step" style="padding: 12px 18px;">
+      <div class="step-body" style="font-size: 18px;">
+        <strong style="font-size: 19px;">🛡 O programa avisou:</strong> "pagar alguém da equipe por tempo indeterminado sem fonte de renda é <strong>proibido</strong>." → Maria ajustou pra 6 meses.
+      </div>
+    </div>
+    <div class="step" style="padding: 12px 18px;">
+      <div class="step-body" style="font-size: 18px;">
+        <strong style="font-size: 19px;">💰 O simulador mostrou:</strong> vendendo R$ 2.000/mês de excedente, a horta se sustenta depois. Projeto ficou <strong>verde</strong> — pronto.
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">04</div>
+</div>
+
+<!-- SLIDE 5: O QUE TEM DENTRO (ferramentas, sem jargão) -->
+<div class="slide">
+  <div class="accent-dots"><span></span><span></span><span></span></div>
+  <div class="kicker">O que tem dentro</div>
+  <h2 style="margin-bottom: 20px;">Ferramentas <span class="accent">disponíveis hoje</span></h2>
+  <div class="features" style="gap: 14px;">
+    <div class="feat" style="padding: 16px 18px;">
+      <div class="icon" style="font-size: 28px; margin-bottom: 4px;">🤖</div>
+      <h3 style="font-size: 19px; margin-bottom: 4px;">Copiloto de IA</h3>
+      <p style="font-size: 15px;">Conversa com você, ajuda a pensar e escreve o projeto. DeepSeek, Maritaca ou no próprio PC (sem internet).</p>
+    </div>
+    <div class="feat" style="padding: 16px 18px;">
+      <div class="icon" style="font-size: 28px; margin-bottom: 4px;">🛡</div>
+      <h3 style="font-size: 19px; margin-bottom: 4px;">Aviso de proibições</h3>
+      <p style="font-size: 15px;">Sabe as regras do acordo e avisa na hora o que não pode — antes de você terminar e descobrir depois.</p>
+    </div>
+    <div class="feat" style="padding: 16px 18px;">
+      <div class="icon" style="font-size: 28px; margin-bottom: 4px;">💰</div>
+      <h3 style="font-size: 19px; margin-bottom: 4px;">Simulador "e depois?"</h3>
+      <p style="font-size: 15px;">Mostra se o projeto se paga sozinho quando o dinheiro acabar. Três cenários: otimista, realista, pessimista.</p>
+    </div>
+    <div class="feat" style="padding: 16px 18px;">
+      <div class="icon" style="font-size: 28px; margin-bottom: 4px;">🔁</div>
+      <h3 style="font-size: 19px; margin-bottom: 4px;">Lapidação com IA</h3>
+      <p style="font-size: 15px;">Seis especialistas virtuais revisam e melhoram o projeto. Você aprova cada mudança.</p>
+    </div>
+    <div class="feat" style="padding: 16px 18px;">
+      <div class="icon" style="font-size: 28px; margin-bottom: 4px;">🌐</div>
+      <h3 style="font-size: 19px; margin-bottom: 4px;">Mapa dos projetos</h3>
+      <p style="font-size: 15px;">Todos os projetos da região num mapa. Mostra quem fornece o quê pra quem — economia circular.</p>
+    </div>
+    <div class="feat" style="padding: 16px 18px;">
+      <div class="icon" style="font-size: 28px; margin-bottom: 4px;">📄</div>
+      <h3 style="font-size: 19px; margin-bottom: 4px;">Importar e exportar</h3>
+      <p style="font-size: 15px;">Tem projeto em PDF ou Word? Importa e preenche. Exporta o final pronto pra entregar.</p>
+    </div>
+  </div>
+  <div class="slide-num">05</div>
+</div>
+
+<!-- SLIDE 6: O QUE NÃO É (limites honestos) -->
+<div class="slide">
+  <div class="accent-dots"><span></span><span></span><span></span></div>
+  <div class="kicker">Transparência</div>
+  <h2>O que a Sementeira <span class="accent">não faz</span></h2>
+  <p class="body-text dim" style="margin-bottom: 24px;">É importante ser honesto sobre os limites:</p>
+  <ul class="x-list">
+    <li><span class="no">✕</span> Não substitui a assembleia, a Comissão de Atingidos ou a Governança Popular</li>
+    <li><span class="no">✕</span> Não é um app de denúncia ou de convocar atos — é uma ferramenta de trabalho</li>
+    <li><span class="no">✕</span> Não decide nada sozinha — toda sugestão da IA é revisável por você</li>
+    <li><span class="no">✕</span> Não funciona no celular (ainda) — é um programa de computador</li>
+  </ul>
+  <div class="quote" style="margin-top: 28px;">
+    A Sementeira é uma ferramenta a mais na caixa de ferramentas da organização popular — não uma substituta dela.
+  </div>
+  <div class="slide-num">06</div>
+</div>
+
+<!-- SLIDE 7: PRIVACIDADE (confiança para público cético) -->
+<div class="slide">
+  <div class="accent-dots"><span></span><span></span><span></span></div>
+  <div class="kicker">Seus dados são seus</div>
+  <h2>Funciona no <span class="accent">seu computador</span></h2>
+  <p class="body-text">
+    Tudo o que você escreve fica <strong>no seu computador</strong>. Nada é mandado pra internet sem você querer.
+  </p>
+  <div class="features" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 24px;">
+    <div class="feat">
+      <div class="icon">🔒</div>
+      <h3 style="font-size: 19px;">Dados locais</h3>
+      <p>Seus projetos não saem do seu computador até você exportar e decidir compartilhar.</p>
+    </div>
+    <div class="feat">
+      <div class="icon">📡</div>
+      <h3 style="font-size: 19px;">Sem internet</h3>
+      <p>Funciona offline. Só precisa de internet se quiser usar a IA de nuvem ou pesquisar preços.</p>
+    </div>
+    <div class="feat">
+      <div class="icon">🏠</div>
+      <h3 style="font-size: 19px;">IA no seu PC</h3>
+      <p>Dá pra rodar a inteligência artificial no próprio computador (Ollama) — privado e sem custo.</p>
+    </div>
+  </div>
+  <div class="quote" style="margin-top: 32px;">
+    Nasce da luta do MAB pela reparação integral depois de Brumadinho.
+  </div>
+  <div class="slide-num">07</div>
+</div>
+
+<!-- SLIDE 8: FECHAMENTO -->
+<div class="slide closing">
+  <div class="big-quote">
+    "A luta é por <span class="hl">reparação integral</span>.<br>A Sementeira ajuda a escrever, em linguagem que o acordo entende,<br><span class="hl">o que a comunidade já sabe que precisa</span>."
+  </div>
+  <div class="sprout">🌱</div>
+  <div class="tag">Sementeira</div>
+  <div class="tag-sub">Da ideia à reparação.</div>
+  <div class="slide-num">08</div>
+</div>
+
+</body>
+</html>

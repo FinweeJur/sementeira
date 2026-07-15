@@ -24,6 +24,7 @@ function migrarProjeto(project: Project): Project {
     indicadores: project.indicadores ?? [],
     objetivosEspecificos: project.objetivosEspecificos ?? [],
     boasPraticas: project.boasPraticas ?? [],
+    documentoOrigem: project.documentoOrigem ?? undefined,
   };
 }
 
