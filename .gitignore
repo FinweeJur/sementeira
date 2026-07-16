@@ -5,3 +5,4 @@ build/
 release/
 *.log
 .DS_Store
+.zcode/
