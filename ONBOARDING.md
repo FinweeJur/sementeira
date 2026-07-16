@@ -161,7 +161,7 @@ electron/
 ## 10. Não-objetivos (importante — evita reescrever)
 
 - **Não** é app de mobilização/denúncia/convocação de atos (ver
-  `marketing/sementeira-apresentacao.md`, que corrige uma versão anterior fantasiosa).
+  `docs/sementeira-apresentacao.md`, que corrige uma versão anterior fantasiosa).
 - **Não** substitui Governança Popular, Comissões de Atingidos ou assembleias.
 - **Não** tem versão mobile nem link público ainda.
 - **Não** decide nada sozinho: toda sugestão de IA é revisável; o motor determinístico é a lei.
