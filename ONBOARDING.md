@@ -13,10 +13,11 @@ barragem de Brumadinho (bacia do Paraopeba) a transformar uma ideia em um **proj
 completo do Anexo I.1** do acordo de reparação — com motor de conformidade determinístico e
 simulador de sustentabilidade. **Não é app de mobilização/popular** (ver §10).
 
-- **Repo**: `FinweeJur/sementeira` — **PRIVADO**, branch default `master`
+- **Repo**: `FinweeJur/sementeira` — **público** (código visível, mas licença proprietária —
+  ver abaixo), branch default `master`
 - **Versão atual**: `0.1.0` (tag `v0.1.0` existe; **sem release** automática no GitHub — o workflow
   `release.yml` só dispara em *novas* tags `v*`, e esta tag é anterior ao workflow)
-- **Licença**: © 2026 Artur Colito (todos os direitos reservados)
+- **Licença**: © 2026 Artur Colito (todos os direitos reservados — repo público NÃO é licença aberta)
 
 ## 2. Stack (essencial)
 
@@ -190,7 +191,7 @@ electron/
 - Último commit funcional: `8ee2bda` (`.opencode/opencode.json`). Antes dele: comparação de
   projetos lado a lado, CI/CD, README, objetivos específicos + boas práticas.
 - **Node não está no PATH do sistema** neste ambiente; há um Node v22.23.1 em
-  `C:\Users\teste\AppData\Local\hermes\node\node.exe` (com `npm` 10.9.8 via `node_modules/npm`).
+  `C:\Users\[USER]\AppData\Local\hermes\node\node.exe` (com `npm` 10.9.8 via `node_modules/npm`).
 
 ## 13. Próximos passos plausíveis (não planejados, só observados)
 
