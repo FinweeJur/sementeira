@@ -11,15 +11,16 @@ import {
 import { carregarConfigComparacao, nomeProvedor, configuracaoLLMPronta } from "../lib/providers";
 import { useTasks } from "../lib/task-context";
 import { Badge } from "./Badge";
+import { PenLine, Wallet, Search, AlertTriangle, Lightbulb, Puzzle, Square, Map, Scale, Users, Brain, Check, RefreshCw, type LucideIcon } from "lucide-react";
 
 const ETAPAS_ORDEM: EtapaLapidacao[] = ["escritor", "orcamentista", "critico", "riscos", "sugestor", "compilador"];
-const ETAPAS_ICONE: Record<EtapaLapidacao, string> = {
-  escritor: "✍",
-  orcamentista: "💰",
-  critico: "🔎",
-  riscos: "⚠️",
-  sugestor: "💡",
-  compilador: "🧩",
+const ETAPAS_ICONE: Record<EtapaLapidacao, LucideIcon> = {
+  escritor: PenLine,
+  orcamentista: Wallet,
+  critico: Search,
+  riscos: AlertTriangle,
+  sugestor: Lightbulb,
+  compilador: Puzzle,
 };
 
 /** Barra de estágio ao vivo, no espírito do indicador de streaming do Hermes/Claude Code — mostra qual agente está rodando agora e permite parar a qualquer momento. */
@@ -28,15 +29,25 @@ function BarraDeEstagio({ volta, totalVoltas, etapaAtual, segundos, onParar }: {
   return (
     <div className="space-y-2 rounded border border-[color:var(--sm-accent)]/40 bg-[color:var(--sm-accent)]/5 p-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium">
-          Volta {volta}/{totalVoltas} {etapaAtual && `— ${ETAPAS_ICONE[etapaAtual]} ${ETAPAS_ROTULO[etapaAtual]}`}
+        <p className="flex items-center gap-1.5 text-sm font-medium">
+          Volta {volta}/{totalVoltas}
+          {etapaAtual && (
+            <>
+              {(() => {
+                const Icone = ETAPAS_ICONE[etapaAtual];
+                return <Icone size={14} strokeWidth={2} />;
+              })()}
+              — {ETAPAS_ROTULO[etapaAtual]}
+            </>
+          )}
         </p>
         <button
           onClick={onParar}
           title="Parar a lapidação agora"
           className="flex items-center gap-1 rounded border border-[color:var(--sm-red)] bg-[color:var(--sm-red)]/10 px-2 py-1 text-xs font-medium text-[color:var(--sm-red)] hover:bg-[color:var(--sm-red)]/20"
         >
-          ⏹ Parar
+          <Square size={12} strokeWidth={2} fill="currentColor" />
+          Parar
         </button>
       </div>
       <div className="flex gap-1">
@@ -182,7 +193,10 @@ export function LapidacaoPanel({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="max-h-[85vh] w-full max-w-lg space-y-3 overflow-y-auto rounded-lg border border-[color:var(--sm-border)] bg-[color:var(--sm-panel)] p-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold">🔁 Ciclo de Lapidação</h2>
+          <h2 className="flex items-center gap-1.5 text-base font-semibold">
+            <RefreshCw size={16} strokeWidth={2} />
+            Ciclo de Lapidação
+          </h2>
           <button onClick={pedirMotivoOuFechar} className="text-sm text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]">
             fechar
           </button>
@@ -299,17 +313,31 @@ export function LapidacaoPanel({
                   {v.consideracoes && (v.consideracoes.juridica.length + v.consideracoes.sociologica.length + v.consideracoes.psicologica.length > 0) && (
                     <div className="mt-1 space-y-1 text-xs">
                       {v.consideracoes.juridica.length > 0 && (
-                        <p>⚖️ <strong>Jurídico-fundiário:</strong> {v.consideracoes.juridica.join(" ")}</p>
+                        <p className="flex items-start gap-1.5">
+                          <Scale size={12} strokeWidth={2} className="mt-0.5 shrink-0" />
+                          <span><strong>Jurídico-fundiário:</strong> {v.consideracoes.juridica.join(" ")}</span>
+                        </p>
                       )}
                       {v.consideracoes.sociologica.length > 0 && (
-                        <p>👥 <strong>Sociológico:</strong> {v.consideracoes.sociologica.join(" ")}</p>
+                        <p className="flex items-start gap-1.5">
+                          <Users size={12} strokeWidth={2} className="mt-0.5 shrink-0" />
+                          <span><strong>Sociológico:</strong> {v.consideracoes.sociologica.join(" ")}</span>
+                        </p>
                       )}
                       {v.consideracoes.psicologica.length > 0 && (
-                        <p>🧠 <strong>Psicológico:</strong> {v.consideracoes.psicologica.join(" ")}</p>
+                        <p className="flex items-start gap-1.5">
+                          <Brain size={12} strokeWidth={2} className="mt-0.5 shrink-0" />
+                          <span><strong>Psicológico:</strong> {v.consideracoes.psicologica.join(" ")}</span>
+                        </p>
                       )}
                     </div>
                   )}
-                  {v.introduziuBloqueio && <p className="text-xs text-[color:var(--sm-red)]">⚠ Esta versão introduziu um bloqueio novo.</p>}
+                  {v.introduziuBloqueio && (
+                    <p className="flex items-center gap-1.5 text-xs text-[color:var(--sm-red)]">
+                      <AlertTriangle size={12} strokeWidth={2} />
+                      Esta versão introduziu um bloqueio novo.
+                    </p>
+                  )}
                   <ul className="list-disc pl-4 text-sm">
                     {v.changelog.length > 0 ? (
                       v.changelog.map((c, j) => <li key={j}>{c}</li>)
@@ -344,9 +372,10 @@ export function LapidacaoPanel({
                       {i === resultado.voltas.length - 1 && (
                         <button
                           onClick={aplicarComparacao}
-                          className="mt-1 rounded border border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/15 px-3 py-1 text-xs hover:bg-[color:var(--sm-accent)]/25"
+                          className="mt-1 inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/15 px-3 py-1 text-xs hover:bg-[color:var(--sm-accent)]/25"
                         >
-                          ✔ Aplicar esta versão ({v.comparacao.providerNome}) em vez da principal
+                          <Check size={12} strokeWidth={2} />
+                          Aplicar esta versão ({v.comparacao.providerNome}) em vez da principal
                         </button>
                       )}
                     </div>
@@ -371,7 +400,10 @@ export function LapidacaoPanel({
 
             {(ultimaVolta.dados.planoImplementacao?.length ?? 0) > 0 && (
               <div>
-                <p className="text-sm font-medium">🗺 Plano de implementação (pré-produção → operação)</p>
+                <p className="flex items-center gap-1.5 text-sm font-medium">
+                  <Map size={14} strokeWidth={2} />
+                  Plano de implementação (pré-produção → operação)
+                </p>
                 <ol className="list-decimal pl-5 text-sm">
                   {ultimaVolta.dados.planoImplementacao!.map((passo, i) => (
                     <li key={i}>{passo}</li>
@@ -404,8 +436,12 @@ export function LapidacaoPanel({
             )}
 
             <div className="flex gap-2 pt-1">
-              <button onClick={aplicar} className="rounded border border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/20 px-4 py-2 text-sm hover:bg-[color:var(--sm-accent)]/30">
-                ✔ Aplicar versão lapidada
+              <button
+                onClick={aplicar}
+                className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/20 px-4 py-2 text-sm hover:bg-[color:var(--sm-accent)]/30"
+              >
+                <Check size={14} strokeWidth={2} />
+                Aplicar versão lapidada
               </button>
               <button onClick={pedirMotivoOuFechar} className="rounded border border-[color:var(--sm-border)] px-4 py-2 text-sm hover:border-[color:var(--sm-red)]">
                 Descartar

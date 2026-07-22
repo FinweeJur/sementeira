@@ -16,12 +16,12 @@ import arquetipos from "../data/arquetipos.json";
 export type EtapaLapidacao = "escritor" | "orcamentista" | "critico" | "riscos" | "sugestor" | "compilador";
 
 export const ETAPAS_ROTULO: Record<EtapaLapidacao, string> = {
-  escritor: "✍ Escritor melhorando os textos",
-  orcamentista: "💰 Orçamentista revisando o orçamento",
-  critico: "🔍 Crítico-realista atacando o projeto",
-  riscos: "⚠ Analista de riscos completando a matriz",
-  sugestor: "💡 Sugestor propondo melhorias",
-  compilador: "📦 Compilador consolidando a nova versão",
+  escritor: "Escritor melhorando os textos",
+  orcamentista: "Orçamentista revisando o orçamento",
+  critico: "Crítico-realista atacando o projeto",
+  riscos: "Analista de riscos completando a matriz",
+  sugestor: "Sugestor propondo melhorias",
+  compilador: "Compilador consolidando a nova versão",
 };
 
 /** Campos que o loop pode alterar — subconjunto de Project, sempre aplicado com confirmação humana. */

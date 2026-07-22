@@ -1,17 +1,31 @@
 import { useTasks, type Tarefa } from "../lib/task-context";
 import { ThinkingIndicator } from "./ThinkingIndicator";
+import { MessageCircle, Bot, RefreshCw, ShieldCheck, Search, Wand2, Upload, Square, X, Zap, type LucideIcon } from "lucide-react";
+
+const ICONE_TIPO: Record<string, LucideIcon> = {
+  "copiloto-chat": MessageCircle,
+  "agente-portfolio": Bot,
+  "lapidacao-projeto": RefreshCw,
+  "lapidacao-ecossistema": RefreshCw,
+  "revisao-geral": RefreshCw,
+  "revisao-ia": ShieldCheck,
+  "analise-ecossistema": Search,
+  "geracao-rascunho": Wand2,
+  "importar-projeto": Upload,
+  "pesquisa-web": Search,
+};
 
 const ROTULO_TIPO: Record<string, string> = {
-  "copiloto-chat": "💬 Copiloto",
-  "agente-portfolio": "🤖 Copiloto de projetos",
-  "lapidacao-projeto": "🔁 Lapidação",
-  "lapidacao-ecossistema": "🔁 Lapidação do ecossistema",
-  "revisao-geral": "🔁 Revisão geral",
-  "revisao-ia": "🛡 Revisão por IA",
-  "analise-ecossistema": "🔎 Análise do ecossistema",
-  "geracao-rascunho": "🪄 Geração de rascunho",
-  "importar-projeto": "📥 Importação de projeto",
-  "pesquisa-web": "🔎 Pesquisa web",
+  "copiloto-chat": "Copiloto",
+  "agente-portfolio": "Copiloto de projetos",
+  "lapidacao-projeto": "Lapidação",
+  "lapidacao-ecossistema": "Lapidação do ecossistema",
+  "revisao-geral": "Revisão geral",
+  "revisao-ia": "Revisão por IA",
+  "analise-ecossistema": "Análise do ecossistema",
+  "geracao-rascunho": "Geração de rascunho",
+  "importar-projeto": "Importação de projeto",
+  "pesquisa-web": "Pesquisa web",
 };
 
 function ItemTarefa({
@@ -28,6 +42,7 @@ function ItemTarefa({
   onAbrirProjeto?: (id: string) => void;
 }) {
   const rotulo = ROTULO_TIPO[tarefa.tipo] ?? tarefa.tipo;
+  const Icone = ICONE_TIPO[tarefa.tipo];
 
   return (
     <div
@@ -41,7 +56,10 @@ function ItemTarefa({
       onClick={() => onMarcarVista(tarefa.id)}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xs text-[color:var(--sm-text-dim)]">{rotulo}</span>
+        <span className="inline-flex items-center gap-1.5 text-xs text-[color:var(--sm-text-dim)]">
+          {Icone && <Icone size={12} strokeWidth={2} />}
+          {rotulo}
+        </span>
         <div className="flex items-center gap-1">
           {tarefa.status === "rodando" && (
             <button
@@ -49,9 +67,10 @@ function ItemTarefa({
                 e.stopPropagation();
                 onCancelar(tarefa.id);
               }}
-              className="rounded border border-[color:var(--sm-red)] px-1.5 py-0.5 text-xs text-[color:var(--sm-red)] hover:bg-[color:var(--sm-red)]/10"
+              className="inline-flex items-center gap-1 rounded border border-[color:var(--sm-red)] px-1.5 py-0.5 text-xs text-[color:var(--sm-red)] hover:bg-[color:var(--sm-red)]/10"
             >
-              ⏹ Parar
+              <Square size={10} strokeWidth={2} fill="currentColor" />
+              Parar
             </button>
           )}
           {(tarefa.status === "concluida" || tarefa.status === "erro" || tarefa.status === "cancelada") && (
@@ -62,7 +81,7 @@ function ItemTarefa({
               }}
               className="text-xs text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]"
             >
-              ✕
+              <X size={14} strokeWidth={2} />
             </button>
           )}
         </div>
@@ -132,7 +151,10 @@ export function TaskSidebar({
       }}
     >
       <div className="flex items-center justify-between pb-2">
-        <h2 className="text-sm font-semibold">⚡ Tarefas de IA — Esc para fechar</h2>
+        <h2 className="flex items-center gap-1.5 text-sm font-semibold">
+          <Zap size={16} strokeWidth={2} />
+          Tarefas de IA — Esc para fechar
+        </h2>
         <button onClick={onFechar} className="text-xs text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]">
           fechar
         </button>

@@ -13,6 +13,9 @@ import { NavBar } from "./components/NavBar";
 import { TaskProvider } from "./lib/task-context";
 import { TaskIndicator } from "./components/TaskIndicator";
 import { TaskSidebar } from "./components/TaskSidebar";
+import { AgentePortfolioChat } from "./components/AgentePortfolioChat";
+import { RevisaoGeralModal } from "./components/RevisaoGeralModal";
+import { ImportarProjetoModal } from "./components/ImportarProjetoModal";
 import {
   onboardingVisto,
   marcarOnboardingVisto,
@@ -41,6 +44,9 @@ export function App() {
   const [mostrarComparacao, setMostrarComparacao] = useState(false);
   const [mostrarOnboarding, setMostrarOnboarding] = useState(false);
   const [sidebarTarefasAberta, setSidebarTarefasAberta] = useState(false);
+  const [agenteAberto, setAgenteAberto] = useState(false);
+  const [revisaoGeralAberta, setRevisaoGeralAberta] = useState(false);
+  const [importarAberta, setImportarAberta] = useState(false);
   const [fontScale, setFontScale] = useState<FontScale>("normal");
   const [tema, setTema] = useState<Tema>("escuro");
   const [llmConfig, setLlmConfig] = useState<ProviderConfig>(carregarConfigLLM());
@@ -160,11 +166,14 @@ export function App() {
         onRename={handleRename}
         onAtualizarProjeto={handleChange}
         onVerTutorial={() => setMostrarOnboarding(true)}
+        onImportar={() => setImportarAberta(true)}
+        onAbrirComparacao={() => setMostrarComparacao(true)}
         onAbrirEcossistema={() => setMostrarEcossistema(true)}
+        onAbrirCopiloto={() => setAgenteAberto(true)}
+        onAbrirRevisaoGeral={() => setRevisaoGeralAberta(true)}
+        onAbrirBiblioteca={() => setMostrarBiblioteca(true)}
         onAbrirClube={() => setMostrarClube(true)}
         onAbrirVoluntarios={() => setMostrarVoluntarios(true)}
-        onAbrirBiblioteca={() => setMostrarBiblioteca(true)}
-        onAbrirComparacao={() => setMostrarComparacao(true)}
         llmConfig={llmConfig}
         onLlmConfigChange={handleLlmConfigChange}
       />
@@ -173,7 +182,23 @@ export function App() {
 
   return (
     <TaskProvider>
-      <NavBar tema={tema} onTema={handleTema} fontScale={fontScale} onFontScale={handleFontScale} />
+      <NavBar
+        tema={tema}
+        onTema={handleTema}
+        fontScale={fontScale}
+        onFontScale={handleFontScale}
+        temProjeto={projects.length > 0}
+        temMultiplosProjetos={projects.length > 1}
+        onNovoProjeto={() => handleCreate(novoProjetoVazio())}
+        onImportar={() => setImportarAberta(true)}
+        onComparar={() => setMostrarComparacao(true)}
+        onEcossistema={() => setMostrarEcossistema(true)}
+        onCopiloto={() => setAgenteAberto(true)}
+        onRevisaoGeral={() => setRevisaoGeralAberta(true)}
+        onBiblioteca={() => setMostrarBiblioteca(true)}
+        onClube={() => setMostrarClube(true)}
+        onVoluntarios={() => setMostrarVoluntarios(true)}
+      />
       {conteudo}
       <TaskIndicator onAbrir={() => setSidebarTarefasAberta(true)} />
       {sidebarTarefasAberta && (
@@ -183,6 +208,19 @@ export function App() {
             setSidebarTarefasAberta(false);
             setOpenId(id);
           }}
+        />
+      )}
+      {importarAberta && <ImportarProjetoModal onCreate={handleCreate} onFechar={() => setImportarAberta(false)} />}
+      {agenteAberto && (
+        <AgentePortfolioChat projects={projects} onAtualizarProjeto={handleChange} onAbrirProjeto={setOpenId} onClose={() => setAgenteAberto(false)} />
+      )}
+      {revisaoGeralAberta && (
+        <RevisaoGeralModal
+          projects={projects}
+          onAtualizarProjeto={handleChange}
+          onClose={() => setRevisaoGeralAberta(false)}
+          onAbrirEcossistema={() => setMostrarEcossistema(true)}
+          onAbrirClube={() => setMostrarClube(true)}
         />
       )}
     </TaskProvider>

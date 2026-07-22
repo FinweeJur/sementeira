@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from "react";
+import { Sprout, AlertTriangle } from "lucide-react";
 
 interface Props {
   children: ReactNode;
@@ -28,7 +29,10 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.erro) {
       return (
         <div className="mx-auto max-w-lg space-y-4 p-8 text-center">
-          <p className="text-3xl">🌱⚠️</p>
+          <p className="flex items-center justify-center gap-2 text-[color:var(--sm-accent)]">
+            <Sprout size={32} strokeWidth={1.5} />
+            <AlertTriangle size={32} strokeWidth={1.5} className="text-[color:var(--sm-yellow)]" />
+          </p>
           <h1 className="text-lg font-semibold">Algo deu errado nessa tela</h1>
           <p className="text-sm text-[color:var(--sm-text-dim)]">
             Seus projetos não foram perdidos — os dados ficam salvos independente desta tela. Detalhe técnico: {this.state.erro.message}

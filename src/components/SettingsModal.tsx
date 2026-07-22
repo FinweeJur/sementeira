@@ -6,6 +6,7 @@ import { DiretrizesGlobais } from "./DiretrizesGlobais";
 import type { ProviderConfig } from "../lib/providers";
 import { exportarConfiguracoes, importarConfiguracoes } from "../lib/settings-export";
 import { carregarConfigLLM } from "../lib/providers";
+import { Download, Upload } from "lucide-react";
 
 export function SettingsModal({ config, onChange, onFechar }: { config: ProviderConfig; onChange: (c: ProviderConfig) => void; onFechar: () => void }) {
   const [erroImportacao, setErroImportacao] = useState<string | null>(null);
@@ -56,11 +57,16 @@ export function SettingsModal({ config, onChange, onFechar }: { config: Provider
             Baixa um arquivo com as chaves de acesso da IA (e da busca Tavily) e as diretrizes que você anexou — útil pra levar tudo de uma vez pra outro computador, sem digitar tudo de novo.
           </p>
           <div className="flex gap-2">
-            <button onClick={exportarConfiguracoes} className="rounded border border-[color:var(--sm-border)] px-3 py-1.5 text-xs hover:border-[color:var(--sm-accent)]">
-              ⬇ Exportar configurações
+            <button
+              onClick={exportarConfiguracoes}
+              className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-border)] px-3 py-1.5 text-xs hover:border-[color:var(--sm-accent)]"
+            >
+              <Download size={12} strokeWidth={2} />
+              Exportar configurações
             </button>
-            <label className="cursor-pointer rounded border border-[color:var(--sm-border)] px-3 py-1.5 text-xs hover:border-[color:var(--sm-accent)]">
-              ⬆ Importar configurações
+            <label className="inline-flex cursor-pointer items-center gap-1.5 rounded border border-[color:var(--sm-border)] px-3 py-1.5 text-xs hover:border-[color:var(--sm-accent)]">
+              <Upload size={12} strokeWidth={2} />
+              Importar configurações
               <input type="file" accept=".json,application/json" className="hidden" onChange={handleImportar} />
             </label>
           </div>

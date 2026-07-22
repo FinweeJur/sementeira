@@ -5,14 +5,12 @@ import arquetipos from "../data/arquetipos.json";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { SettingsModal } from "../components/SettingsModal";
 import { HistoricoVersoesModal } from "../components/HistoricoVersoesModal";
-import { RevisaoGeralModal } from "../components/RevisaoGeralModal";
-import { AgentePortfolioChat } from "../components/AgentePortfolioChat";
-import { ImportarProjetoModal } from "../components/ImportarProjetoModal";
 import type { ProviderConfig } from "../lib/providers";
 import { PROVEDORES, configuracaoLLMPronta } from "../lib/providers";
 import { avaliarConformidade } from "../lib/compliance-engine";
 import { Tooltip } from "../components/Tooltip";
 import { CabecalhoSecao } from "../components/CabecalhoSecao";
+import { Settings, CheckCircle2, Square, Sprout, Pencil, Upload, Scale, Globe, Bot, RefreshCw, BookOpen, Ticket, HeartHandshake } from "lucide-react";
 
 const CHECKLIST_DISPENSADO_KEY = "sementeira-checklist-primeiro-uso-dispensado-v1";
 
@@ -24,11 +22,14 @@ export function ProjectList({
   onRename,
   onAtualizarProjeto,
   onVerTutorial,
+  onImportar,
+  onAbrirComparacao,
   onAbrirEcossistema,
+  onAbrirCopiloto,
+  onAbrirRevisaoGeral,
+  onAbrirBiblioteca,
   onAbrirClube,
   onAbrirVoluntarios,
-  onAbrirBiblioteca,
-  onAbrirComparacao,
   llmConfig,
   onLlmConfigChange,
 }: {
@@ -39,11 +40,14 @@ export function ProjectList({
   onRename: (id: string, novoTitulo: string) => void;
   onAtualizarProjeto: (p: Project) => void;
   onVerTutorial: () => void;
+  onImportar: () => void;
+  onAbrirComparacao: () => void;
   onAbrirEcossistema: () => void;
+  onAbrirCopiloto: () => void;
+  onAbrirRevisaoGeral: () => void;
+  onAbrirBiblioteca: () => void;
   onAbrirClube: () => void;
   onAbrirVoluntarios: () => void;
-  onAbrirBiblioteca: () => void;
-  onAbrirComparacao: () => void;
   llmConfig: ProviderConfig;
   onLlmConfigChange: (c: ProviderConfig) => void;
 }) {
@@ -52,9 +56,6 @@ export function ProjectList({
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [tituloEmEdicao, setTituloEmEdicao] = useState("");
   const [historicoDeId, setHistoricoDeId] = useState<string | null>(null);
-  const [revisaoGeralAberta, setRevisaoGeralAberta] = useState(false);
-  const [agenteAberto, setAgenteAberto] = useState(false);
-  const [importarAberta, setImportarAberta] = useState(false);
   const [checklistDispensado, setChecklistDispensado] = useState(() => localStorage.getItem(CHECKLIST_DISPENSADO_KEY) === "1");
   const provedorAtual = PROVEDORES.find((p) => p.id === llmConfig.providerId);
 
@@ -93,9 +94,10 @@ export function ProjectList({
           <Tooltip texto="Escolha e configure o provedor de IA (DeepSeek, Maritaca ou Ollama local)" posicao="bottom">
             <button
               onClick={() => setConfigAberta(true)}
-              className="rounded border border-[color:var(--sm-border)] px-2 py-1 text-xs hover:border-[color:var(--sm-accent)]"
+              className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-border)] px-2 py-1 text-xs hover:border-[color:var(--sm-accent)]"
             >
-              ⚙ Modelo: {provedorAtual?.nome ?? "não configurado"}
+              <Settings size={14} strokeWidth={2} />
+              Modelo: {provedorAtual?.nome ?? "não configurado"}
             </button>
           </Tooltip>
         }
@@ -110,58 +112,97 @@ export function ProjectList({
             </button>
           </div>
           <ul className="space-y-1 text-sm">
-            <li>{iaConfigurada ? "✅" : "⬜"} Configurar o modelo de IA (botão ⚙ acima)</li>
-            <li>{temProjeto ? "✅" : "⬜"} Criar ou importar um projeto</li>
-            <li>{temProjetoSemBloqueio ? "✅" : "⬜"} Deixar um projeto sem bloqueios 🔴</li>
+            <li className="flex items-center gap-1.5">
+              {iaConfigurada ? (
+                <CheckCircle2 size={14} strokeWidth={2} className="text-[color:var(--sm-ok-text)]" />
+              ) : (
+                <Square size={14} strokeWidth={2} className="text-[color:var(--sm-text-dim)]" />
+              )}
+              Configurar o modelo de IA (botão "Modelo" na barra superior)
+            </li>
+            <li className="flex items-center gap-1.5">
+              {temProjeto ? (
+                <CheckCircle2 size={14} strokeWidth={2} className="text-[color:var(--sm-ok-text)]" />
+              ) : (
+                <Square size={14} strokeWidth={2} className="text-[color:var(--sm-text-dim)]" />
+              )}
+              Criar ou importar um projeto
+            </li>
+            <li className="flex items-center gap-1.5">
+              {temProjetoSemBloqueio ? (
+                <CheckCircle2 size={14} strokeWidth={2} className="text-[color:var(--sm-ok-text)]" />
+              ) : (
+                <Square size={14} strokeWidth={2} className="text-[color:var(--sm-text-dim)]" />
+              )}
+              Deixar um projeto sem bloqueios
+            </li>
           </ul>
         </div>
       )}
 
-      {/* Hierarquia de 3 níveis: criar (ação principal + caminho alternativo) → analisar o portfólio existente → outros módulos da rede. Cada nível abaixo do primeiro leva um rótulo pra deixar a relação explícita, não só o tamanho do botão. */}
+      {/* Mesmas ações da barra superior, repetidas aqui em destaque — a barra é o acesso permanente em qualquer tela, isto aqui é o acesso facilitado a partir da tela inicial. Hierarquia de 3 níveis: criar → analisar projetos → consultar/rede da comunidade. */}
       <div className="space-y-4">
         <div className="flex flex-wrap items-center gap-3">
           <Tooltip texto="Crie um novo projeto a partir de uma ideia ou importe de um documento" posicao="bottom">
             <button
               onClick={() => onCreate(novoProjetoVazio())}
-              className="rounded-lg border border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)] px-5 py-3 text-sm font-semibold text-[color:var(--sm-bg)]"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)] px-5 py-3 text-sm font-semibold text-[color:var(--sm-bg)]"
             >
-              🌱 Novo projeto
+              <Sprout size={16} strokeWidth={2} />
+              Novo projeto
             </button>
           </Tooltip>
           <Tooltip texto="Importe um projeto já escrito a partir de um PDF ou DOCX — o app lê e preenche os campos" posicao="bottom">
             <button
-              onClick={() => setImportarAberta(true)}
-              className="rounded border border-dashed border-[color:var(--sm-border)] px-3 py-2 text-xs text-[color:var(--sm-text-dim)] hover:border-[color:var(--sm-accent)] hover:text-[color:var(--sm-text)]"
+              onClick={onImportar}
+              className="inline-flex items-center gap-1.5 rounded border border-dashed border-[color:var(--sm-border)] px-3 py-2 text-xs text-[color:var(--sm-text-dim)] hover:border-[color:var(--sm-accent)] hover:text-[color:var(--sm-text)]"
             >
-              ou 📥 importar de PDF/DOCX
+              <Upload size={14} strokeWidth={2} />
+              ou importar de PDF/DOCX
             </button>
           </Tooltip>
         </div>
 
-        {projects.length > 0 && (
+        {temProjeto && (
           <div className="space-y-1.5">
             <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--sm-text-dim)]">Analisar projetos</p>
             <div className="flex flex-wrap gap-2">
               {projects.length > 1 && (
                 <Tooltip texto="Compare até 3 projetos lado a lado para identificar sobreposições e lacunas" posicao="bottom">
-                  <button onClick={onAbrirComparacao} className="rounded border border-[color:var(--sm-border)] px-3 py-2 text-xs hover:border-[color:var(--sm-accent)]">
-                    ⚖️ Comparar
+                  <button
+                    onClick={onAbrirComparacao}
+                    className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-border)] px-3 py-2 text-xs hover:border-[color:var(--sm-accent)]"
+                  >
+                    <Scale size={14} strokeWidth={2} />
+                    Comparar
                   </button>
                 </Tooltip>
               )}
               <Tooltip texto="Mapa da região e como os projetos podem se ajudar — um projeto compra do outro" posicao="bottom">
-                <button onClick={onAbrirEcossistema} className="rounded border border-[color:var(--sm-border)] px-3 py-2 text-xs hover:border-[color:var(--sm-accent)]">
-                  🌐 Ecossistema
+                <button
+                  onClick={onAbrirEcossistema}
+                  className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-border)] px-3 py-2 text-xs hover:border-[color:var(--sm-accent)]"
+                >
+                  <Globe size={14} strokeWidth={2} />
+                  Ecossistema
                 </button>
               </Tooltip>
               <Tooltip texto="Converse por texto para lapidar, exportar ou consultar o status de qualquer projeto" posicao="bottom">
-                <button onClick={() => setAgenteAberto(true)} className="rounded border border-[color:var(--sm-border)] px-3 py-2 text-xs hover:border-[color:var(--sm-accent)]">
-                  🤖 Copiloto de projetos
+                <button
+                  onClick={onAbrirCopiloto}
+                  className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-border)] px-3 py-2 text-xs hover:border-[color:var(--sm-accent)]"
+                >
+                  <Bot size={14} strokeWidth={2} />
+                  Copiloto de projetos
                 </button>
               </Tooltip>
               <Tooltip texto="Roda 1 volta de lapidação nos projetos selecionados + atualiza ecossistema e clube" posicao="bottom">
-                <button onClick={() => setRevisaoGeralAberta(true)} className="rounded border border-[color:var(--sm-border)] px-3 py-2 text-xs hover:border-[color:var(--sm-accent)]">
-                  🔁 Revisão geral
+                <button
+                  onClick={onAbrirRevisaoGeral}
+                  className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-border)] px-3 py-2 text-xs hover:border-[color:var(--sm-accent)]"
+                >
+                  <RefreshCw size={14} strokeWidth={2} />
+                  Revisão geral
                 </button>
               </Tooltip>
             </div>
@@ -172,8 +213,12 @@ export function ProjectList({
           <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--sm-text-dim)]">Consultar</p>
           <div className="flex flex-wrap gap-2">
             <Tooltip texto="Documentos de referência do processo (Proposta, Acordo, Ofícios) e leituras de apoio que você mesmo cadastra" posicao="bottom">
-              <button onClick={onAbrirBiblioteca} className="rounded border border-[color:var(--sm-border)] px-3 py-2 text-xs hover:border-[color:var(--sm-accent)]">
-                📚 Biblioteca
+              <button
+                onClick={onAbrirBiblioteca}
+                className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-border)] px-3 py-2 text-xs hover:border-[color:var(--sm-accent)]"
+              >
+                <BookOpen size={14} strokeWidth={2} />
+                Biblioteca
               </button>
             </Tooltip>
           </div>
@@ -183,13 +228,21 @@ export function ProjectList({
           <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--sm-text-dim)]">Rede da comunidade</p>
           <div className="flex flex-wrap gap-2">
             <Tooltip texto="Programa de pontos e descontos que conecta produtos dos projetos às famílias atingidas" posicao="bottom">
-              <button onClick={onAbrirClube} className="rounded border border-[color:var(--sm-border)] px-3 py-2 text-xs hover:border-[color:var(--sm-accent)]">
-                🎟 Clube de benefícios
+              <button
+                onClick={onAbrirClube}
+                className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-border)] px-3 py-2 text-xs hover:border-[color:var(--sm-accent)]"
+              >
+                <Ticket size={14} strokeWidth={2} />
+                Clube de benefícios
               </button>
             </Tooltip>
             <Tooltip texto="Cadastro de pessoas disponíveis para mutirões, vinculadas aos projetos de interesse" posicao="bottom">
-              <button onClick={onAbrirVoluntarios} className="rounded border border-[color:var(--sm-border)] px-3 py-2 text-xs hover:border-[color:var(--sm-accent)]">
-                🙋 Voluntários
+              <button
+                onClick={onAbrirVoluntarios}
+                className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-border)] px-3 py-2 text-xs hover:border-[color:var(--sm-accent)]"
+              >
+                <HeartHandshake size={14} strokeWidth={2} />
+                Voluntários
               </button>
             </Tooltip>
           </div>
@@ -230,8 +283,13 @@ export function ProjectList({
                   </button>
                 )}
                 {editandoId !== p.id && (
-                  <button onClick={() => iniciarEdicao(p)} className="text-xs text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]" title="Editar título">
-                    ✎ editar
+                  <button
+                    onClick={() => iniciarEdicao(p)}
+                    className="inline-flex items-center gap-1 text-xs text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]"
+                    title="Editar título"
+                  >
+                    <Pencil size={12} strokeWidth={2} />
+                    editar
                   </button>
                 )}
                 <button onClick={() => setParaExcluir(p)} className="text-xs text-[color:var(--sm-red)]">
@@ -243,16 +301,17 @@ export function ProjectList({
         })}
         {projects.length === 0 && (
           <div className="space-y-3 rounded border border-dashed border-[color:var(--sm-border)] p-6 text-center">
-            <p className="text-2xl">🌱</p>
+            <Sprout size={28} strokeWidth={2} className="mx-auto text-[color:var(--sm-accent)]" />
             <p className="text-sm">
               Um projeto aqui é uma ideia da comunidade transformada em proposta completa — com orçamento, plano de sustentabilidade e checagem automática das regras do Anexo I.1.
             </p>
             <div className="flex flex-wrap justify-center gap-2">
               <button
                 onClick={() => onCreate(novoProjetoVazio())}
-                className="rounded border border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/20 px-4 py-2 text-sm font-medium hover:bg-[color:var(--sm-accent)]/30"
+                className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/20 px-4 py-2 text-sm font-medium hover:bg-[color:var(--sm-accent)]/30"
               >
-                🌱 Começar meu primeiro projeto
+                <Sprout size={16} strokeWidth={2} />
+                Começar meu primeiro projeto
               </button>
             </div>
           </div>
@@ -279,23 +338,7 @@ export function ProjectList({
 
       {configAberta && <SettingsModal config={llmConfig} onChange={onLlmConfigChange} onFechar={() => setConfigAberta(false)} />}
 
-      {importarAberta && <ImportarProjetoModal onCreate={onCreate} onFechar={() => setImportarAberta(false)} />}
-
     </div>
-
-      {agenteAberto && (
-        <AgentePortfolioChat projects={projects} onAtualizarProjeto={onAtualizarProjeto} onAbrirProjeto={onOpen} onClose={() => setAgenteAberto(false)} />
-      )}
-
-      {revisaoGeralAberta && (
-        <RevisaoGeralModal
-          projects={projects}
-          onAtualizarProjeto={onAtualizarProjeto}
-          onClose={() => setRevisaoGeralAberta(false)}
-          onAbrirEcossistema={onAbrirEcossistema}
-          onAbrirClube={onAbrirClube}
-        />
-      )}
 
       {historicoDeId &&
         (() => {

@@ -3,6 +3,7 @@ import { novoProjetoVazio, type Project } from "../lib/types";
 import { importarProjetoDeArquivo } from "../lib/importar-projeto";
 import { ThinkingIndicator } from "./ThinkingIndicator";
 import { useTasks } from "../lib/task-context";
+import { Upload, FileText } from "lucide-react";
 
 /**
  * Modal de importação de projeto: o usuário anexa um PDF/DOCX, o app extrai o
@@ -57,7 +58,10 @@ export function ImportarProjetoModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="w-full max-w-md space-y-4 rounded-lg border border-[color:var(--sm-border)] bg-[color:var(--sm-panel)] p-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold">📥 Importar projeto de PDF/DOCX</h2>
+          <h2 className="flex items-center gap-1.5 text-base font-semibold">
+            <Upload size={16} strokeWidth={2} />
+            Importar projeto de PDF/DOCX
+          </h2>
           <button onClick={onFechar} className="text-sm text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]">
             fechar
           </button>
@@ -75,7 +79,7 @@ export function ImportarProjetoModal({
           </div>
         ) : (
           <label className="flex cursor-pointer flex-col items-center gap-2 rounded border border-dashed border-[color:var(--sm-border)] p-6 text-center hover:border-[color:var(--sm-accent)]">
-            <span className="text-3xl">📄</span>
+            <FileText size={32} strokeWidth={1.5} className="text-[color:var(--sm-accent)]" />
             <span className="text-sm font-medium">Clique para escolher um arquivo</span>
             <span className="text-xs text-[color:var(--sm-text-dim)]">PDF (.pdf) ou Word (.docx)</span>
             <input type="file" accept=".pdf,.docx" className="hidden" onChange={handleArquivo} />

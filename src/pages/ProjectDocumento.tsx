@@ -13,6 +13,7 @@ import { mesAtualDoProjeto, orientacaoDoMes } from "../lib/acompanhamento";
 import danos from "../data/danos.json";
 import setores from "../data/setores.json";
 import arquetipos from "../data/arquetipos.json";
+import { FileText, Calendar, Map, ScrollText, BarChart3, Pencil } from "lucide-react";
 
 /**
  * Visão de leitura do projeto inteiro, na mesma ordem da exportação .docx —
@@ -80,8 +81,9 @@ export function ProjectDocumento({
         <button onClick={onFechar} className="text-sm text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]">
           ← Voltar ao wizard
         </button>
-        <h1 className="text-lg font-semibold">
-          📄 Documento completo{(project.versaoLapidacao ?? 0) > 0 && <span className="ml-2 text-sm text-[color:var(--sm-text-dim)]">v{project.versaoLapidacao}</span>}
+        <h1 className="flex items-center gap-2 text-lg font-semibold">
+          <FileText size={18} strokeWidth={2} />
+          Documento completo{(project.versaoLapidacao ?? 0) > 0 && <span className="ml-2 text-sm text-[color:var(--sm-text-dim)]">v{project.versaoLapidacao}</span>}
         </h1>
         <div className="flex gap-2">
           <button onClick={() => exportarProjetoDocx(project)} className="rounded border border-[color:var(--sm-border)] px-3 py-1.5 text-sm hover:border-[color:var(--sm-accent)]">
@@ -105,7 +107,7 @@ export function ProjectDocumento({
         <div className="rounded border border-[color:var(--sm-accent)]/40 bg-[color:var(--sm-accent)]/5 p-3 text-sm">
           {project.dataInicioReal ? (
             <>
-              📅 <strong>Mês {mesAtual} de implantação</strong>
+              <Calendar size={14} strokeWidth={2} className="mr-1 inline" /> <strong>Mês {mesAtual} de implantação</strong>
               {atividadesDoMes.length > 0 ? (
                 <ul className="mt-1 list-disc pl-5 text-xs text-[color:var(--sm-text-dim)]">
                   {atividadesDoMes.map((a, i) => (
@@ -328,7 +330,14 @@ export function ProjectDocumento({
       )}
 
       {(project.planoImplementacao?.length ?? 0) > 0 && (
-        <Bloco titulo="🗺 Plano de implementação (pré-produção → operação)">
+        <Bloco
+          titulo={
+            <>
+              <Map size={14} strokeWidth={2} />
+              Plano de implementação (pré-produção → operação)
+            </>
+          }
+        >
           <ol className="list-decimal pl-5 text-sm">
             {project.planoImplementacao!.map((passo, i) => (
               <li key={i}>{passo}</li>
@@ -337,7 +346,14 @@ export function ProjectDocumento({
         </Bloco>
       )}
 
-      <Bloco titulo="📜 Documentos de formalização (associação/cooperativa)">
+      <Bloco
+        titulo={
+          <>
+            <ScrollText size={14} strokeWidth={2} />
+            Documentos de formalização (associação/cooperativa)
+          </>
+        }
+      >
         <p className="text-xs text-[color:var(--sm-text-dim)]">
           Minutas parametrizadas com os dados deste projeto — exigem revisão por advogado(a)/contador(a) antes de assinatura ou registro em cartório.
         </p>
@@ -405,12 +421,18 @@ export function ProjectDocumento({
         )}
 
         <div className="space-y-1 pt-2">
-          <p className="text-sm font-medium">📅 Cronograma de implantação (por categoria de orçamento)</p>
+          <p className="flex items-center gap-1.5 text-sm font-medium">
+            <Calendar size={14} strokeWidth={2} />
+            Cronograma de implantação (por categoria de orçamento)
+          </p>
           <CronogramaGantt project={project} />
         </div>
 
         <div className="space-y-1 pt-2">
-          <p className="text-sm font-medium">📊 Fluxo de caixa estimado (12 meses)</p>
+          <p className="flex items-center gap-1.5 text-sm font-medium">
+            <BarChart3 size={14} strokeWidth={2} />
+            Fluxo de caixa estimado (12 meses)
+          </p>
           <FluxoCaixaChart project={project} />
         </div>
       </Bloco>
@@ -477,14 +499,15 @@ export function ProjectDocumento({
   );
 }
 
-function Bloco({ titulo, onEditar, children }: { titulo: string; onEditar?: () => void; children: React.ReactNode }) {
+function Bloco({ titulo, onEditar, children }: { titulo: React.ReactNode; onEditar?: () => void; children: React.ReactNode }) {
   return (
     <section className="space-y-2 rounded border border-[color:var(--sm-border)] p-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-[color:var(--sm-accent)]">{titulo}</h2>
+        <h2 className="flex items-center gap-1.5 text-sm font-semibold text-[color:var(--sm-accent)]">{titulo}</h2>
         {onEditar && (
-          <button onClick={onEditar} className="no-print text-xs text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-accent)]">
-            ✎ editar
+          <button onClick={onEditar} className="no-print inline-flex items-center gap-1 text-xs text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-accent)]">
+            <Pencil size={12} strokeWidth={2} />
+            editar
           </button>
         )}
       </div>

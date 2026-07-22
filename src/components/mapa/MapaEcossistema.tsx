@@ -3,6 +3,7 @@ import * as THREE from "three";
 import type { Project } from "../../lib/types";
 import { calcularSaldosRealistas } from "../../lib/ecosystem";
 import { estagioDoProjeto, derivarConexoes, ESTAGIO_ROTULO, type EstagioCrescimento, type ConexaoMapa } from "../../lib/mapa-estagios";
+import { X } from "lucide-react";
 
 /**
  * Mapa vivo do ecossistema — estilo isométrico de jogo (Sims/WoW visto de
@@ -631,8 +632,8 @@ export function MapaEcossistema({
         <div className="absolute bottom-3 right-3 w-72 space-y-2 rounded border border-[color:var(--sm-accent)]/50 bg-[color:var(--sm-panel)] p-3 shadow-lg">
           <div className="flex items-start justify-between gap-2">
             <p className="text-sm font-medium">{selecionado.titulo || "(sem título)"}</p>
-            <button onClick={() => setSelecionadoId(null)} className="shrink-0 text-xs text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]">
-              ✕
+            <button onClick={() => setSelecionadoId(null)} className="shrink-0 text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]">
+              <X size={14} strokeWidth={2} />
             </button>
           </div>
           <p className="text-xs text-[color:var(--sm-text-dim)]">{ESTAGIO_ROTULO[estagioDoProjeto(selecionado)]}</p>

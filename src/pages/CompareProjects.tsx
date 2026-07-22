@@ -7,6 +7,7 @@ import { Badge } from "../components/Badge";
 import danos from "../data/danos.json";
 import setores from "../data/setores.json";
 import arquetipos from "../data/arquetipos.json";
+import { X, Check } from "lucide-react";
 
 function nomeArquetipo(id: string) {
   return arquetipos.find((a) => a.id === id)?.nome ?? id;
@@ -50,7 +51,7 @@ export function CompareProjects({
             className="text-sm px-3 py-1 rounded hover:opacity-70"
             style={{ backgroundColor: "var(--sm-border)" }}
           >
-            ✕
+            <X size={16} strokeWidth={2} />
           </button>
         </div>
 
@@ -111,9 +112,9 @@ export function CompareProjects({
                           </div>
                           <button
                             onClick={() => setSelecionados(selecionados.filter((s) => s !== p.id))}
-                            className="ml-2 text-lg hover:opacity-70"
+                            className="ml-2 hover:opacity-70"
                           >
-                            ✕
+                            <X size={16} strokeWidth={2} />
                           </button>
                         </div>
                       </th>
@@ -232,9 +233,10 @@ export function CompareProjects({
                             style={{
                               color: saldo >= 0 ? "var(--sm-green)" : "var(--sm-red)",
                             }}
-                            className="text-xs font-semibold"
+                            className="flex items-center gap-1 text-xs font-semibold"
                           >
-                            {saldo >= 0 ? "✓ Sustentável" : "✗ Deficitário"}
+                            {saldo >= 0 ? <Check size={12} strokeWidth={2} /> : <X size={12} strokeWidth={2} />}
+                            {saldo >= 0 ? "Sustentável" : "Deficitário"}
                           </div>
                         </td>
                       );
@@ -249,8 +251,9 @@ export function CompareProjects({
                       const totalPendencias = checklist.pendencias.length;
                       return (
                         <td key={p.id} className="p-3">
-                          <div className="text-sm">
-                            {totalPendencias === 0 ? "✓ Nenhuma" : `${totalPendencias} itens`}
+                          <div className="flex items-center gap-1 text-sm">
+                            {totalPendencias === 0 && <Check size={12} strokeWidth={2} />}
+                            {totalPendencias === 0 ? "Nenhuma" : `${totalPendencias} itens`}
                           </div>
                           {totalPendencias > 0 && (
                             <div style={{ color: "var(--sm-text-dim)" }} className="text-xs mt-1">

@@ -10,6 +10,7 @@ import { ThinkingIndicator } from "./ThinkingIndicator";
 import { useTasks } from "../lib/task-context";
 import danos from "../data/danos.json";
 import arquetipos from "../data/arquetipos.json";
+import { Wand2 } from "lucide-react";
 
 function montarPromptSistema(project: Project): string {
   const listaDanos = danos.map((d) => `- ${d.id}: ${d.nome} — ${d.descricao}`).join("\n");
@@ -207,9 +208,10 @@ export function CopilotoChat({
       <button
         onClick={gerarRascunho}
         disabled={gerandoRascunho}
-        className="mt-2 rounded border border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/15 px-3 py-1.5 text-sm hover:bg-[color:var(--sm-accent)]/25 disabled:opacity-40"
+        className="mt-2 inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/15 px-3 py-1.5 text-sm hover:bg-[color:var(--sm-accent)]/25 disabled:opacity-40"
       >
-        {gerandoRascunho ? "Gerando rascunho..." : "🪄 Gerar rascunho do projeto com IA"}
+        {!gerandoRascunho && <Wand2 size={14} strokeWidth={2} />}
+        {gerandoRascunho ? "Gerando rascunho..." : "Gerar rascunho do projeto com IA"}
       </button>
       <p className="mt-1 text-xs text-[color:var(--sm-text-dim)]">
         A IA usa o título e a ideia para sugerir o dano, o modelo de projeto, o objetivo, a justificativa e as metas. Se faltar informação, ela pergunta antes de rascunhar. Você revisa tudo depois.

@@ -6,6 +6,7 @@ import { exportarClubeBeneficiosDocx } from "../lib/export";
 import { Section } from "../components/Section";
 import { inputClass } from "../components/Field";
 import { CabecalhoSecao } from "../components/CabecalhoSecao";
+import { RefreshCw, Check } from "lucide-react";
 
 export function ClubeBeneficios({ projects, onVoltar }: { projects: Project[]; onVoltar: () => void }) {
   const [clube, setClube] = useState(carregarClube());
@@ -97,16 +98,24 @@ export function ClubeBeneficios({ projects, onVoltar }: { projects: Project[]; o
         apoio="Liga o que cada projeto produz às famílias atingidas: cartão de associado com desconto, pontos e prêmios, e uma vitrine dos produtos. Um projeto gera produto, o clube gera demanda, a demanda sustenta o projeto."
       />
 
-      <Section title="🔁 Lapidar clube (crítico → compilador)">
+      <Section
+        title={
+          <>
+            <RefreshCw size={16} strokeWidth={2} />
+            Lapidar clube (crítico → compilador)
+          </>
+        }
+      >
         <p className="text-xs text-[color:var(--sm-text-dim)]">
           Agentes avaliam a coerência do clube com os projetos reais (ofertas faltando, pontos impossíveis, prêmios desbalanceados) e propõem uma versão melhorada. Só substitui o clube atual com sua confirmação.
         </p>
         <button
           onClick={lapidar}
           disabled={lapidando || projects.length === 0}
-          className="rounded border border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/15 px-3 py-1.5 text-sm hover:bg-[color:var(--sm-accent)]/25 disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/15 px-3 py-1.5 text-sm hover:bg-[color:var(--sm-accent)]/25 disabled:opacity-40"
         >
-          {lapidando ? (progressoLapidacao ?? "Lapidando...") : "🔁 Lapidar com agentes"}
+          {!lapidando && <RefreshCw size={14} strokeWidth={2} />}
+          {lapidando ? (progressoLapidacao ?? "Lapidando...") : "Lapidar com agentes"}
         </button>
         {erroLapidacao && <p className="text-xs text-[color:var(--sm-red)]">{erroLapidacao}</p>}
         {lapidacao?.clube && (
@@ -135,8 +144,12 @@ export function ClubeBeneficios({ projects, onVoltar }: { projects: Project[]; o
               Versão proposta: {lapidacao.clube.ofertas.length} oferta(s), {lapidacao.clube.regrasPontos.length} regra(s) de pontos, {lapidacao.clube.premios.length} prêmio(s).
             </p>
             <div className="flex gap-2">
-              <button onClick={aplicarClubeLapidado} className="rounded border border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/20 px-3 py-1.5 text-xs hover:bg-[color:var(--sm-accent)]/30">
-                ✔ Substituir clube pela versão lapidada
+              <button
+                onClick={aplicarClubeLapidado}
+                className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/20 px-3 py-1.5 text-xs hover:bg-[color:var(--sm-accent)]/30"
+              >
+                <Check size={12} strokeWidth={2} />
+                Substituir clube pela versão lapidada
               </button>
               <button onClick={() => setLapidacao(null)} className="rounded border border-[color:var(--sm-border)] px-3 py-1.5 text-xs hover:border-[color:var(--sm-red)]">
                 Descartar

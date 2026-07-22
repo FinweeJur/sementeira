@@ -7,6 +7,7 @@ import { gerarMensagensProativas } from "../lib/acompanhamento";
 import { extrairTextoDeArquivo } from "../lib/file-extraction";
 import { ThinkingIndicator } from "./ThinkingIndicator";
 import { useTasks } from "../lib/task-context";
+import { Bot } from "lucide-react";
 
 const CHAT_ID = "agente-portfolio";
 
@@ -103,7 +104,10 @@ export function AgentePortfolioChat({
       }}
     >
       <div className="flex items-center justify-between pb-2">
-        <h2 className="text-sm font-semibold">🤖 Copiloto de projetos — Esc para fechar</h2>
+        <h2 className="flex items-center gap-1.5 text-sm font-semibold">
+          <Bot size={16} strokeWidth={2} />
+          Copiloto de projetos — Esc para fechar
+        </h2>
         <button onClick={onClose} className="text-xs text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]">
           fechar
         </button>

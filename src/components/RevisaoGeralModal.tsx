@@ -7,6 +7,7 @@ import { carregarAnaliseEcossistema, salvarAnaliseEcossistema } from "../lib/eco
 import { carregarClube, salvarClube } from "../lib/clube-beneficios";
 import { ThinkingIndicator } from "./ThinkingIndicator";
 import { useTasks } from "../lib/task-context";
+import { RefreshCw, CheckSquare, Square, SquareX, Check, AlertTriangle } from "lucide-react";
 
 interface ResultadoProjeto {
   projectId: string;
@@ -160,9 +161,9 @@ export function RevisaoGeralModal({
   }
 
   const rotuloStatus: Record<"ok" | "erro" | "pendente" | "pulado", string> = {
-    ok: "✅ atualizado",
-    erro: "⚠ falhou (verifique o modelo de IA configurado)",
-    pulado: "— não rodado",
+    ok: "atualizado",
+    erro: "falhou (verifique o modelo de IA configurado)",
+    pulado: "não rodado",
     pendente: "…",
   };
 
@@ -170,7 +171,10 @@ export function RevisaoGeralModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="max-h-[85vh] w-full max-w-lg space-y-3 overflow-y-auto rounded-lg border border-[color:var(--sm-border)] bg-[color:var(--sm-panel)] p-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold">🔁 Revisão geral dos projetos</h2>
+          <h2 className="flex items-center gap-1.5 text-base font-semibold">
+            <RefreshCw size={16} strokeWidth={2} />
+            Revisão geral dos projetos
+          </h2>
           <button onClick={onClose} className="text-sm text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]">
             fechar
           </button>
@@ -182,11 +186,19 @@ export function RevisaoGeralModal({
               Roda 1 volta de lapidação em cada projeto selecionado (aplica automaticamente — reversível pelo histórico de versões), e depois atualiza o ecossistema e o clube de benefícios com a lista mais recente.
             </p>
             <div className="flex gap-2">
-              <button onClick={selecionarTodos} className="rounded border border-[color:var(--sm-border)] px-2 py-1 text-xs hover:border-[color:var(--sm-accent)]">
-                ☑ Selecionar todos
+              <button
+                onClick={selecionarTodos}
+                className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-border)] px-2 py-1 text-xs hover:border-[color:var(--sm-accent)]"
+              >
+                <CheckSquare size={12} strokeWidth={2} />
+                Selecionar todos
               </button>
-              <button onClick={limparSelecao} className="rounded border border-[color:var(--sm-border)] px-2 py-1 text-xs hover:border-[color:var(--sm-accent)]">
-                ☐ Limpar seleção
+              <button
+                onClick={limparSelecao}
+                className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-border)] px-2 py-1 text-xs hover:border-[color:var(--sm-accent)]"
+              >
+                <SquareX size={12} strokeWidth={2} />
+                Limpar seleção
               </button>
             </div>
             <ul className="max-h-64 space-y-1 overflow-y-auto">
@@ -221,8 +233,12 @@ export function RevisaoGeralModal({
               <p className="text-sm font-medium">
                 {progressoAtual ? `${progressoAtual.titulo}${progressoAtual.total ? ` (${progressoAtual.indice}/${progressoAtual.total})` : ""}` : "Finalizando..."}
               </p>
-              <button onClick={cancelar} className="rounded border border-[color:var(--sm-red)] bg-[color:var(--sm-red)]/10 px-2 py-1 text-xs text-[color:var(--sm-red)] hover:bg-[color:var(--sm-red)]/20">
-                ⏹ Parar
+              <button
+                onClick={cancelar}
+                className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-red)] bg-[color:var(--sm-red)]/10 px-2 py-1 text-xs text-[color:var(--sm-red)] hover:bg-[color:var(--sm-red)]/20"
+              >
+                <Square size={12} strokeWidth={2} fill="currentColor" />
+                Parar
               </button>
             </div>
             {progressoAtual?.etapaAtual && <p className="text-xs text-[color:var(--sm-text-dim)]">{progressoAtual.etapaAtual}</p>}
@@ -238,8 +254,13 @@ export function RevisaoGeralModal({
               <ul className="mt-1 space-y-1">
                 {resultados.map((r) => (
                   <li key={r.projectId} className="rounded border border-[color:var(--sm-border)] p-2 text-xs">
-                    <p>
-                      {r.status === "ok" ? "✅" : "⚠"} <strong>{r.titulo}</strong>
+                    <p className="flex flex-wrap items-center gap-1">
+                      {r.status === "ok" ? (
+                        <Check size={12} strokeWidth={2} className="text-[color:var(--sm-ok-text)]" />
+                      ) : (
+                        <AlertTriangle size={12} strokeWidth={2} className="text-[color:var(--sm-atencao-text)]" />
+                      )}
+                      <strong>{r.titulo}</strong>
                       {r.status === "ok" && r.scoreAntes && r.scoreDepois && (
                         <span className="text-[color:var(--sm-text-dim)]">
                           {" "}

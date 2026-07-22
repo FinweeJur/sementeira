@@ -13,9 +13,9 @@ import arquetipos from "../data/arquetipos.json";
 
 export type EtapaPortfolio = "critico" | "sugestor" | "compilador";
 export const ETAPAS_PORTFOLIO_ROTULO: Record<EtapaPortfolio, string> = {
-  critico: "🔍 Crítico avaliando o conjunto",
-  sugestor: "💡 Sugestor propondo integrações",
-  compilador: "📦 Compilador consolidando a versão melhorada",
+  critico: "Crítico avaliando o conjunto",
+  sugestor: "Sugestor propondo integrações",
+  compilador: "Compilador consolidando a versão melhorada",
 };
 
 function resumoPortfolio(projects: Project[]): string {

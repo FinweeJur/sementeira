@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { PROVEDORES, listarModelosOllamaLocal, type ProviderConfig } from "../lib/providers";
 import { Field, inputClass } from "./Field";
+import { RefreshCw } from "lucide-react";
 
 const OUTRO = "__outro__";
 
@@ -82,8 +83,14 @@ export function ProviderSettings({ config, onChange }: { config: ProviderConfig;
                   ? erroDeteccao
                   : "Nenhum modelo detectado ainda."}
           </span>
-          <button type="button" onClick={detectarModelosOllama} disabled={detectando} className="text-[color:var(--sm-accent)] hover:underline disabled:opacity-40">
-            🔄 atualizar lista
+          <button
+            type="button"
+            onClick={detectarModelosOllama}
+            disabled={detectando}
+            className="inline-flex items-center gap-1 text-[color:var(--sm-accent)] hover:underline disabled:opacity-40"
+          >
+            <RefreshCw size={12} strokeWidth={2} />
+            atualizar lista
           </button>
         </div>
       )}

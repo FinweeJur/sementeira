@@ -11,6 +11,7 @@ import { Section } from "../components/Section";
 import { Field, inputClass } from "../components/Field";
 import { useTasks } from "../lib/task-context";
 import { CabecalhoSecao } from "../components/CabecalhoSecao";
+import { Map as MapIcon, MapPinned, List, CheckCircle2, Search, RefreshCw, Check } from "lucide-react";
 
 export function Ecossistema({
   projects,
@@ -138,9 +139,10 @@ export function Ecossistema({
           <button
             key={a}
             onClick={() => setAba(a)}
-            className={`rounded border px-3 py-1.5 text-sm ${aba === a ? "border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/20" : "border-[color:var(--sm-border)] hover:border-[color:var(--sm-accent)]"}`}
+            className={`inline-flex items-center gap-1.5 rounded border px-3 py-1.5 text-sm ${aba === a ? "border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/20" : "border-[color:var(--sm-border)] hover:border-[color:var(--sm-accent)]"}`}
           >
-            {a === "mapa" ? "🗺 Mapa" : a === "regiao" ? "🗾 Região" : "📋 Lista"}
+            {a === "mapa" ? <MapIcon size={14} strokeWidth={2} /> : a === "regiao" ? <MapPinned size={14} strokeWidth={2} /> : <List size={14} strokeWidth={2} />}
+            {a === "mapa" ? "Mapa" : a === "regiao" ? "Região" : "Lista"}
           </button>
         ))}
       </div>
@@ -166,7 +168,14 @@ export function Ecossistema({
         <p className="text-sm">
           <strong className={cota.atingida ? "text-[color:var(--sm-green)]" : "text-[color:var(--sm-red)]"}>{(cota.percentual * 100).toFixed(1)}%</strong>
           {" "}do orçamento (R$ {cota.valorPrioritario.toFixed(2)} de R$ {cota.valorTotal.toFixed(2)}) — meta: {(cota.meta * 100).toFixed(0)}%
-          {cota.atingida ? " ✅ atingida" : " 🔴 abaixo da meta"}
+          {cota.atingida ? (
+            <span className="inline-flex items-center gap-1">
+              <CheckCircle2 size={14} strokeWidth={2} className="text-[color:var(--sm-ok-text)]" />
+              atingida
+            </span>
+          ) : (
+            " 🔴 abaixo da meta"
+          )}
         </p>
         {cota.projetosPrioritarios.length > 0 && (
           <ul className="space-y-0.5 text-xs text-[color:var(--sm-text-dim)]">
@@ -207,9 +216,10 @@ export function Ecossistema({
         <button
           onClick={analisar}
           disabled={analisando}
-          className="rounded border border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/15 px-3 py-1.5 text-sm hover:bg-[color:var(--sm-accent)]/25 disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/15 px-3 py-1.5 text-sm hover:bg-[color:var(--sm-accent)]/25 disabled:opacity-40"
         >
-          {analisando ? "Analisando..." : "🔎 Analisar ecossistema com IA"}
+          {!analisando && <Search size={14} strokeWidth={2} />}
+          {analisando ? "Analisando..." : "Analisar ecossistema com IA"}
         </button>
         {erroAnalise && <p className="text-xs text-[color:var(--sm-red)]">{erroAnalise}</p>}
         {analise && (
@@ -236,16 +246,24 @@ export function Ecossistema({
         )}
       </Section>
 
-      <Section title="🔁 Lapidar ecossistema (crítico → sugestor → compilador)">
+      <Section
+        title={
+          <>
+            <RefreshCw size={16} strokeWidth={2} />
+            Lapidar ecossistema (crítico → sugestor → compilador)
+          </>
+        }
+      >
         <p className="text-xs text-[color:var(--sm-text-dim)]">
           Três agentes avaliam o conjunto de projetos e propõem uma versão melhorada da análise + sugestões de integração por projeto. Nada é aplicado sem sua confirmação.
         </p>
         <button
           onClick={lapidar}
           disabled={lapidando}
-          className="rounded border border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/15 px-3 py-1.5 text-sm hover:bg-[color:var(--sm-accent)]/25 disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/15 px-3 py-1.5 text-sm hover:bg-[color:var(--sm-accent)]/25 disabled:opacity-40"
         >
-          {lapidando ? (progressoLapidacao ?? "Lapidando...") : "🔁 Lapidar com agentes"}
+          {!lapidando && <RefreshCw size={14} strokeWidth={2} />}
+          {lapidando ? (progressoLapidacao ?? "Lapidando...") : "Lapidar com agentes"}
         </button>
         {lapidacao && (
           <div className="space-y-3 pt-2 text-sm">
@@ -270,8 +288,12 @@ export function Ecossistema({
               </div>
             )}
             {lapidacao.analise && (
-              <button onClick={aplicarAnaliseLapidada} className="rounded border border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/20 px-3 py-1.5 text-xs hover:bg-[color:var(--sm-accent)]/30">
-                ✔ Aplicar análise melhorada
+              <button
+                onClick={aplicarAnaliseLapidada}
+                className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/20 px-3 py-1.5 text-xs hover:bg-[color:var(--sm-accent)]/30"
+              >
+                <Check size={12} strokeWidth={2} />
+                Aplicar análise melhorada
               </button>
             )}
             {lapidacao.sugestoesPorProjeto && lapidacao.sugestoesPorProjeto.length > 0 && (
@@ -291,7 +313,14 @@ export function Ecossistema({
                           disabled={aplicada}
                           className="shrink-0 rounded border border-[color:var(--sm-accent)] px-2 py-1 text-xs hover:bg-[color:var(--sm-accent)]/20 disabled:opacity-40"
                         >
-                          {aplicada ? "✔ aplicada" : "aplicar"}
+                          {aplicada ? (
+                            <span className="inline-flex items-center gap-1">
+                              <Check size={12} strokeWidth={2} />
+                              aplicada
+                            </span>
+                          ) : (
+                            "aplicar"
+                          )}
                         </button>
                       </li>
                     );

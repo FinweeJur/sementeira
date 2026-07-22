@@ -4,6 +4,7 @@ import { carregarVoluntarios, salvarVoluntarios, sugerirVoluntariosParaProjeto }
 import { Section } from "../components/Section";
 import { Field, inputClass } from "../components/Field";
 import { CabecalhoSecao } from "../components/CabecalhoSecao";
+import { Check, Plus } from "lucide-react";
 
 /** Cadastro de voluntários em nível de portfólio (Fase 14a) — trabalho pontual/mutirão, não substitui posto de folha permanente. */
 export function Voluntarios({ projects, onVoltar }: { projects: Project[]; onVoltar: () => void }) {
@@ -62,7 +63,7 @@ export function Voluntarios({ projects, onVoltar }: { projects: Project[]; onVol
       <CabecalhoSecao
         icone="g"
         olho="Rede da comunidade"
-        titulo="🙋 Voluntários"
+        titulo="Voluntários"
         apoio="Trabalho voluntário ou mutirão reduz o custo de equipe sem virar salário — mas não substitui o posto de trabalho que o projeto precisa ter. Cadastrar aqui não muda o que o acordo permite em cada projeto."
       />
 
@@ -121,9 +122,9 @@ export function Voluntarios({ projects, onVoltar }: { projects: Project[]; onVol
                     <button
                       key={p.id}
                       onClick={() => alternarInteresse(v.id, p.id)}
-                      className={`rounded border px-2 py-0.5 text-xs ${marcado ? "border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/20" : "border-[color:var(--sm-border)] hover:border-[color:var(--sm-accent)]"}`}
+                      className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 text-xs ${marcado ? "border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/20" : "border-[color:var(--sm-border)] hover:border-[color:var(--sm-accent)]"}`}
                     >
-                      {marcado ? "✔ " : "+ "}
+                      {marcado ? <Check size={11} strokeWidth={2} /> : <Plus size={11} strokeWidth={2} />}
                       {p.titulo || "(sem título)"}
                     </button>
                   );

@@ -19,6 +19,7 @@ import { Field, inputClass } from "../components/Field";
 import { Badge } from "../components/Badge";
 import { Stepper, type PassoInfo } from "../components/Stepper";
 import { CapacidadeEquipe } from "../components/CapacidadeEquipe";
+import { Wand2, Search, FileText, Check, X, Truck, ShieldCheck, AlertTriangle, RefreshCw, Sparkles } from "lucide-react";
 import { CopilotoChat } from "../components/CopilotoChat";
 import { LapidacaoPanel } from "../components/LapidacaoPanel";
 import { ProjectDocumento } from "./ProjectDocumento";
@@ -378,9 +379,10 @@ export function ProjectWizard({
           )}
           <button
             onClick={abrirCopilotoEGerarRascunho}
-            className="rounded border border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/15 px-3 py-1.5 text-sm hover:bg-[color:var(--sm-accent)]/25"
+            className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/15 px-3 py-1.5 text-sm hover:bg-[color:var(--sm-accent)]/25"
           >
-            🪄 Gerar proposta completa com IA
+            <Wand2 size={14} strokeWidth={2} />
+            Gerar proposta completa com IA
           </button>
           <p className="text-xs text-[color:var(--sm-text-dim)]">
             A IA sugere o dano, o modelo de projeto, o objetivo, a justificativa e as metas a partir da sua ideia. Você revisa tudo depois. Se faltar informação, ela pergunta antes.
@@ -480,9 +482,10 @@ export function ProjectWizard({
             <button
               onClick={pesquisarJustificativa}
               disabled={pesquisandoJustificativa}
-              className="rounded border border-[color:var(--sm-accent)]/40 bg-[color:var(--sm-accent)]/10 px-3 py-1.5 text-sm hover:bg-[color:var(--sm-accent)]/20 disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-accent)]/40 bg-[color:var(--sm-accent)]/10 px-3 py-1.5 text-sm hover:bg-[color:var(--sm-accent)]/20 disabled:opacity-40"
             >
-              {pesquisandoJustificativa ? "Pesquisando dados públicos (várias buscas)..." : "🔎 Pesquisar dado público (IBGE/Censo) + referência ABNT"}
+              {!pesquisandoJustificativa && <Search size={14} strokeWidth={2} />}
+              {pesquisandoJustificativa ? "Pesquisando dados públicos (várias buscas)..." : "Pesquisar dado público (IBGE/Censo) + referência ABNT"}
             </button>
             <p className="text-xs text-[color:var(--sm-text-dim)]">Exige internet e chave da Tavily configurada (Configurações). Substitui o texto acima — revise antes de seguir.</p>
             {subperguntasJustificativa && subperguntasJustificativa.length > 0 && (
@@ -685,16 +688,18 @@ export function ProjectWizard({
                     <button
                       onClick={() => pesquisarPrecoLinha(l)}
                       disabled={pesquisandoPrecoId === l.id}
-                      className="rounded border border-[color:var(--sm-accent)]/40 bg-[color:var(--sm-accent)]/10 px-2 py-1 text-xs hover:bg-[color:var(--sm-accent)]/20 disabled:opacity-40"
+                      className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-accent)]/40 bg-[color:var(--sm-accent)]/10 px-2 py-1 text-xs hover:bg-[color:var(--sm-accent)]/20 disabled:opacity-40"
                     >
-                      {pesquisandoPrecoId === l.id ? "Pesquisando preço (várias buscas)..." : "🔎 Pesquisar preço de referência (MG/Brasil, jul/2026)"}
+                      {pesquisandoPrecoId !== l.id && <Search size={12} strokeWidth={2} />}
+                      {pesquisandoPrecoId === l.id ? "Pesquisando preço (várias buscas)..." : "Pesquisar preço de referência (MG/Brasil, jul/2026)"}
                     </button>
                     <button
                       onClick={() => gerarCotacao(l)}
                       disabled={!l.descricao.trim()}
-                      className="rounded border border-[color:var(--sm-accent)]/40 bg-[color:var(--sm-accent)]/10 px-2 py-1 text-xs hover:bg-[color:var(--sm-accent)]/20 disabled:opacity-40"
+                      className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-accent)]/40 bg-[color:var(--sm-accent)]/10 px-2 py-1 text-xs hover:bg-[color:var(--sm-accent)]/20 disabled:opacity-40"
                     >
-                      📄 Gerar solicitação de cotação (.docx)
+                      <FileText size={12} strokeWidth={2} />
+                      Gerar solicitação de cotação (.docx)
                     </button>
                     <button onClick={() => removeLinha(l.id)} className="ml-auto rounded px-2 py-1 text-xs font-medium text-[color:var(--sm-bloqueio-text)] hover:bg-[color:var(--sm-bloqueio-bg)]">
                       Remover linha
@@ -731,11 +736,11 @@ export function ProjectWizard({
                         value={pr.observacoes ?? ""}
                         onChange={(e) => updateProposta(l.id, pr.id, { observacoes: e.target.value })}
                       />
-                      <button onClick={() => usarProposta(l.id, pr)} className="col-span-1 text-xs text-[color:var(--sm-accent)]" title="Usar este valor na linha">
-                        ✓
+                      <button onClick={() => usarProposta(l.id, pr)} className="col-span-1 flex justify-center text-[color:var(--sm-accent)]" title="Usar este valor na linha">
+                        <Check size={14} strokeWidth={2} />
                       </button>
-                      <button onClick={() => removerProposta(l.id, pr.id)} className="col-span-1 text-xs text-[color:var(--sm-red)]">
-                        x
+                      <button onClick={() => removerProposta(l.id, pr.id)} className="col-span-1 flex justify-center text-[color:var(--sm-red)]">
+                        <X size={14} strokeWidth={2} />
                       </button>
                     </div>
                   ))}
@@ -934,7 +939,10 @@ export function ProjectWizard({
 
           {project.municipioId && parceirosLogistica.length > 0 && (
             <div className="space-y-2 rounded border border-dashed border-[color:var(--sm-border)] p-2">
-              <p className="text-sm font-medium">🚚 Distância e custo logístico com projetos parceiros da rede</p>
+              <p className="flex items-center gap-1.5 text-sm font-medium">
+                <Truck size={14} strokeWidth={2} />
+                Distância e custo logístico com projetos parceiros da rede
+              </p>
               <button
                 onClick={calcularRotasParceiros}
                 disabled={rotasCalculando}
@@ -987,9 +995,10 @@ export function ProjectWizard({
               <button
                 onClick={pesquisarArrecadacao}
                 disabled={pesquisandoArrecadacao}
-                className="rounded border border-[color:var(--sm-accent)]/40 bg-[color:var(--sm-accent)]/10 px-3 py-1.5 text-sm hover:bg-[color:var(--sm-accent)]/20 disabled:opacity-40"
+                className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-accent)]/40 bg-[color:var(--sm-accent)]/10 px-3 py-1.5 text-sm hover:bg-[color:var(--sm-accent)]/20 disabled:opacity-40"
               >
-                {pesquisandoArrecadacao ? "Pesquisando políticas públicas (várias buscas)..." : "🔎 Pesquisar editais/linhas de crédito (federal/MG/município)"}
+                {!pesquisandoArrecadacao && <Search size={14} strokeWidth={2} />}
+                {pesquisandoArrecadacao ? "Pesquisando políticas públicas (várias buscas)..." : "Pesquisar editais/linhas de crédito (federal/MG/município)"}
               </button>
               <p className="text-xs text-[color:var(--sm-text-dim)]">Exige internet e chave da Tavily. Só busca municipal se o Local já estiver preenchido.</p>
               {subperguntasArrecadacao && subperguntasArrecadacao.length > 0 && (
@@ -1213,9 +1222,10 @@ export function ProjectWizard({
             <button
               onClick={executarRevisao}
               disabled={revisando}
-              className="rounded border border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/15 px-3 py-1.5 text-sm hover:bg-[color:var(--sm-accent)]/25 disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-accent)] bg-[color:var(--sm-accent)]/15 px-3 py-1.5 text-sm hover:bg-[color:var(--sm-accent)]/25 disabled:opacity-40"
             >
-              {revisando ? "Revisando..." : "🛡 Revisar com IA"}
+              {!revisando && <ShieldCheck size={14} strokeWidth={2} />}
+              {revisando ? "Revisando..." : "Revisar com IA"}
             </button>
             {erroRevisao && <p className="text-xs text-[color:var(--sm-red)]">{erroRevisao}</p>}
             {revisao && (
@@ -1225,8 +1235,9 @@ export function ProjectWizard({
                   <span>{revisao.adequado ? "O agente considera o projeto adequado às regras." : "O agente sugere ajustes antes de finalizar."}</span>
                 </div>
                 {revisao.divergeDoMotor && (
-                  <p className="text-xs text-[color:var(--sm-yellow)]">
-                    ⚠ Aqui, o programa e a IA discordaram. Confira os dois antes de decidir.
+                  <p className="flex items-center gap-1.5 text-xs text-[color:var(--sm-yellow)]">
+                    <AlertTriangle size={12} strokeWidth={2} />
+                    Aqui, o programa e a IA discordaram. Confira os dois antes de decidir.
                   </p>
                 )}
                 {revisao.mudancasResumo.length > 0 && (
@@ -1378,16 +1389,18 @@ export function ProjectWizard({
           <span className={`text-xs text-[color:var(--sm-text-dim)] sm-fade ${salvoAgora ? "opacity-100" : "opacity-0"}`}>Salvo automaticamente</span>
           <button
             onClick={() => setVerDocumento(true)}
-            className="rounded border border-[color:var(--sm-border)] px-3 py-1.5 text-sm hover:border-[color:var(--sm-accent)]"
+            className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-border)] px-3 py-1.5 text-sm hover:border-[color:var(--sm-accent)]"
           >
-            📄 Documento completo
+            <FileText size={14} strokeWidth={2} />
+            Documento completo
           </button>
           <button
             onClick={() => setLapidacaoAberta(true)}
-            className="rounded border border-[color:var(--sm-accent)]/50 bg-[color:var(--sm-accent)]/10 px-3 py-1.5 text-sm hover:bg-[color:var(--sm-accent)]/20"
+            className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-accent)]/50 bg-[color:var(--sm-accent)]/10 px-3 py-1.5 text-sm hover:bg-[color:var(--sm-accent)]/20"
             title="Seis agentes de IA revisam e melhoram o projeto — você aprova antes de aplicar"
           >
-            🔁 Lapidar
+            <RefreshCw size={14} strokeWidth={2} />
+            Lapidar
           </button>
           <button
             onClick={() => setCopilotoAberto((v) => !v)}
@@ -1418,9 +1431,10 @@ export function ProjectWizard({
             onClick={() => project.documentoOrigem?.caminhoArquivo && abrirDocumentoOrigem(project.documentoOrigem.caminhoArquivo)}
             disabled={!project.documentoOrigem.caminhoArquivo}
             title={project.documentoOrigem.caminhoArquivo ? "Abrir o documento original no aplicativo padrão" : "Documento original não foi salvo no disco"}
-            className="rounded border border-[color:var(--sm-border)] px-2 py-1 text-xs hover:border-[color:var(--sm-accent)] disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-border)] px-2 py-1 text-xs hover:border-[color:var(--sm-accent)] disabled:opacity-40"
           >
-            📄 {project.documentoOrigem.nomeArquivo}
+            <FileText size={12} strokeWidth={2} />
+            {project.documentoOrigem.nomeArquivo}
           </button>
         )}
         {bloqueios > 0 && <Badge severidade="bloqueio" />}
@@ -1431,7 +1445,7 @@ export function ProjectWizard({
           <>
             <Badge severidade="ok" />
             <span>Projeto sem bloqueios pendentes</span>
-            {florescendo && <span className="sm-bloom text-lg">🌸</span>}
+            {florescendo && <Sparkles size={16} strokeWidth={2} className="sm-bloom text-[color:var(--sm-accent)]" />}
           </>
         )}
       </div>
