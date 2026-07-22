@@ -3,6 +3,7 @@ import type { RascunhoDados } from "./draft-generation";
 import { avaliarConformidade } from "./compliance-engine";
 import { carregarConfigLLM, enviarMensagemLLM } from "./providers";
 import { montarBlocoDiretrizesGlobais } from "./diretrizes-globais";
+import { montarBlocoBiblioteca } from "./biblioteca";
 import { extrairBlocoJson } from "./json-parsing";
 
 export interface RevisaoResultado {
@@ -46,6 +47,7 @@ function montarPromptRevisao(project: Project, findingsMotor: ComplianceFinding[
     "O motor de conformidade determinístico do app já encontrou estes achados (use como referência, mas confira com seu próprio raciocínio — se você discordar, sinalize):",
     resumirFindings(findingsMotor),
     montarBlocoDiretrizesGlobais(),
+    montarBlocoBiblioteca(project),
     "",
     "Responda SOMENTE com um bloco json neste formato, sem mais nada:",
     '```json\n{"adequado": true/false, "divergeDoMotor": true/false, "mudancasSugeridas": {"objetivo": "...", "justificativa": "...", "metas": ["..."], "comoComunidadeAjuda": "...", "missaoImpacto": "..."}, "mudancasResumo": ["o que mudou e por quê, item por item"], "recomendacoes": ["..."], "perguntas": ["..."]}\n```',

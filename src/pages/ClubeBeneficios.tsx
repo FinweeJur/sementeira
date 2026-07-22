@@ -5,6 +5,7 @@ import { lapidarClube, ETAPAS_PORTFOLIO_ROTULO, type ResultadoLapidacaoClube } f
 import { exportarClubeBeneficiosDocx } from "../lib/export";
 import { Section } from "../components/Section";
 import { inputClass } from "../components/Field";
+import { CabecalhoSecao } from "../components/CabecalhoSecao";
 
 export function ClubeBeneficios({ projects, onVoltar }: { projects: Project[]; onVoltar: () => void }) {
   const [clube, setClube] = useState(carregarClube());
@@ -89,11 +90,12 @@ export function ClubeBeneficios({ projects, onVoltar }: { projects: Project[]; o
         </button>
       </div>
 
-      <h1 className="text-xl font-bold">Clube de Benefícios</h1>
-      <p className="text-sm text-[color:var(--sm-text-dim)]">
-        Conecta os produtos/serviços gerados pelos projetos às famílias atingidas — cartão de associado com descontos, pontos e prêmios, e vitrine dos produtos. Objetivo: fechar o ciclo — projetos
-        geram produto → clube gera demanda → demanda sustenta os projetos.
-      </p>
+      <CabecalhoSecao
+        icone="n"
+        olho="Rede da comunidade"
+        titulo="Clube de Benefícios"
+        apoio="Liga o que cada projeto produz às famílias atingidas: cartão de associado com desconto, pontos e prêmios, e uma vitrine dos produtos. Um projeto gera produto, o clube gera demanda, a demanda sustenta o projeto."
+      />
 
       <Section title="🔁 Lapidar clube (crítico → compilador)">
         <p className="text-xs text-[color:var(--sm-text-dim)]">
@@ -184,9 +186,9 @@ export function ClubeBeneficios({ projects, onVoltar }: { projects: Project[]; o
         </ul>
       </Section>
 
-      <Section title="Programa de pontos — consumo circular">
+      <Section title="Programa de pontos — quando um projeto consome do outro">
         <p className="text-xs text-[color:var(--sm-text-dim)]">
-          Ex.: "1kg de material reciclável separado e depositado = 10 pontos". Incentiva o consumo/participação circular entre os projetos da rede.
+          Exemplo: "1kg de material reciclável separado e entregue = 10 pontos". Isso incentiva as pessoas a comprarem e participarem dos outros projetos da rede.
         </p>
         <div className="grid grid-cols-12 gap-2">
           <input

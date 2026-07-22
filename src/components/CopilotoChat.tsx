@@ -212,7 +212,7 @@ export function CopilotoChat({
         {gerandoRascunho ? "Gerando rascunho..." : "🪄 Gerar rascunho do projeto com IA"}
       </button>
       <p className="mt-1 text-xs text-[color:var(--sm-text-dim)]">
-        A IA usa o título/ideia para propor dano, arquétipo, objetivo, justificativa e metas. Se faltar informação, ela pergunta antes de rascunhar. Sempre revisável.
+        A IA usa o título e a ideia para sugerir o dano, o modelo de projeto, o objetivo, a justificativa e as metas. Se faltar informação, ela pergunta antes de rascunhar. Você revisa tudo depois.
       </p>
 
       <div className="mt-2 flex-1 space-y-2 overflow-y-auto">

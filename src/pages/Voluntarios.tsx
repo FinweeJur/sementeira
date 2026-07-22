@@ -3,6 +3,7 @@ import type { Project, Voluntario } from "../lib/types";
 import { carregarVoluntarios, salvarVoluntarios, sugerirVoluntariosParaProjeto } from "../lib/voluntarios";
 import { Section } from "../components/Section";
 import { Field, inputClass } from "../components/Field";
+import { CabecalhoSecao } from "../components/CabecalhoSecao";
 
 /** Cadastro de voluntários em nível de portfólio (Fase 14a) — trabalho pontual/mutirão, não substitui posto de folha permanente. */
 export function Voluntarios({ projects, onVoltar }: { projects: Project[]; onVoltar: () => void }) {
@@ -55,16 +56,15 @@ export function Voluntarios({ projects, onVoltar }: { projects: Project[]; onVol
 
   return (
     <div className="mx-auto max-w-4xl space-y-4 p-6">
-      <div className="flex items-center justify-between">
-        <button onClick={onVoltar} className="text-sm text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]">
-          ← Meus projetos
-        </button>
-        <h1 className="text-xl font-bold">🙋 Voluntários</h1>
-      </div>
-      <p className="text-sm text-[color:var(--sm-text-dim)]">
-        Trabalho voluntário/mutirão é uma forma legítima de reduzir custo de equipe sem virar pagamento permanente vedado — mas não substitui posto de folha necessário; o motor de conformidade de cada
-        projeto não muda por causa deste cadastro.
-      </p>
+      <button onClick={onVoltar} className="text-sm text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]">
+        ← Meus projetos
+      </button>
+      <CabecalhoSecao
+        icone="g"
+        olho="Rede da comunidade"
+        titulo="🙋 Voluntários"
+        apoio="Trabalho voluntário ou mutirão reduz o custo de equipe sem virar salário — mas não substitui o posto de trabalho que o projeto precisa ter. Cadastrar aqui não muda o que o acordo permite em cada projeto."
+      />
 
       <Section title="Cadastrar voluntário(a)">
         <div className="grid grid-cols-2 gap-2">

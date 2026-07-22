@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev:renderer"],
       "port": 5183
+    },
+    {
+      "name": "sementeira-renderer-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite", "--host", "127.0.0.1", "--port", "5190"],
+      "port": 5190
     }
   ]
 }

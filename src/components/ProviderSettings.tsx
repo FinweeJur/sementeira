@@ -44,7 +44,7 @@ export function ProviderSettings({ config, onChange }: { config: ProviderConfig;
 
   return (
     <div className="space-y-3 rounded border border-[color:var(--sm-border)] p-3">
-      <Field label="Provedor de IA" hint="Ollama roda local e funciona offline. DeepSeek e Maritaca exigem chave de API e internet.">
+      <Field label="Provedor de IA" hint="Ollama roda no seu computador e funciona sem internet. DeepSeek e Maritaca exigem chave de acesso e internet.">
         <select
           className={inputClass}
           value={config.providerId}
@@ -61,7 +61,7 @@ export function ProviderSettings({ config, onChange }: { config: ProviderConfig;
         </select>
       </Field>
       {def?.precisaApiKey && (
-        <Field label="Chave de API" hint={def.docsUrl ? `Obtenha em ${def.docsUrl}` : undefined}>
+        <Field label="Chave de acesso" hint={def.docsUrl ? `Obtenha em ${def.docsUrl}` : undefined}>
           <input
             type="password"
             className={inputClass}
@@ -88,7 +88,7 @@ export function ProviderSettings({ config, onChange }: { config: ProviderConfig;
         </div>
       )}
 
-      <Field label="Modelo" hint={ehOllama ? "Detectado a partir dos modelos que você já baixou (equivalente a `ollama list`)." : `Padrão: ${def?.modeloDefault}`}>
+      <Field label="Modelo" hint={ehOllama ? "Detectado a partir dos modelos que você já baixou no Ollama." : `Padrão: ${def?.modeloDefault}`}>
         {modoLivre || modelosDisponiveis.length === 0 ? (
           <div className="flex gap-2">
             <input className={inputClass} placeholder={def?.modeloDefault} value={config.model ?? ""} onChange={(e) => onChange({ ...config, model: e.target.value })} />

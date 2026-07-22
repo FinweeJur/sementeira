@@ -30,7 +30,7 @@ export function DiretrizesGlobais() {
     <div className="space-y-2 rounded border border-[color:var(--sm-border)] p-3">
       <p className="text-sm font-medium">Diretrizes gerais (aplicadas a todos os projetos)</p>
       <p className="text-xs text-[color:var(--sm-text-dim)]">
-        Anexe editais, orientações da Entidade Gestora etc. (.pdf, .docx, .txt). Elas entram no contexto da IA em todo projeto — mas nunca podem contradizer as vedações do Ofício 46, que sempre prevalece.
+        Anexe editais, orientações da Entidade Gestora etc. (PDF, DOCX ou TXT). A IA vai usar isso como referência em todo projeto — mas nunca pode contradizer as regras do acordo, que sempre valem mais.
       </p>
       <label className="inline-flex cursor-pointer items-center rounded border border-dashed border-[color:var(--sm-border)] px-3 py-1.5 text-xs hover:border-[color:var(--sm-accent)]">
         {carregando ? "Lendo arquivo..." : "+ Anexar diretriz"}

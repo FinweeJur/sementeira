@@ -10,6 +10,7 @@ import { derivarConexoes } from "../lib/mapa-estagios";
 import { Section } from "../components/Section";
 import { Field, inputClass } from "../components/Field";
 import { useTasks } from "../lib/task-context";
+import { CabecalhoSecao } from "../components/CabecalhoSecao";
 
 export function Ecossistema({
   projects,
@@ -125,10 +126,12 @@ export function Ecossistema({
         </button>
       </div>
 
-      <h1 className="text-xl font-bold">Ecossistema de projetos</h1>
-      <p className="text-sm text-[color:var(--sm-text-dim)]">
-        Quanto mais projetos cadastrados, mais o sistema tem para cruzar. Isso não substitui o motor de conformidade de cada projeto — é uma visão de portfólio.
-      </p>
+      <CabecalhoSecao
+        icone="u"
+        olho="Visão geral"
+        titulo="Ecossistema de projetos"
+        apoio="Quanto mais projetos você cadastra, mais o programa encontra pra cruzar. Isso não muda o que o acordo permite em cada projeto — é só uma vista de conjunto."
+      />
 
       <div className="flex gap-1">
         {(["mapa", "regiao", "lista"] as const).map((a) => (
@@ -155,10 +158,10 @@ export function Ecossistema({
 
       {aba === "lista" && (
       <>
-      <Section title="Cota de equidade agregada (Proposta pág. 53 — mínimo 30%)">
+      <Section title="Quanto vai para quem mais precisa (mínimo 30%)">
         <p className="text-xs text-[color:var(--sm-text-dim)]">
-          % do orçamento total do portfólio alocado a projetos com público prioritário (pessoas mais pobres, PCTs, mulheres, Familiares de Vítimas Fatais, Zona Quente) — conta também projeto marcado
-          como "coordenação por mulher(es)", mesmo com outro setor selecionado.
+          Porcentagem do orçamento total que vai para projetos com público prioritário: pessoas mais pobres, PCTs (Povos e Comunidades Tradicionais), mulheres, Familiares de Vítimas Fatais, Zona Quente.
+          Um projeto marcado como "coordenação por mulher(es)" também conta, mesmo com outro setor selecionado.
         </p>
         <p className="text-sm">
           <strong className={cota.atingida ? "text-[color:var(--sm-green)]" : "text-[color:var(--sm-red)]"}>{(cota.percentual * 100).toFixed(1)}%</strong>
@@ -176,11 +179,11 @@ export function Ecossistema({
         )}
       </Section>
       {alertasLogistica.length > 0 && (
-        <Section title="🟡 Alerta de logística frágil entre projetos integrados">
+        <Section title="🟡 Atenção: acesso difícil entre projetos ligados">
           <ul className="space-y-1 text-sm">
             {alertasLogistica.map((a) => (
               <li key={a.chave} className="rounded border border-[color:var(--sm-yellow)]/50 bg-[color:var(--sm-yellow)]/10 p-2">
-                <strong>{a.a}</strong> ↔ <strong>{a.b}</strong> ({a.rotulo}) — ambos com acesso de estrada de terra/difícil; risco de custo/atraso na troca de insumos.
+                <strong>{a.a}</strong> ↔ <strong>{a.b}</strong> ({a.rotulo}) — os dois têm acesso por estrada de terra ou difícil: risco de custo e atraso ao trocar insumos entre eles.
               </li>
             ))}
           </ul>
@@ -200,7 +203,7 @@ export function Ecossistema({
         </ul>
       </Section>
 
-      <Section title="Análise por IA — complementaridades, redundâncias e mercado comprador">
+      <Section title="Análise por IA — o que se completa, o que se repete, quem compra de quem">
         <button
           onClick={analisar}
           disabled={analisando}
@@ -212,19 +215,19 @@ export function Ecossistema({
         {analise && (
           <div className="space-y-3 pt-2 text-sm">
             <div>
-              <p className="font-medium">Complementaridades (cadeias locais)</p>
+              <p className="font-medium">O que se completa entre os projetos</p>
               <ul className="list-disc pl-4">
                 {analise.complementaridades.length ? analise.complementaridades.map((c, i) => <li key={i}>{c}</li>) : <li className="text-[color:var(--sm-text-dim)]">Nenhuma identificada.</li>}
               </ul>
             </div>
             <div>
-              <p className="font-medium">Redundâncias</p>
+              <p className="font-medium">O que se repete</p>
               <ul className="list-disc pl-4">
                 {analise.redundancias.length ? analise.redundancias.map((c, i) => <li key={i}>{c}</li>) : <li className="text-[color:var(--sm-text-dim)]">Nenhuma identificada.</li>}
               </ul>
             </div>
             <div>
-              <p className="font-medium">Mercado comprador entre projetos (Ofício 46, 4.1 §4)</p>
+              <p className="font-medium">Quem pode comprar de quem</p>
               <ul className="list-disc pl-4">
                 {analise.mercadosCompradores.length ? analise.mercadosCompradores.map((c, i) => <li key={i}>{c}</li>) : <li className="text-[color:var(--sm-text-dim)]">Nenhuma identificada.</li>}
               </ul>
@@ -300,17 +303,17 @@ export function Ecossistema({
         )}
       </Section>
 
-      <Section title="Simulação: Fundo Rotativo Solidário (Proposta 5.5)">
+      <Section title="Simulação: fundo de ajuda entre projetos">
         <p className="text-xs text-[color:var(--sm-text-dim)]">
-          Simulação apenas — não move dinheiro real. Projetos com saldo positivo contribuiriam um percentual para um fundo comum, que ajudaria projetos deficitários. Isso precisa ser estruturado como
-          fundo/crédito solidário de verdade (não custeio permanente disfarçado — Vedação Geral III).
+          É só uma simulação — não move dinheiro de verdade. Projetos com saldo positivo dariam uma parte para um fundo comum, que ajudaria os projetos no vermelho. Isso precisa virar um fundo ou
+          crédito solidário de verdade: o acordo não permite disfarçar uma despesa permanente assim.
         </p>
-        <Field label="Percentual de contribuição dos projetos superavitários">
+        <Field label="Quanto (%) os projetos no positivo contribuem">
           <input type="number" min={0} max={100} className={inputClass} value={percentual} onChange={(e) => setPercentual(Number(e.target.value))} />
         </Field>
         <div className="space-y-2 pt-2 text-sm">
           <p>
-            Pool mensal formado: <strong>R$ {fundo.poolMensal.toFixed(2)}</strong>
+            Total reunido no fundo por mês: <strong>R$ {fundo.poolMensal.toFixed(2)}</strong>
           </p>
           {fundo.contribuintes.length > 0 && (
             <div>
@@ -326,7 +329,7 @@ export function Ecossistema({
           )}
           {fundo.beneficiarios.length > 0 && (
             <div>
-              <p className="font-medium">Projetos deficitários e cobertura estimada</p>
+              <p className="font-medium">Projetos no vermelho e quanto o fundo cobriria</p>
               <ul className="list-disc pl-4">
                 {fundo.beneficiarios.map((b, i) => (
                   <li key={i}>
@@ -336,7 +339,7 @@ export function Ecossistema({
               </ul>
             </div>
           )}
-          <p className="text-[color:var(--sm-text-dim)]">Pool restante não alocado: R$ {fundo.poolRestante.toFixed(2)}/mês</p>
+          <p className="text-[color:var(--sm-text-dim)]">Sobra do fundo, sem destino ainda: R$ {fundo.poolRestante.toFixed(2)}/mês</p>
         </div>
       </Section>
       </>

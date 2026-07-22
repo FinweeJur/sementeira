@@ -88,6 +88,35 @@ export interface Voluntario {
   cadastradoEm: string;
 }
 
+/**
+ * Item da Biblioteca (Fase 14e) — nível de portfólio, não por projeto. Duas categorias:
+ * "referencia" são os documentos normativos do processo (Proposta Definitiva, Acordo
+ * Judicial, Ofícios) — começam como slots vazios (`fixo: true`, não podem ser excluídos,
+ * só ganhar/perder o arquivo anexado) que o usuário preenche com o PDF que já tem.
+ * "leitura" é de livre cadastro do usuário: artigos/textos de apoio, por arquivo local
+ * anexado OU link (nunca um link sugerido pelo app — só o que o usuário colar).
+ */
+export interface RecursoBiblioteca {
+  id: string;
+  categoria: "referencia" | "leitura";
+  titulo: string;
+  descricao?: string;
+  /** Autor/instituição/fonte, quando fizer sentido (ex.: "Ministério Público de MG"). */
+  fonte?: string;
+  /** Link informado pelo próprio usuário — nunca preenchido automaticamente pelo app. */
+  url?: string;
+  nomeArquivo?: string;
+  /** Caminho absoluto salvo em userData/biblioteca/<id>/ (só existe no app desktop). */
+  caminhoArquivo?: string;
+  /** Texto extraído do PDF/DOCX no momento do anexo (mesmo pipeline de `documentoOrigem`) — permite oferecer trechos como contexto de IA sem reler o arquivo do disco a cada chamada. */
+  textoExtraido?: string;
+  anexadoEm?: string;
+  /** Nome do arquivo em public/biblioteca-docs/ — presente só nos documentos que já vêm com o app (Proposta Definitiva, Ofícios etc.); resolvido pra `caminhoArquivo` real na primeira vez que a Biblioteca abre. */
+  nomeArquivoEmbutido?: string;
+  /** Slot semeado pelo app (documentos de referência) — a entrada em si não pode ser excluída, só o arquivo anexado a ela. */
+  fixo?: boolean;
+}
+
 /** Um mês do cronograma detalhado, gerado pelo compilador da lapidação — complementa o resumo livre de `Project.cronograma`. */
 export interface MesCronograma {
   mes: number;

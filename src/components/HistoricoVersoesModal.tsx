@@ -39,7 +39,7 @@ export function HistoricoVersoesModal({ project, onReverter, onClose }: { projec
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-xs text-[color:var(--sm-text-dim)]">Sem changelog registrado.</p>
+                  <p className="text-xs text-[color:var(--sm-text-dim)]">Sem lista de mudanças registrada.</p>
                 )}
                 <button
                   onClick={() => reverter(v.versao)}

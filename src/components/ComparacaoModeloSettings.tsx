@@ -36,7 +36,7 @@ export function ComparacaoModeloSettings() {
         Comparar Crítico/Compilador com um 2º modelo (opcional)
       </label>
       <p className="text-xs text-[color:var(--sm-text-dim)]">
-        Quando ativado, a lapidação roda o Crítico e o Compilador também com este segundo provedor, e mostra as duas versões lado a lado para você escolher/mesclar. Aumenta o tempo/custo da lapidação.
+        Quando ligado, a lapidação roda o Crítico e o Compilador também com esse segundo provedor, e mostra as duas versões lado a lado pra você escolher ou juntar as duas. Isso deixa a lapidação mais lenta e usa mais chamadas de IA.
       </p>
       {ativo && config && <ProviderSettings config={config} onChange={atualizar} />}
     </div>

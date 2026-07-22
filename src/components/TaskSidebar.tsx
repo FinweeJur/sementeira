@@ -3,7 +3,7 @@ import { ThinkingIndicator } from "./ThinkingIndicator";
 
 const ROTULO_TIPO: Record<string, string> = {
   "copiloto-chat": "💬 Copiloto",
-  "agente-portfolio": "🤖 Copiloto de portfólio",
+  "agente-portfolio": "🤖 Copiloto de projetos",
   "lapidacao-projeto": "🔁 Lapidação",
   "lapidacao-ecossistema": "🔁 Lapidação do ecossistema",
   "revisao-geral": "🔁 Revisão geral",

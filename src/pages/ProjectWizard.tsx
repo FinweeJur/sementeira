@@ -18,6 +18,7 @@ import { Section } from "../components/Section";
 import { Field, inputClass } from "../components/Field";
 import { Badge } from "../components/Badge";
 import { Stepper, type PassoInfo } from "../components/Stepper";
+import { CapacidadeEquipe } from "../components/CapacidadeEquipe";
 import { CopilotoChat } from "../components/CopilotoChat";
 import { LapidacaoPanel } from "../components/LapidacaoPanel";
 import { ProjectDocumento } from "./ProjectDocumento";
@@ -83,7 +84,7 @@ export function ProjectWizard({
   const [revisao, setRevisao] = useState<RevisaoResultado | null>(null);
   const [rotasCalculando, setRotasCalculando] = useState(false);
   const [rotasPorProjeto, setRotasPorProjeto] = useState<Map<string, EstimativaRota>>(new Map());
-  const headingRef = useRef<HTMLHeadingElement>(null);
+  const secaoRefs = useRef<(HTMLDivElement | null)[]>([]);
   const { registrar, concluir, falhar } = useTasks();
 
   const arquetipo = arquetipos.find((a) => a.id === project.arquetipoId);
@@ -382,7 +383,7 @@ export function ProjectWizard({
             🪄 Gerar proposta completa com IA
           </button>
           <p className="text-xs text-[color:var(--sm-text-dim)]">
-            A IA propõe dano, arquétipo, objetivo, justificativa e metas a partir do título/ideia — sempre revisável nos próximos passos. Se faltar informação, ela pergunta antes.
+            A IA sugere o dano, o modelo de projeto, o objetivo, a justificativa e as metas a partir da sua ideia. Você revisa tudo depois. Se faltar informação, ela pergunta antes.
           </p>
         </Section>
       ),
@@ -405,9 +406,9 @@ export function ProjectWizard({
             {project.danoId && <p className="text-xs text-[color:var(--sm-text-dim)]">{danos.find((d) => d.id === project.danoId)?.descricao}</p>}
           </Section>
           <Section title="Que tipo de projeto resolve esse dano?">
-            <Field label="Arquétipo">
+            <Field label="Modelo de projeto">
               <select className={inputClass} value={project.arquetipoId} onChange={(e) => update("arquetipoId", e.target.value)}>
-                <option value="">Selecione o arquétipo...</option>
+                <option value="">Selecione o modelo de projeto...</option>
                 {arquetipos.map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.nome} ({a.tipo})
@@ -418,7 +419,7 @@ export function ProjectWizard({
             {arquetipo && (
               <div className="space-y-1 text-xs text-[color:var(--sm-text-dim)]">
                 <p>Tipo: {arquetipo.tipoNome} ({arquetipo.tipo})</p>
-                <p>Vedações-chave: {arquetipo.vedacoesChave.join("; ")}</p>
+                <p>O que não pode: {arquetipo.vedacoesChave.join("; ")}</p>
                 <p>Sustentabilidade sugerida: {arquetipo.modeloSustentabilidadeSugerido}</p>
               </div>
             )}
@@ -444,7 +445,7 @@ export function ProjectWizard({
             </select>
           </Field>
           <p className="text-xs text-[color:var(--sm-text-dim)]">
-            Porte: <strong>{porte}</strong> · Aprovação: {CONSELHO_POR_ABRANGENCIA[project.abrangencia]} · Exigência de POS: <strong>{exigenciaPOS(project)}</strong>
+            Porte: <strong>{porte}</strong> · Aprovação: {CONSELHO_POR_ABRANGENCIA[project.abrangencia]} · Plano de sustentabilidade exigido: <strong>{exigenciaPOS(project)}</strong>
           </p>
           <Field label={`Teto orçamentário do porte "${porte}" (editável)`}>
             <input
@@ -607,49 +608,100 @@ export function ProjectWizard({
               + Preencher com itens sugeridos para "{arquetipo.nome}"
             </button>
           )}
-          <div className="space-y-2">
-            {project.orcamento.map((l) => (
-              <div key={l.id} className="grid grid-cols-12 gap-2 rounded border border-[color:var(--sm-border)] p-2">
-                <select className={`${inputClass} col-span-3`} value={l.categoria} onChange={(e) => updateLinha(l.id, { categoria: e.target.value as CategoriaLinha })}>
-                  {CATEGORIAS.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  className={`${inputClass} col-span-4`}
-                  placeholder="O que essa despesa paga, exatamente?"
-                  value={l.descricao}
-                  onChange={(e) => updateLinha(l.id, { descricao: e.target.value })}
-                />
-                <input type="number" className={`${inputClass} col-span-2`} placeholder="Valor R$" value={l.valor} onChange={(e) => updateLinha(l.id, { valor: Number(e.target.value) })} />
-                <input
-                  type="number"
-                  className={`${inputClass} col-span-2`}
-                  placeholder="Prazo (meses)"
-                  value={l.prazoMeses ?? ""}
-                  onChange={(e) => updateLinha(l.id, { prazoMeses: e.target.value ? Number(e.target.value) : undefined })}
-                />
-                <button onClick={() => removeLinha(l.id)} className="col-span-1 text-xs text-[color:var(--sm-red)]">
-                  x
-                </button>
-                <button
-                  onClick={() => pesquisarPrecoLinha(l)}
-                  disabled={pesquisandoPrecoId === l.id}
-                  className="col-span-12 justify-self-start rounded border border-[color:var(--sm-accent)]/40 bg-[color:var(--sm-accent)]/10 px-2 py-1 text-xs hover:bg-[color:var(--sm-accent)]/20 disabled:opacity-40"
+          <div className="space-y-3">
+            {project.orcamento.map((l) => {
+              const achados = conformidade.filter((f) => f.linhaId === l.id);
+              const pior = achados.some((f) => f.severidade === "bloqueio")
+                ? "bloqueio"
+                : achados.some((f) => f.severidade === "atencao")
+                  ? "atencao"
+                  : null;
+              const corBorda = pior === "bloqueio" ? "var(--sm-bloqueio-border)" : pior === "atencao" ? "var(--sm-atencao-border)" : "var(--sm-border)";
+              return (
+                <div
+                  key={l.id}
+                  className="sm-card rounded-[var(--sm-radius-lg)] border bg-[color:var(--sm-panel)]"
+                  style={{ borderColor: corBorda, borderLeftWidth: pior ? "4px" : "1px" }}
                 >
-                  {pesquisandoPrecoId === l.id ? "Pesquisando preço (várias buscas)..." : "🔎 Pesquisar preço de referência (MG/Brasil, jul/2026)"}
-                </button>
-                <button
-                  onClick={() => gerarCotacao(l)}
-                  disabled={!l.descricao.trim()}
-                  className="col-span-12 justify-self-start rounded border border-[color:var(--sm-accent)]/40 bg-[color:var(--sm-accent)]/10 px-2 py-1 text-xs hover:bg-[color:var(--sm-accent)]/20 disabled:opacity-40"
-                >
-                  📄 Gerar solicitação de cotação (.docx)
-                </button>
+                  <div className="grid grid-cols-12 gap-3 p-3">
+                    <div className="col-span-12 sm:col-span-3">
+                      <label className="mb-1 block text-[color:var(--sm-text-dim)]" style={{ fontSize: "var(--sm-text-xs)" }}>
+                        Categoria
+                      </label>
+                      <select className={`${inputClass} w-full`} value={l.categoria} onChange={(e) => updateLinha(l.id, { categoria: e.target.value as CategoriaLinha })}>
+                        {CATEGORIAS.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-span-12 sm:col-span-4">
+                      <label className="mb-1 block text-[color:var(--sm-text-dim)]" style={{ fontSize: "var(--sm-text-xs)" }}>
+                        Descrição
+                      </label>
+                      <input
+                        className={`${inputClass} w-full`}
+                        placeholder="O que essa despesa paga, exatamente?"
+                        value={l.descricao}
+                        onChange={(e) => updateLinha(l.id, { descricao: e.target.value })}
+                      />
+                    </div>
+                    <div className="col-span-6 sm:col-span-3">
+                      <label className="mb-1 block text-[color:var(--sm-text-dim)]" style={{ fontSize: "var(--sm-text-xs)" }}>
+                        Valor
+                      </label>
+                      <input type="number" className={`${inputClass} w-full`} placeholder="R$" value={l.valor} onChange={(e) => updateLinha(l.id, { valor: Number(e.target.value) })} />
+                    </div>
+                    <div className="col-span-6 sm:col-span-2">
+                      <label className="mb-1 block text-[color:var(--sm-text-dim)]" style={{ fontSize: "var(--sm-text-xs)" }}>
+                        Prazo (meses)
+                      </label>
+                      <input
+                        type="number"
+                        className={`${inputClass} w-full`}
+                        value={l.prazoMeses ?? ""}
+                        onChange={(e) => updateLinha(l.id, { prazoMeses: e.target.value ? Number(e.target.value) : undefined })}
+                      />
+                    </div>
+                  </div>
 
-                <div className="col-span-12 space-y-1 rounded border border-dashed border-[color:var(--sm-border)] p-2">
+                  {achados.map((f, i) => (
+                    <div
+                      key={i}
+                      className="mx-3 mb-2 flex items-center gap-2 rounded-[var(--sm-radius-sm)] px-3 py-2"
+                      style={{
+                        background: f.severidade === "bloqueio" ? "var(--sm-bloqueio-bg)" : "var(--sm-atencao-bg)",
+                        color: f.severidade === "bloqueio" ? "var(--sm-bloqueio-text)" : "var(--sm-atencao-text)",
+                        fontSize: "var(--sm-text-sm)",
+                      }}
+                    >
+                      <span aria-hidden="true" className="inline-block h-2 w-2 flex-none rounded-full bg-current" />
+                      {f.mensagem}
+                    </div>
+                  ))}
+
+                  <div className="flex flex-wrap items-center gap-2 border-t border-[color:var(--sm-border)] px-3 py-2">
+                    <button
+                      onClick={() => pesquisarPrecoLinha(l)}
+                      disabled={pesquisandoPrecoId === l.id}
+                      className="rounded border border-[color:var(--sm-accent)]/40 bg-[color:var(--sm-accent)]/10 px-2 py-1 text-xs hover:bg-[color:var(--sm-accent)]/20 disabled:opacity-40"
+                    >
+                      {pesquisandoPrecoId === l.id ? "Pesquisando preço (várias buscas)..." : "🔎 Pesquisar preço de referência (MG/Brasil, jul/2026)"}
+                    </button>
+                    <button
+                      onClick={() => gerarCotacao(l)}
+                      disabled={!l.descricao.trim()}
+                      className="rounded border border-[color:var(--sm-accent)]/40 bg-[color:var(--sm-accent)]/10 px-2 py-1 text-xs hover:bg-[color:var(--sm-accent)]/20 disabled:opacity-40"
+                    >
+                      📄 Gerar solicitação de cotação (.docx)
+                    </button>
+                    <button onClick={() => removeLinha(l.id)} className="ml-auto rounded px-2 py-1 text-xs font-medium text-[color:var(--sm-bloqueio-text)] hover:bg-[color:var(--sm-bloqueio-bg)]">
+                      Remover linha
+                    </button>
+                  </div>
+
+                <div className="col-span-12 space-y-1 rounded border border-dashed border-[color:var(--sm-border)] p-2 mx-3 mb-3">
                   <p className="text-xs font-medium">Propostas recebidas de fornecedores</p>
                   {(l.propostas ?? []).map((pr) => (
                     <div key={pr.id} className="grid grid-cols-12 gap-1">
@@ -692,39 +744,47 @@ export function ProjectWizard({
                   </button>
                 </div>
 
-                {l.categoria === "equipamento" && (
-                  <input
-                    type="number"
-                    className={`${inputClass} col-span-4`}
-                    placeholder="Vida útil (anos, padrão 5)"
-                    value={l.vidaUtilAnos ?? ""}
-                    onChange={(e) => updateLinha(l.id, { vidaUtilAnos: e.target.value ? Number(e.target.value) : undefined })}
-                  />
-                )}
-                {(l.categoria === "folha-permanente" || CATEGORIAS_COM_PRAZO_6M.includes(l.categoria)) && (
-                  <input
-                    className={`${inputClass} col-span-6`}
-                    placeholder="Fonte de custeio futuro (obrigatório p/ evitar bloqueio)"
-                    value={l.fonteCusteioFuturo ?? ""}
-                    onChange={(e) => updateLinha(l.id, { fonteCusteioFuturo: e.target.value })}
-                  />
-                )}
-                {CATEGORIAS_COM_PRAZO_6M.includes(l.categoria) && (
-                  <input
-                    className={`${inputClass} col-span-6`}
-                    placeholder="Justificativa de ciclo produtivo (se prazo > 6 meses)"
-                    value={l.justificativaCicloProdutivo ?? ""}
-                    onChange={(e) => updateLinha(l.id, { justificativaCicloProdutivo: e.target.value })}
-                  />
-                )}
-                {arquetipo?.tipo === "4.4" && (
-                  <label className="col-span-12 flex items-center gap-2 text-xs">
-                    <input type="checkbox" checked={l.anuenciaEntePublico ?? false} onChange={(e) => updateLinha(l.id, { anuenciaEntePublico: e.target.checked })} />
-                    Há anuência formal do ente público para manutenção/custeio futuros
-                  </label>
-                )}
-              </div>
-            ))}
+                  {(l.categoria === "equipamento" ||
+                    l.categoria === "folha-permanente" ||
+                    CATEGORIAS_COM_PRAZO_6M.includes(l.categoria) ||
+                    arquetipo?.tipo === "4.4") && (
+                    <div className="grid grid-cols-12 gap-3 border-t border-[color:var(--sm-border)] p-3">
+                      {l.categoria === "equipamento" && (
+                        <input
+                          type="number"
+                          className={`${inputClass} col-span-12 sm:col-span-4`}
+                          placeholder="Vida útil (anos, padrão 5)"
+                          value={l.vidaUtilAnos ?? ""}
+                          onChange={(e) => updateLinha(l.id, { vidaUtilAnos: e.target.value ? Number(e.target.value) : undefined })}
+                        />
+                      )}
+                      {(l.categoria === "folha-permanente" || CATEGORIAS_COM_PRAZO_6M.includes(l.categoria)) && (
+                        <input
+                          className={`${inputClass} col-span-12 sm:col-span-6`}
+                          placeholder="De onde vem o dinheiro depois (evita bloqueio)"
+                          value={l.fonteCusteioFuturo ?? ""}
+                          onChange={(e) => updateLinha(l.id, { fonteCusteioFuturo: e.target.value })}
+                        />
+                      )}
+                      {CATEGORIAS_COM_PRAZO_6M.includes(l.categoria) && (
+                        <input
+                          className={`${inputClass} col-span-12 sm:col-span-6`}
+                          placeholder="Por que esse gasto continua depois de 6 meses"
+                          value={l.justificativaCicloProdutivo ?? ""}
+                          onChange={(e) => updateLinha(l.id, { justificativaCicloProdutivo: e.target.value })}
+                        />
+                      )}
+                      {arquetipo?.tipo === "4.4" && (
+                        <label className="col-span-12 flex items-center gap-2 text-xs">
+                          <input type="checkbox" checked={l.anuenciaEntePublico ?? false} onChange={(e) => updateLinha(l.id, { anuenciaEntePublico: e.target.checked })} />
+                          A prefeitura (ou outro órgão público) topou formalmente bancar isso depois
+                        </label>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             <button onClick={addLinha} className="rounded border border-dashed border-[color:var(--sm-border)] px-3 py-1.5 text-sm hover:border-[color:var(--sm-accent)]">
               + Adicionar item
             </button>
@@ -738,7 +798,7 @@ export function ProjectWizard({
             {totalOrcamento > teto && <span className="ml-2 text-[color:var(--sm-red)]">acima do teto configurado</span>}
           </p>
           <div className="space-y-2 pt-2">
-            <h3 className="text-sm font-medium">Checagem de conformidade</h3>
+            <h3 className="text-sm font-medium">O que o acordo permite aqui</h3>
             {conformidade.map((f, i) => (
               <div key={i} className="flex items-start gap-2 rounded border border-[color:var(--sm-border)] p-2 text-sm sm-fade">
                 <Badge severidade={f.severidade} />
@@ -803,6 +863,7 @@ export function ProjectWizard({
               + Adicionar pessoa
             </button>
           </Field>
+          <CapacidadeEquipe equipe={project.equipe} />
           <Field label="Cronograma" hint="1ª onda: local/regional, teto de 12 meses até a contratação.">
             <textarea className={inputClass} rows={3} value={project.cronograma} onChange={(e) => update("cronograma", e.target.value)} />
           </Field>
@@ -814,7 +875,7 @@ export function ProjectWizard({
       conteudo: (
         <Section title="Previsão de espaço físico e logística">
           <p className="text-xs text-[color:var(--sm-text-dim)]">
-            Ajuda a planejar "conseguir o local" no roteiro de implementação e a estimar custo/risco de troca de insumos com outros projetos da rede (economia circular).
+            Ajuda a planejar como conseguir o local e a estimar custo e risco de trocar insumos com outros projetos da rede — quando um projeto compra do outro.
           </p>
           <Field label="Município (bacia do Paraopeba)" hint="Usado para o mapa regional e para calcular distância/custo logístico real com outros projetos da rede.">
             <select className={inputClass} value={project.municipioId ?? ""} onChange={(e) => update("municipioId", e.target.value || undefined)}>
@@ -981,7 +1042,7 @@ export function ProjectWizard({
                         />
                         <input
                           className={inputClass}
-                          placeholder="Fonte de custeio futuro"
+                          placeholder="De onde vem o dinheiro depois"
                           value={marcado.fonteCusteioFuturo ?? ""}
                           onChange={(e) => updateCustoNaoCoberto(c.id, { fonteCusteioFuturo: e.target.value })}
                         />
@@ -996,9 +1057,9 @@ export function ProjectWizard({
       ),
     },
     {
-      info: { id: "simulador", titulo: "Simulação (POS)" },
+      info: { id: "simulador", titulo: "Sustentabilidade" },
       conteudo: (
-        <Section title="Simulador: o dia seguinte ao fim do dinheiro (POS)">
+        <Section title="Simulador: o dia seguinte ao fim do dinheiro">
           <div className="grid grid-cols-3 gap-3">
             {project.cenarios.map((c) => (
               <div key={c.nome} className="space-y-2 rounded border border-[color:var(--sm-border)] p-2">
@@ -1027,9 +1088,9 @@ export function ProjectWizard({
           {depreciacaoMensal > 0 && (
             <div className="space-y-2 rounded border border-[color:var(--sm-yellow)]/40 bg-[color:var(--sm-yellow)]/10 p-2">
               <p className="text-sm">
-                Depreciação estimada dos equipamentos: <strong>R$ {depreciacaoMensal.toFixed(2)}/mês</strong> (já somada ao custo operacional acima). Sem repor o equipamento, o projeto para quando ele quebrar.
+                As máquinas se gastam com o tempo, e isso entra na conta: <strong>R$ {depreciacaoMensal.toFixed(2)}/mês</strong> (já somado ao custo operacional acima). Sem repor o equipamento, o projeto para quando ele quebrar.
               </p>
-              <Field label="Fonte futura de reposição dos equipamentos">
+              <Field label="De onde vem o dinheiro para repor os equipamentos, no futuro">
                 <input
                   className={inputClass}
                   value={project.fonteReposicaoEquipamentos ?? ""}
@@ -1042,7 +1103,7 @@ export function ProjectWizard({
 
           {exigenciaPOS(project) === "completo" && (
             <div className="space-y-2 rounded border border-[color:var(--sm-yellow)]/40 bg-[color:var(--sm-yellow)]/10 p-2">
-              <p className="text-sm font-medium">POS completo (obrigatório para porte médio/grande)</p>
+              <p className="text-sm font-medium">Plano completo de sustentabilidade (obrigatório para porte médio ou grande)</p>
               <Field label="Responsável pela operação e manutenção">
                 <input
                   className={inputClass}
@@ -1050,7 +1111,7 @@ export function ProjectWizard({
                   onChange={(e) => update("posCompleto", { ...project.posCompleto, responsavelOperacao: e.target.value })}
                 />
               </Field>
-              <Field label="Fonte de custeio futuro geral do projeto">
+              <Field label="De onde vem o dinheiro do projeto todo, depois">
                 <input
                   className={inputClass}
                   value={project.posCompleto.fonteCusteioFuturoGeral ?? ""}
@@ -1081,9 +1142,9 @@ export function ProjectWizard({
     {
       info: { id: "riscos", titulo: "Riscos" },
       conteudo: (
-        <Section title="Matriz de risco">
+        <Section title="Riscos do projeto">
           <p className="text-xs text-[color:var(--sm-text-dim)]">
-            Foco no que barra ou quebra o projeto — não é desculpa: o Ofício 45 é explícito que mencionar dificuldade na matriz de risco não desobriga o cumprimento de metas e prazos.
+            Foco no que atrapalha ou quebra o projeto. Não é desculpa: citar uma dificuldade aqui não tira a obrigação de cumprir metas e prazos.
           </p>
           <div className="space-y-2">
             {project.riscos.map((r) => (
@@ -1145,9 +1206,9 @@ export function ProjectWizard({
       info: { id: "revisao", titulo: "Revisão final" },
       conteudo: (
         <>
-          <Section title="Revisão por um segundo agente (Ofícios 45/46 + Proposta Definitiva)">
+          <Section title="Revisão por um segundo agente de IA">
             <p className="text-xs text-[color:var(--sm-text-dim)]">
-              Um agente independente confere o projeto contra as regras oficiais e o motor de conformidade determinístico (não substitui o motor — é uma segunda camada de checagem).
+              Um agente de IA independente confere o projeto contra as mesmas regras do programa. Ele não substitui o programa — é uma segunda conferência.
             </p>
             <button
               onClick={executarRevisao}
@@ -1165,7 +1226,7 @@ export function ProjectWizard({
                 </div>
                 {revisao.divergeDoMotor && (
                   <p className="text-xs text-[color:var(--sm-yellow)]">
-                    ⚠ O agente de revisão discordou em algum ponto do motor de conformidade determinístico — confira os dois vereditos antes de decidir.
+                    ⚠ Aqui, o programa e a IA discordaram. Confira os dois antes de decidir.
                   </p>
                 )}
                 {revisao.mudancasResumo.length > 0 && (
@@ -1232,19 +1293,42 @@ export function ProjectWizard({
     },
   ];
 
+  /** Formulário é uma página única contínua — "ir para um passo" rola até a seção e devolve o foco pro título dela (a11y), em vez de trocar o que está visível. */
   function irParaPasso(indice: number) {
-    setPassoAtual(Math.max(0, Math.min(passos.length - 1, indice)));
+    const alvo = Math.max(0, Math.min(passos.length - 1, indice));
+    const el = secaoRefs.current[alvo];
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      const titulo = el.querySelector<HTMLElement>("h2");
+      titulo?.setAttribute("tabindex", "-1");
+      titulo?.focus();
+    }
   }
 
   function irParaPassoPorId(id: string) {
     const indice = passos.findIndex((p) => p.info.id === id);
-    if (indice >= 0) setPassoAtual(indice);
+    if (indice >= 0) irParaPasso(indice);
     setVerDocumento(false);
   }
 
+  /** Observa qual seção está mais visível pra manter o indicador de progresso (Stepper) e o "Passo X de Y" sincronizados durante o scroll — não move foco nem interfere na leitura. */
   useEffect(() => {
-    headingRef.current?.focus();
-  }, [passoAtual]);
+    const elementos = secaoRefs.current.filter((el): el is HTMLDivElement => el !== null);
+    if (elementos.length === 0) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Entre as seções que cruzam a faixa (podem ser 2 num instante de transição), a de indice maior é a que "começou" mais recentemente rolando pra baixo.
+        const indices = entries
+          .filter((e) => e.isIntersecting)
+          .map((e) => secaoRefs.current.findIndex((el) => el === e.target))
+          .filter((i) => i >= 0);
+        if (indices.length > 0) setPassoAtual(Math.max(...indices));
+      },
+      { rootMargin: "-15% 0px -70% 0px", threshold: 0 },
+    );
+    elementos.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [passos.length]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -1352,31 +1436,18 @@ export function ProjectWizard({
         )}
       </div>
 
-      <Stepper passos={passos.map((p) => p.info)} atual={passoAtual} onIr={irParaPasso} />
-
-      <h2 ref={headingRef} tabIndex={-1} className="sr-only">
-        {passos[passoAtual].info.titulo}
-      </h2>
-
-      <div className="space-y-4">{passos[passoAtual].conteudo}</div>
-
-      <div className="flex justify-between pt-2">
-        <button
-          onClick={() => irParaPasso(passoAtual - 1)}
-          disabled={passoAtual === 0}
-          className="rounded border border-[color:var(--sm-border)] px-3 py-1.5 text-sm hover:border-[color:var(--sm-accent)] disabled:opacity-30"
-        >
-          ← Voltar (Alt+←)
-        </button>
-        <button
-          onClick={() => irParaPasso(passoAtual + 1)}
-          disabled={passoAtual === passos.length - 1}
-          className="rounded border border-[color:var(--sm-border)] px-3 py-1.5 text-sm hover:border-[color:var(--sm-accent)] disabled:opacity-30"
-        >
-          Próximo (Alt+→) →
-        </button>
+      <div className="sticky top-0 z-10 -mx-6 border-b border-[color:var(--sm-border)] bg-[color:var(--sm-bg)] px-6 py-2">
+        <Stepper passos={passos.map((p) => p.info)} atual={passoAtual} onIr={irParaPasso} />
       </div>
 
+      {/* Formulário inteiro numa página só, dividido por seções — evita depender de "próximo/voltar" pra ver tudo. O Stepper acima serve de índice: clicar rola até a seção. */}
+      <div className="space-y-6">
+        {passos.map((p, i) => (
+          <div key={p.info.id} ref={(el) => { secaoRefs.current[i] = el; }} className="scroll-mt-16">
+            {p.conteudo}
+          </div>
+        ))}
+      </div>
     </div>
 
       {copilotoAberto && (

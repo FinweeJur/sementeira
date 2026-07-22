@@ -113,6 +113,9 @@ export interface AbrirDocumentoResposta {
       exportarPdf: (sugestaoNomeArquivo?: string) => Promise<ExportarPdfResposta>;
       salvarDocumento: (dados: { projectId: string; nomeArquivo: string; conteudoBase64: string }) => Promise<SalvarDocumentoResposta>;
       abrirDocumento: (caminho: string) => Promise<AbrirDocumentoResposta>;
+      salvarArquivoBiblioteca: (dados: { recursoId: string; nomeArquivo: string; conteudoBase64: string }) => Promise<SalvarDocumentoResposta>;
+      abrirArquivoBiblioteca: (caminho: string) => Promise<AbrirDocumentoResposta>;
+      caminhoDocumentoEmbutido: (nomeArquivo: string) => Promise<SalvarDocumentoResposta>;
     };
   }
 }

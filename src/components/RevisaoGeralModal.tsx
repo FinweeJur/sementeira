@@ -197,7 +197,7 @@ export function RevisaoGeralModal({
                     <label className="flex items-center gap-2 rounded border border-[color:var(--sm-border)] p-2 text-sm hover:border-[color:var(--sm-accent)]/50">
                       <input type="checkbox" checked={selecionados.has(p.id)} onChange={() => alternarSelecao(p.id)} />
                       <span className="flex-1">
-                        {p.titulo || "(sem título)"} <span className="text-xs text-[color:var(--sm-text-dim)]">— {arquetipo?.nome ?? "arquétipo não definido"}</span>
+                        {p.titulo || "(sem título)"} <span className="text-xs text-[color:var(--sm-text-dim)]">— {arquetipo?.nome ?? "modelo de projeto não definido"}</span>
                       </span>
                     </label>
                   </li>

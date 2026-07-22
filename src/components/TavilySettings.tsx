@@ -13,11 +13,11 @@ export function TavilySettings() {
 
   return (
     <div className="space-y-2 rounded border border-[color:var(--sm-border)] p-3">
-      <p className="text-sm font-medium">Busca web (Deep Research)</p>
+      <p className="text-sm font-medium">Busca na internet (Tavily)</p>
       <p className="text-xs text-[color:var(--sm-text-dim)]">
-        Usada para pesquisar dados públicos (justificativa), preços de mercado (orçamento) e políticas de fomento (arrecadação). Exige internet — sem chave, esses campos ficam manuais.
+        Usada para pesquisar dados públicos (justificativa), preços de mercado (orçamento) e editais e programas de apoio (arrecadação). Exige internet — sem chave, você preenche esses campos à mão.
       </p>
-      <Field label="Chave da API Tavily" hint="Obtenha em tavily.com — tem plano gratuito.">
+      <Field label="Chave de acesso do Tavily" hint="Obtenha em tavily.com — tem plano gratuito.">
         <input type="password" className={inputClass} value={config.apiKey ?? ""} onChange={(e) => atualizar(e.target.value)} />
       </Field>
     </div>

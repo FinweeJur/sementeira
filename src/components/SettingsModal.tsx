@@ -53,7 +53,7 @@ export function SettingsModal({ config, onChange, onFechar }: { config: Provider
         <div className="space-y-2 rounded border border-[color:var(--sm-border)] p-3">
           <p className="text-sm font-medium">Exportar / Importar configurações</p>
           <p className="text-xs text-[color:var(--sm-text-dim)]">
-            Baixa um .json com as chaves de API (LLM + Tavily) e as diretrizes gerais anexadas — útil para levar tudo de uma vez ao trocar de instalação (dev↔instalado, reinstalação, outra máquina), sem redigitar nada.
+            Baixa um arquivo com as chaves de acesso da IA (e da busca Tavily) e as diretrizes que você anexou — útil pra levar tudo de uma vez pra outro computador, sem digitar tudo de novo.
           </p>
           <div className="flex gap-2">
             <button onClick={exportarConfiguracoes} className="rounded border border-[color:var(--sm-border)] px-3 py-1.5 text-xs hover:border-[color:var(--sm-accent)]">

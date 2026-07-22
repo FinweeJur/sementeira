@@ -373,7 +373,7 @@ export function ProjectDocumento({
             <ul className="list-disc pl-5 text-sm">
               {project.custosNaoCobertos.map((c) => (
                 <li key={c.id}>
-                  {c.nome}: R$ {c.valorMensalEstimado.toFixed(2)}/mês {c.fonteCusteioFuturo ? `— fonte futura: ${c.fonteCusteioFuturo}` : "(sem fonte futura indicada)"}
+                  {c.nome}: R$ {c.valorMensalEstimado.toFixed(2)}/mês {c.fonteCusteioFuturo ? `— de onde vem depois: ${c.fonteCusteioFuturo}` : "(sem indicar de onde vem o dinheiro depois)"}
                 </li>
               ))}
             </ul>
@@ -381,7 +381,7 @@ export function ProjectDocumento({
         )}
       </Bloco>
 
-      <Bloco titulo="Simulação / POS" onEditar={() => onIrParaPasso("simulador")}>
+      <Bloco titulo="Sustentabilidade" onEditar={() => onIrParaPasso("simulador")}>
         <div className="space-y-1">
           {simulacoes.map((s) => (
             <p key={s.cenario} className="text-sm capitalize">
@@ -389,16 +389,16 @@ export function ProjectDocumento({
             </p>
           ))}
         </div>
-        <p className="text-sm text-[color:var(--sm-text-dim)]">Exigência de POS para este porte: {exigenciaPOS(project)}</p>
+        <p className="text-sm text-[color:var(--sm-text-dim)]">Plano de sustentabilidade exigido para este porte: {exigenciaPOS(project)}</p>
         {depreciacaoMensal > 0 && (
           <p className="text-sm">
-            Depreciação de equipamentos: R$ {depreciacaoMensal.toFixed(2)}/mês — fonte de reposição: {project.fonteReposicaoEquipamentos || "não indicada"}
+            As máquinas se gastam com o tempo: R$ {depreciacaoMensal.toFixed(2)}/mês — de onde vem a reposição: {project.fonteReposicaoEquipamentos || "não indicada"}
           </p>
         )}
         {exigenciaPOS(project) === "completo" && (
           <div className="space-y-1 text-sm">
             <p>Responsável pela operação: {project.posCompleto.responsavelOperacao ?? "-"}</p>
-            <p>Fonte de custeio futuro geral: {project.posCompleto.fonteCusteioFuturoGeral ?? "-"}</p>
+            <p>De onde vem o dinheiro do projeto todo, depois: {project.posCompleto.fonteCusteioFuturoGeral ?? "-"}</p>
             <p>Metodologia de transição: {project.posCompleto.metodologiaTransicao ?? "-"}</p>
             <p>Indicadores de autonomia: {project.posCompleto.indicadoresAutonomia ?? "-"}</p>
           </div>
@@ -439,7 +439,7 @@ export function ProjectDocumento({
         </Bloco>
       )}
 
-      <Bloco titulo="Checagem de conformidade">
+      <Bloco titulo="O que o acordo permite aqui">
         <div className="space-y-2">
           {conformidade.map((f, i) => (
             <div key={i} className="flex items-start gap-2 rounded border border-[color:var(--sm-border)] p-2 text-sm">

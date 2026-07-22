@@ -4,6 +4,7 @@ import { avaliarConformidade } from "./compliance-engine";
 import { montarChecklistFinal } from "./checklist";
 import { carregarConfigLLM, enviarMensagemLLM, nomeProvedor, type ProviderConfig } from "./providers";
 import { montarBlocoDiretrizesGlobais } from "./diretrizes-globais";
+import { montarBlocoBiblioteca } from "./biblioteca";
 import { parseJsonDeResposta } from "./json-parsing";
 import danos from "../data/danos.json";
 import arquetipos from "../data/arquetipos.json";
@@ -530,10 +531,10 @@ export function reverterParaVersao(project: Project, versaoAlvo: number): Projec
 // O ciclo
 // ---------------------------------------------------------------------------
 
-async function chamarPapel(prompt: string, configOverride?: ProviderConfig): Promise<{ ok: boolean; texto?: string; erro?: string }> {
+async function chamarPapel(prompt: string, configOverride?: ProviderConfig, project?: Project): Promise<{ ok: boolean; texto?: string; erro?: string }> {
   const config = configOverride ?? carregarConfigLLM();
-  const diretrizes = montarBlocoDiretrizesGlobais();
-  const conteudo = diretrizes ? `${prompt}\n\n${diretrizes}` : prompt;
+  const contexto = [montarBlocoDiretrizesGlobais(), montarBlocoBiblioteca(project)].filter(Boolean).join("\n\n");
+  const conteudo = contexto ? `${prompt}\n\n${contexto}` : prompt;
   const resposta = await enviarMensagemLLM(config, [{ role: "user", content: conteudo }]);
   if (!resposta.ok) return { ok: false, erro: resposta.erro };
   return { ok: true, texto: resposta.conteudo ?? "" };
@@ -579,7 +580,7 @@ export async function lapidarProjeto(original: Project, opcoes: OpcoesLapidacao)
     for (const { etapa, prompt } of etapas) {
       if (opcoes.cancelado?.()) return { ok: false, erro: "Cancelado pelo usuário.", voltas, convergiu: false };
       opcoes.onProgresso?.(volta, etapa);
-      const resposta = await chamarPapel(prompt);
+      const resposta = await chamarPapel(prompt, undefined, atual);
       if (!resposta.ok) return { ok: false, erro: `${ETAPAS_ROTULO[etapa]}: ${resposta.erro}`, voltas, convergiu: false };
       saidas[etapa] = parseJsonDeResposta<Record<string, unknown>>(resposta.texto ?? "") ?? {};
     }
@@ -601,6 +602,8 @@ export async function lapidarProjeto(original: Project, opcoes: OpcoesLapidacao)
         riscos: saidas.riscos,
         sugestor: sugestoes,
       }) + sufixoDiretrizExtra,
+      undefined,
+      atual,
     );
     if (!respostaCompilador.ok) return { ok: false, erro: `Compilador: ${respostaCompilador.erro}`, voltas, convergiu: false };
 
@@ -618,7 +621,7 @@ export async function lapidarProjeto(original: Project, opcoes: OpcoesLapidacao)
     let comparacao: ComparacaoModelo | undefined;
     if (opcoes.compararConfig && !opcoes.cancelado?.()) {
       opcoes.onProgressoComparacao?.(volta, "critico");
-      const respostaCriticoB = await chamarPapel(promptCritico(atual), opcoes.compararConfig);
+      const respostaCriticoB = await chamarPapel(promptCritico(atual), opcoes.compararConfig, atual);
       if (respostaCriticoB.ok) {
         const criticoB = parseJsonDeResposta<Record<string, unknown>>(respostaCriticoB.texto ?? "") ?? {};
         const problemasB = listaDeStrings(criticoB.problemas) ?? [];
@@ -637,6 +640,7 @@ export async function lapidarProjeto(original: Project, opcoes: OpcoesLapidacao)
             sugestor: sugestoes,
           }),
           opcoes.compararConfig,
+          atual,
         );
         const brutoCompiladoB = respostaCompiladorB.ok ? parseJsonDeResposta<Record<string, unknown>>(respostaCompiladorB.texto ?? "") : null;
         if (brutoCompiladoB) {

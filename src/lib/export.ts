@@ -322,7 +322,7 @@ export async function exportarEcossistemaDocx(projects: Project[], analise: Anal
 
           new Paragraph({ text: "Cota de equidade agregada (Proposta pág. 53 — mínimo 30%)", heading: HeadingLevel.HEADING_1 }),
           new Paragraph({
-            text: `${(cota.percentual * 100).toFixed(1)}% do orçamento do portfólio (R$ ${cota.valorPrioritario.toFixed(2)} de R$ ${cota.valorTotal.toFixed(2)}) — meta ${(cota.meta * 100).toFixed(0)}% — ${cota.atingida ? "atingida" : "abaixo da meta"}.`,
+            text: `${(cota.percentual * 100).toFixed(1)}% do orçamento total dos projetos (R$ ${cota.valorPrioritario.toFixed(2)} de R$ ${cota.valorTotal.toFixed(2)}) — meta ${(cota.meta * 100).toFixed(0)}% — ${cota.atingida ? "atingida" : "abaixo da meta"}.`,
           }),
           ...cota.projetosPrioritarios.map((p) => new Paragraph({ text: `• ${p.titulo} — ${p.motivo}` })),
 

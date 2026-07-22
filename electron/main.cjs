@@ -206,6 +206,72 @@ ipcMain.handle("sementeira:documento:abrir", async (_event, caminho) => {
 });
 
 /**
+ * Salva um arquivo anexado na Biblioteca (documento de referência ou leitura
+ * complementar) — guarda o binário em userData/biblioteca/<recursoId>/, mesmo
+ * padrão de "documento:salvar" mas fora do namespace por projeto (a Biblioteca
+ * é global, compartilhada entre todos os projetos).
+ */
+ipcMain.handle("sementeira:biblioteca:salvar", async (_event, { recursoId, nomeArquivo, conteudoBase64 }) => {
+  try {
+    if (!recursoId || !nomeArquivo || !conteudoBase64) {
+      return { ok: false, erro: "Dados incompletos para salvar o arquivo." };
+    }
+    const nomeSeguro = path.basename(nomeArquivo).replace(/[^\w.\-]/g, "_");
+    const idSeguro = String(recursoId).replace(/[^\w-]/g, "");
+    const dirBiblioteca = path.join(app.getPath("userData"), "biblioteca", idSeguro);
+    await fs.mkdir(dirBiblioteca, { recursive: true });
+    const caminhoCompleto = path.join(dirBiblioteca, nomeSeguro);
+    await fs.writeFile(caminhoCompleto, Buffer.from(conteudoBase64, "base64"));
+    return { ok: true, caminho: caminhoCompleto };
+  } catch (erro) {
+    return { ok: false, erro: erro instanceof Error ? erro.message : String(erro) };
+  }
+});
+
+/**
+ * Diretório dos documentos de referência que já vêm com o app (Proposta
+ * Definitiva, Ofícios, etc.) — empacotados fora do asar (ver "asarUnpack" no
+ * package.json) porque `shell.openPath` precisa de um arquivo real no disco,
+ * não de uma entrada virtual dentro do .asar.
+ */
+function dirDocumentosEmbutidos() {
+  return app.isPackaged
+    ? path.join(process.resourcesPath, "app.asar.unpacked", "dist", "biblioteca-docs")
+    : path.join(__dirname, "..", "public", "biblioteca-docs");
+}
+
+/** Devolve o caminho absoluto de um documento embutido pelo nome do arquivo (se existir) — a UI usa isso como `caminhoArquivo` pra reaproveitar o mesmo fluxo de abrir/extrair texto dos anexos do usuário. */
+ipcMain.handle("sementeira:biblioteca:caminhoEmbutido", async (_event, nomeArquivo) => {
+  try {
+    const nomeSeguro = path.basename(String(nomeArquivo || "")).replace(/[^\w.\-]/g, "_");
+    const caminho = path.join(dirDocumentosEmbutidos(), nomeSeguro);
+    await fs.access(caminho);
+    return { ok: true, caminho };
+  } catch {
+    return { ok: false, erro: "Documento embutido não encontrado." };
+  }
+});
+
+/** Abre um arquivo da Biblioteca no aplicativo padrão do SO — libera tanto os anexos do usuário (userData/biblioteca) quanto os documentos que já vêm com o app. */
+ipcMain.handle("sementeira:biblioteca:abrir", async (_event, caminho) => {
+  try {
+    if (!caminho || typeof caminho !== "string") {
+      return { ok: false, erro: "Caminho inválido." };
+    }
+    const dirBiblioteca = path.join(app.getPath("userData"), "biblioteca");
+    const dirEmbutidos = dirDocumentosEmbutidos();
+    const alvoResolvido = path.resolve(caminho);
+    if (!alvoResolvido.startsWith(dirBiblioteca) && !alvoResolvido.startsWith(dirEmbutidos)) {
+      return { ok: false, erro: "Acesso negado: o arquivo está fora do diretório permitido." };
+    }
+    await shell.openPath(alvoResolvido);
+    return { ok: true };
+  } catch (erro) {
+    return { ok: false, erro: erro instanceof Error ? erro.message : String(erro) };
+  }
+});
+
+/**
  * Auto-update via GitHub Releases — verifica silenciosamente se há versão nova
  * ao abrir o app. Se houver, baixa em background e pergunta se reinicia ao
  * terminar. Em desenvolvimento (electron . direto) o electron-updater não

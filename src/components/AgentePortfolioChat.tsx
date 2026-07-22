@@ -76,7 +76,7 @@ export function AgentePortfolioChat({
     setCarregando(true);
     setErro(null);
 
-    const taskId = registrar("agente-portfolio", "Copiloto de portfólio processando...");
+    const taskId = registrar("agente-portfolio", "Copiloto de projetos processando...");
 
     const resultado = await interpretarComando(mensagemUsuario, mensagens, projects);
     setCarregando(false);
@@ -103,7 +103,7 @@ export function AgentePortfolioChat({
       }}
     >
       <div className="flex items-center justify-between pb-2">
-        <h2 className="text-sm font-semibold">🤖 Copiloto de portfólio — Esc para fechar</h2>
+        <h2 className="text-sm font-semibold">🤖 Copiloto de projetos — Esc para fechar</h2>
         <button onClick={onClose} className="text-xs text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]">
           fechar
         </button>

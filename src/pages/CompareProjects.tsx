@@ -40,8 +40,8 @@ export function CompareProjects({
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center overflow-auto">
       <div
-        className="bg-white dark:bg-slate-900 rounded-lg shadow-xl max-w-7xl w-full mx-4 my-4 flex flex-col max-h-[90vh]"
-        style={{ color: "var(--sm-text)" }}
+        className="rounded-lg shadow-xl max-w-7xl w-full mx-4 my-4 flex flex-col max-h-[90vh]"
+        style={{ color: "var(--sm-text)", backgroundColor: "var(--sm-panel)" }}
       >
         <div className="flex justify-between items-center p-6 border-b" style={{ borderColor: "var(--sm-border)" }}>
           <h2 className="text-2xl font-bold">Comparação de Projetos</h2>

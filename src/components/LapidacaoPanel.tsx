@@ -259,7 +259,7 @@ export function LapidacaoPanel({
           <div className="space-y-3">
             {scoreInicial && scoreFinal && (
               <div className="rounded border border-[color:var(--sm-border)] p-2 text-sm">
-                <p className="font-medium">Antes → Depois (medido pelo motor de conformidade)</p>
+                <p className="font-medium">Antes → Depois (medido pelas regras do acordo)</p>
                 <p>
                   🔴 Bloqueios: {scoreInicial.bloqueios} → {scoreFinal.bloqueios} · 🟡 Atenções: {scoreInicial.atencoes} → {scoreFinal.atencoes} · Pendências: {scoreInicial.pendencias} →{" "}
                   {scoreFinal.pendencias}
@@ -277,7 +277,7 @@ export function LapidacaoPanel({
 
             {resultado.convergiu && (
               <p className="rounded border border-[color:var(--sm-yellow)]/40 bg-[color:var(--sm-yellow)]/10 p-2 text-xs">
-                O ciclo convergiu: a última volta não resolveu item novo (medido pelo motor de conformidade) ou o compilador avaliou que não há mais ganho a extrair — paramos antes de gastar mais chamadas de IA.
+                O ciclo parou sozinho: a última volta não resolveu nada novo (medido pelas regras do acordo), ou o compilador viu que não dava mais pra melhorar — assim evita gastar chamadas de IA à toa.
               </p>
             )}
 
@@ -338,7 +338,7 @@ export function LapidacaoPanel({
                         {v.comparacao.changelog.length > 0 ? (
                           v.comparacao.changelog.map((c, j) => <li key={j}>{c}</li>)
                         ) : (
-                          <li className="text-[color:var(--sm-text-dim)]">Sem changelog descrito.</li>
+                          <li className="text-[color:var(--sm-text-dim)]">Sem lista de mudanças descrita.</li>
                         )}
                       </ul>
                       {i === resultado.voltas.length - 1 && (

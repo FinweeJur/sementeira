@@ -4,56 +4,57 @@ const TELAS = [
   {
     titulo: "O que é a Sementeira",
     texto: [
-      "A Sementeira é um aplicativo de computador (Windows, funciona sem internet) que ajuda você, pessoa atingida pelo rompimento da barragem de Brumadinho, a transformar uma ideia em um projeto comunitário completo — pronto para levar à Governança Popular.",
+      "A Sementeira é um programa para computador com Windows. Funciona sem internet.",
+      "Ela ajuda você, pessoa atingida pelo rompimento da barragem de Brumadinho, a transformar uma ideia em um projeto pronto para levar à Governança Popular.",
       "",
-      "Ela não substitui as assembleias, as Comissões de Atingidos nem a Governança. É a ferramenta que prepara o material antes disso.",
+      "Ela não substitui a assembleia, a Comissão de Atingidos nem a Governança. Ela só prepara o material antes disso.",
     ].join("\n"),
   },
   {
     titulo: "Do dano ao documento",
     texto: [
-      "1) Você conta qual dano quer reparar e a app sugere o tipo de projeto mais próximo.",
-      "2) A IA ajuda a preencher objetivo, justificativa, metas, orçamento e equipe — sempre revisável.",
-      "3) Um motor de conformidade avisa na hora o que é vedado pelo Ofício 46 (folha permanente sem fonte futura, contas de consumo, etc.).",
-      "4) Você simula se o projeto se sustenta sozinho depois que o dinheiro acabar (Plano Obrigatório de Sustentabilidade).",
+      "1) Você conta qual dano quer reparar. A Sementeira sugere o tipo de projeto mais próximo.",
+      "2) A IA ajuda a preencher objetivo, justificativa, metas, orçamento e equipe. Você revisa tudo.",
+      "3) O programa confere as regras na hora. Se algo não pode — como pagar salário para sempre sem dizer de onde vem o dinheiro depois —, ele avisa.",
+      "4) Você simula se o projeto se sustenta sozinho depois que o dinheiro do repasse acabar.",
       "5) Exporta tudo pronto em PDF, DOCX ou XLSX.",
     ].join("\n"),
   },
   {
     titulo: "A IA trabalha pra você",
     texto: [
-      "🪄 Copiloto dentro do projeto — faz perguntas, sugere melhorias e gera rascunhos completos a partir da sua ideia.",
-      "🔁 Ciclo de Lapidação — seis agentes especializados (escritor, orçamentista, crítico, analista de risco, sugestor, compilador) refinam seu projeto em uma versão melhorada. Nada é aplicado sem sua aprovação, e tudo pode ser revertido.",
-      "🛡 Revisão independente — um segundo agente de IA confere se o projeto está adequado às regras dos Ofícios 45 e 46, apontando divergências.",
+      "🪄 Copiloto — fica dentro do projeto, faz perguntas, sugere melhorias e gera rascunhos a partir da sua ideia.",
+      "🔁 Ciclo de Lapidação — seis ajudantes de IA revisam o projeto, um de cada vez, e você aprova cada mudança. Nada é aplicado sem você dizer sim, e tudo pode voltar atrás.",
+      "🛡 Revisão independente — um segundo agente de IA confere se o projeto segue as regras do acordo e mostra onde os dois discordam.",
     ].join("\n"),
   },
   {
-    titulo: "Visão de portfólio",
+    titulo: "Visão geral dos projetos",
     texto: [
-      "🌐 Ecossistema de projetos — mapa da região com os ~26 municípios da bacia do Paraopeba, análise de complementaridades e economia circular entre projetos.",
-      "⚖ Comparação lado a lado — compare até 3 projetos simultaneamente para identificar sobreposições ou lacunas.",
-      "🎟 Clube de benefícios — programa que conecta os produtos de cada projeto às famílias atingidas.",
-      "🙋 Voluntários — cadastro de pessoas disponíveis para mutirões, vinculadas aos projetos de interesse.",
-      "🤖 Copiloto de portfólio — converse por texto para lapidar, exportar ou consultar o status de qualquer projeto.",
+      "🌐 Ecossistema de projetos — mapa da região com os ~26 municípios da bacia do Paraopeba, e como os projetos podem se ajudar (um compra do outro, por exemplo).",
+      "⚖ Comparação lado a lado — compare até 3 projetos ao mesmo tempo pra ver o que se repete ou o que falta.",
+      "🎟 Clube de benefícios — liga o que cada projeto produz às famílias atingidas.",
+      "🙋 Voluntários — cadastro de pessoas disponíveis pra mutirão, ligadas aos projetos de interesse.",
+      "🤖 Copiloto de projetos — converse por texto pra lapidar, exportar ou saber a situação de qualquer projeto.",
     ].join("\n"),
   },
   {
     titulo: "Configure sua IA",
     texto: [
-      "A Sementeira funciona sem internet — formulário, motor de conformidade e simulações rodam offline. Mas a IA e a pesquisa precisam de configuração:",
+      "A Sementeira funciona sem internet: formulário, conferência de regras e simulações rodam no seu computador. Só a IA e a pesquisa precisam de configuração.",
       "",
-      "• Provedor de IA — DeepSeek, Maritaca/Sabiá ou Ollama local (modelos detectados automaticamente, sem lista fixa).",
-      "• Deep Research (Tavily) — busca dados públicos, preços de mercado e editais para embasar o projeto. Só cita o que realmente encontrou.",
+      "• Provedor de IA — DeepSeek, Maritaca/Sabiá ou Ollama no seu computador (os modelos aparecem sozinhos, sem lista fixa).",
+      "• Pesquisa na internet (Tavily) — busca dados públicos, preços de mercado e editais pra embasar o projeto. Só cita o que realmente encontrou.",
       "",
-      "Sem configurar a IA, o app continua funcional — só os recursos de inteligência artificial ficam desativados até você configurar.",
+      "Sem configurar a IA, o app continua funcionando — só os recursos de inteligência artificial ficam desligados até você configurar.",
     ].join("\n"),
   },
   {
     titulo: "Vamos começar",
     texto: [
-      "Você pode criar um projeto do zero ou importar um projeto já escrito em PDF/DOCX — a app lê o documento e preenche os campos automaticamente.",
+      "Você pode criar um projeto do zero ou importar um projeto já escrito em PDF ou DOCX — a Sementeira lê o documento e preenche os campos sozinha.",
       "",
-      "Este tutorial pode ser revisto a qualquer momento pelo botão no rodapé da tela inicial.",
+      "Você pode rever este tutorial quando quiser, pelo botão no rodapé da tela inicial.",
     ].join("\n"),
   },
 ];
@@ -75,6 +76,9 @@ export function Onboarding({ onConcluir }: { onConcluir: (comecarProjeto: boolea
             />
           ))}
         </div>
+        <span className="sm-selo-ico" aria-hidden="true">
+          <span className="sm-ico">h</span>
+        </span>
         <h2 className="text-lg font-semibold">{tela.titulo}</h2>
         <p className="text-sm text-[color:var(--sm-text-dim)] whitespace-pre-wrap">{tela.texto}</p>
         <div className="flex items-center justify-between pt-2">

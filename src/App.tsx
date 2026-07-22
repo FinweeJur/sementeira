@@ -6,6 +6,7 @@ import { ProjectWizard } from "./pages/ProjectWizard";
 import { Ecossistema } from "./pages/Ecossistema";
 import { ClubeBeneficios } from "./pages/ClubeBeneficios";
 import { Voluntarios } from "./pages/Voluntarios";
+import { Biblioteca } from "./pages/Biblioteca";
 import { CompareProjects } from "./pages/CompareProjects";
 import { Onboarding } from "./components/Onboarding";
 import { NavBar } from "./components/NavBar";
@@ -28,6 +29,7 @@ import { carregarConfigLLM, salvarConfigLLM, type ProviderConfig } from "./lib/p
 import { gerarProjetosSeed } from "./data/seed-projetos";
 import { gerarClubeSeed } from "./data/seed-clube";
 import { salvarClube } from "./lib/clube-beneficios";
+import { iniciarHolofote } from "./lib/holofote";
 
 export function App() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -35,6 +37,7 @@ export function App() {
   const [mostrarEcossistema, setMostrarEcossistema] = useState(false);
   const [mostrarClube, setMostrarClube] = useState(false);
   const [mostrarVoluntarios, setMostrarVoluntarios] = useState(false);
+  const [mostrarBiblioteca, setMostrarBiblioteca] = useState(false);
   const [mostrarComparacao, setMostrarComparacao] = useState(false);
   const [mostrarOnboarding, setMostrarOnboarding] = useState(false);
   const [sidebarTarefasAberta, setSidebarTarefasAberta] = useState(false);
@@ -62,6 +65,8 @@ export function App() {
     setTema(temaAtual);
     salvarTema(temaAtual);
   }, []);
+
+  useEffect(() => iniciarHolofote(), []);
 
   function handleTema(t: Tema) {
     setTema(t);
@@ -136,6 +141,8 @@ export function App() {
     conteudo = <ClubeBeneficios projects={projects} onVoltar={() => setMostrarClube(false)} />;
   } else if (mostrarVoluntarios) {
     conteudo = <Voluntarios projects={projects} onVoltar={() => setMostrarVoluntarios(false)} />;
+  } else if (mostrarBiblioteca) {
+    conteudo = <Biblioteca onVoltar={() => setMostrarBiblioteca(false)} />;
   } else if (mostrarComparacao) {
     conteudo = (
       <CompareProjects
@@ -156,6 +163,7 @@ export function App() {
         onAbrirEcossistema={() => setMostrarEcossistema(true)}
         onAbrirClube={() => setMostrarClube(true)}
         onAbrirVoluntarios={() => setMostrarVoluntarios(true)}
+        onAbrirBiblioteca={() => setMostrarBiblioteca(true)}
         onAbrirComparacao={() => setMostrarComparacao(true)}
         llmConfig={llmConfig}
         onLlmConfigChange={handleLlmConfigChange}

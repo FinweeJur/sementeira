@@ -5,8 +5,8 @@ import type { Project } from "../../lib/types";
 import { MUNICIPIOS_PARAOPEBA, distanciaHaversineKm } from "../../lib/geografia";
 import { derivarConexoes } from "../../lib/mapa-estagios";
 
-const COR_ACCENT = "#6fae55";
-const COR_DIM = "#6b7a67";
+const COR_ACCENT = "var(--sm-accent)";
+const COR_DIM = "var(--sm-text-dim)";
 
 /**
  * Mapa geográfico real dos ~26 municípios da bacia do Paraopeba — tiles reais
@@ -125,7 +125,7 @@ export function MapaGeografico({ projects, onAbrirProjeto }: { projects: Project
         radius: 13,
         color: COR_ACCENT,
         weight: selecionadoId === p.id ? 4 : 2,
-        fillColor: "#171d17",
+        fillColor: "var(--sm-panel)",
         fillOpacity: 0.95,
       })
         .bindTooltip(p.titulo || "(sem título)")

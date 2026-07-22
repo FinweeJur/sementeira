@@ -1,23 +1,130 @@
 @import "tailwindcss";
 
+/* Fontes self-hospedadas (app offline-first — sem dependência de CDN em runtime). */
+@font-face {
+  font-family: "Panchang";
+  src: url("./assets/fonts/panchang-600.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Panchang";
+  src: url("./assets/fonts/panchang-700.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Chillax";
+  src: url("./assets/fonts/chillax-600.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Synonym";
+  src: url("./assets/fonts/synonym-400.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Synonym";
+  src: url("./assets/fonts/synonym-500.woff2") format("woff2");
+  font-weight: 500;
+  font-display: swap;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Synonym";
+  src: url("./assets/fonts/synonym-600.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+  font-style: normal;
+}
+/* Subset de 11 glifos (dos 52 do TTF original) — só as letras usadas em .sm-ico. Ver mapa em CabecalhoSecao/Onboarding. */
+@font-face {
+  font-family: "Icones do Brasil";
+  src: url("./assets/fonts/icones-brasil.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+  font-style: normal;
+}
+
 :root {
+  /* Superfície e texto — mantidos, sem mudança de valor */
   --sm-bg: #0f1410;
   --sm-panel: #171d17;
   --sm-border: #2a332a;
   --sm-text: #e9efe6;
   --sm-text-dim: #9fae9b;
+  --sm-accent: #6fae55;
+
+  /* Cor bruta de estado — uso restrito a mapa/gráfico, não mais como texto direto */
   --sm-green: #4caf50;
   --sm-yellow: #d4a017;
   --sm-red: #d1453b;
-  --sm-accent: #6fae55;
 
+  /* Severidade — trio completo (cor + forma + texto, nunca só cor) */
+  --sm-ok-bg: #16281a;
+  --sm-ok-border: #2f5c34;
+  --sm-ok-text: #4caf50;
+  --sm-atencao-bg: #2b2410;
+  --sm-atencao-border: #5c4d17;
+  --sm-atencao-text: #d4a017;
+  --sm-bloqueio-bg: #2e1512;
+  --sm-bloqueio-border: #6b2e27;
+  --sm-bloqueio-text: #e15c50;
+
+  /* IA sugere × sistema afirma — família à parte (azul-violeta), nunca resolve divergência em silêncio */
+  --sm-ia: #8fa3e8;
+  --sm-ia-bg: #1c2340;
+  --sm-ia-border: #3a4680;
+
+  /* Foco de teclado */
+  --sm-focus: #9fe86f;
+
+  /* Tipografia */
+  --sm-font-display: "Panchang", serif;
+  --sm-font-heading: "Chillax", sans-serif;
+  --sm-font-body: "Synonym", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --sm-text-xs: 12px;
+  --sm-text-sm: 14px;
+  --sm-text-base: 17px;
+  --sm-text-lg: 18px;
+  --sm-text-xl: 22px;
+  --sm-text-2xl: 28px;
+  --sm-weight-regular: 400;
+  --sm-weight-medium: 500;
+  --sm-weight-bold: 700;
+  --sm-leading-tight: 1.25;
+  --sm-leading-normal: 1.6;
+  --sm-leading-relaxed: 1.65;
+
+  /* Espaçamento e raio */
+  --sm-space-xs: 4px;
   --sm-space-sm: 8px;
   --sm-space-md: 16px;
   --sm-space-lg: 24px;
+  --sm-space-xl: 32px;
+  --sm-space-2xl: 48px;
+  --sm-radius-sm: 4px;
   --sm-radius: 8px;
+  --sm-radius-lg: 12px;
+
   --sm-transition-fast: 150ms ease-out;
   --sm-transition-step: 200ms ease-out;
   --sm-font-scale: 1;
+
+  /* Sombra — degrada para borda no alto contraste e some na impressão */
+  --sm-shadow-panel: 0 2px 12px rgba(0, 0, 0, 0.4);
+  --sm-border-width-severidade: 1px;
+
+  /* Holofote do mouse — só em .sm-card, bem mais discreto que o do site (raio 240px/alpha .14):
+     o app fica aberto por horas, não é uma visita de 2 minutos. */
+  --sm-spot-raio: 120px;
+  --sm-spot-cor: rgba(111, 174, 85, 0.055);
 }
 
 /* Temas: só troca o conjunto de variáveis — nenhum componente referencia cor fixa. */
@@ -27,10 +134,28 @@
   --sm-border: #d7ddd2;
   --sm-text: #1c241c;
   --sm-text-dim: #5c6b57;
+  --sm-accent: #3f7a2c;
   --sm-green: #2f8132;
   --sm-yellow: #a0730a;
   --sm-red: #b23227;
-  --sm-accent: #3f7a2c;
+
+  --sm-ok-bg: #eaf5e8;
+  --sm-ok-border: #bfe0ba;
+  --sm-ok-text: #2f8132;
+  --sm-atencao-bg: #faf1de;
+  --sm-atencao-border: #e6cf9a;
+  --sm-atencao-text: #8a6008;
+  --sm-bloqueio-bg: #fbeae8;
+  --sm-bloqueio-border: #eab5ae;
+  --sm-bloqueio-text: #b23227;
+
+  --sm-ia: #4552b0;
+  --sm-ia-bg: #eef0fb;
+  --sm-ia-border: #c7cdf0;
+
+  --sm-focus: #1f5c1a;
+  --sm-shadow-panel: 0 2px 8px rgba(20, 30, 15, 0.08);
+  --sm-spot-cor: rgba(63, 122, 44, 0.07);
 }
 
 :root[data-tema="alto-contraste"] {
@@ -39,20 +164,182 @@
   --sm-border: #ffffff;
   --sm-text: #ffffff;
   --sm-text-dim: #d8d8d8;
+  --sm-accent: #7fd858;
   --sm-green: #4caf50;
   --sm-yellow: #ffd400;
   --sm-red: #ff5c4d;
-  --sm-accent: #7fd858;
+
+  --sm-ok-bg: #0a0a0a;
+  --sm-ok-border: #4caf50;
+  --sm-ok-text: #4caf50;
+  --sm-atencao-bg: #0a0a0a;
+  --sm-atencao-border: #ffd400;
+  --sm-atencao-text: #ffd400;
+  --sm-bloqueio-bg: #0a0a0a;
+  --sm-bloqueio-border: #ff5c4d;
+  --sm-bloqueio-text: #ff5c4d;
+
+  --sm-ia: #9fb4ff;
+  --sm-ia-bg: #0a0a0a;
+  --sm-ia-border: #9fb4ff;
+
+  --sm-focus: #ffd400;
+  --sm-border-width-severidade: 2px;
+  --sm-shadow-panel: none;
+  /* Desliga o holofote no alto contraste só zerando a cor — sem if no JS. */
+  --sm-spot-cor: transparent;
 }
 
 html {
-  font-size: calc(16px * var(--sm-font-scale));
+  font-size: calc(var(--sm-text-base) * var(--sm-font-scale));
 }
 
 body {
   background: var(--sm-bg);
   color: var(--sm-text);
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: var(--sm-font-body);
+  line-height: var(--sm-leading-normal);
+}
+
+/* Título de página/seção — a tipografia que dá o rosto do site (antes carregada e nunca usada). */
+h1, h2 {
+  font-family: var(--sm-font-display);
+  letter-spacing: 0.015em;
+}
+
+/* Título de card, painel, modal. */
+h3 {
+  font-family: var(--sm-font-heading);
+}
+
+/* Ritmo de cabeçalho de tela (CabecalhoSecao.tsx) — espelha .cabecalho-secao do site,
+   em escala mais contida: o app fica aberto por horas, não é uma visita de 2 minutos. */
+.sm-cabecalho-secao {
+  margin-bottom: var(--sm-space-lg);
+}
+.sm-olho {
+  font-size: var(--sm-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sm-accent);
+  font-weight: var(--sm-weight-bold);
+  margin: 0 0 4px;
+}
+.sm-titulo-secao {
+  font-family: var(--sm-font-display);
+  font-weight: var(--sm-weight-bold);
+  font-size: clamp(22px, 3vw, 32px);
+  line-height: var(--sm-leading-tight);
+  letter-spacing: 0.015em;
+  margin: 0 0 6px;
+}
+.sm-linha-secao {
+  font-size: var(--sm-text-lg);
+  color: var(--sm-text-dim);
+  line-height: var(--sm-leading-relaxed);
+  margin: 0;
+  max-width: 60ch;
+}
+
+/* Ícones "Ícones do Brasil" — família à parte, nunca na pilha do corpo (senão vaza pra texto normal).
+   São letras (a=arara, s=onça...), por isso aria-hidden sempre. Uso: selo do CabecalhoSecao, tela vazia, onboarding — nunca ícone de ação. */
+.sm-ico {
+  font-family: "Icones do Brasil";
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1;
+  display: inline-block;
+  speak: never;
+}
+.sm-selo-ico {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--sm-radius);
+  background: var(--sm-ok-bg);
+  border: 1px solid var(--sm-ok-border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--sm-accent);
+  margin-bottom: 8px;
+}
+.sm-selo-ico .sm-ico {
+  font-size: 20px;
+}
+
+/* Anel de foco visível — substitui o outline padrão do navegador em todo controle interativo. */
+:focus-visible {
+  outline: 2px solid var(--sm-focus);
+  outline-offset: 2px;
+  border-radius: var(--sm-radius-sm);
+}
+
+/* Hairline de acento no topo do card (mantido, hover-lift discreto). */
+.sm-card {
+  position: relative;
+  transition: transform var(--sm-transition-step), box-shadow var(--sm-transition-step), border-color var(--sm-transition-step);
+}
+.sm-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sm-shadow-panel);
+  border-color: color-mix(in srgb, var(--sm-accent) 40%, var(--sm-border));
+}
+.sm-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+  background: linear-gradient(90deg, transparent, var(--sm-accent), transparent);
+  opacity: 0;
+  transition: opacity var(--sm-transition-step);
+}
+.sm-card:hover::before {
+  opacity: 1;
+}
+/* Holofote — camada única (::after, nunca <div> injetado: um filho colidiria com a regra
+   ".sm-card > *" logo abaixo e viraria position:relative com altura 0). O JS (holofote.ts)
+   só escreve --sm-mx/--sm-my/--sm-spot; o CSS decide raio e cor por token/tema. */
+.sm-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  opacity: var(--sm-spot, 0);
+  transition: opacity 0.3s;
+  background: radial-gradient(var(--sm-spot-raio) circle at var(--sm-mx, 50%) var(--sm-my, 50%), var(--sm-spot-cor), transparent 62%);
+}
+/* O conteúdo do card fica acima do brilho. */
+.sm-card > * {
+  position: relative;
+  z-index: 1;
+}
+/* Hover-lift discreto em todo controle clicável — "confirma que é clicável", sem decorar demais. */
+button:not(:disabled), a {
+  transition: transform var(--sm-transition-step), border-color var(--sm-transition-fast), background-color var(--sm-transition-fast), box-shadow var(--sm-transition-step);
+}
+button:not(:disabled):hover, a:hover {
+  transform: translateY(-2px);
+}
+button:not(:disabled):active, a:active {
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sm-card, .sm-card::before, button, a {
+    transition: none;
+  }
+  .sm-card:hover, button:hover, a:hover {
+    transform: none;
+  }
+  .sm-card::after {
+    opacity: 0 !important;
+  }
 }
 
 .sm-fade {

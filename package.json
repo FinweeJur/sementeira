@@ -13,6 +13,7 @@
     "dev": "concurrently -k \"npm:dev:renderer\" \"npm:dev:electron\"",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -p . --noEmit",
+    "test": "vitest run",
     "dist": "npm run build && electron-builder"
   },
   "build": {
@@ -23,6 +24,9 @@
       "electron/**/*",
       "build/icon.png",
       "package.json"
+    ],
+    "asarUnpack": [
+      "dist/biblioteca-docs/**"
     ],
     "directories": {
       "output": "release"
@@ -47,6 +51,7 @@
     "electron-updater": "^6.8.9",
     "exceljs": "^4.4.0",
     "leaflet": "^1.9.4",
+    "lucide-react": "^1.25.0",
     "mammoth": "^1.12.0",
     "pdfjs-dist": "^6.1.200",
     "react": "^19.2.0",
@@ -55,6 +60,8 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.4",
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^16.3.2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@types/three": "^0.170.0",
@@ -63,9 +70,11 @@
     "cross-env": "^7.0.3",
     "electron": "^40.10.2",
     "electron-builder": "^26.8.1",
+    "jsdom": "^29.1.1",
     "tailwindcss": "^4.2.4",
     "typescript": "^5.7.2",
     "vite": "^6.3.6",
+    "vitest": "^4.1.10",
     "wait-on": "^8.0.1"
   }
 }
