@@ -42,6 +42,16 @@ import {
 
 const ZOOM_MIN = 0.55;
 const ZOOM_MAX = 4;
+/**
+ * Distância da câmera ao alvo, ao longo da direção isométrica (1,1,1). Numa
+ * câmera ortográfica isto NÃO muda o tamanho aparente — serve só para nada
+ * ficar atrás do plano near. Mas a névoa é calculada sobre a profundidade real,
+ * então esta distância e a névoa têm que ser definidas juntas: com a câmera a
+ * ~138 unidades e FogExp2 de densidade 0,026, a cena inteira era pintada com
+ * 99,9997% de cor de névoa — um retângulo chapado da cor do fundo.
+ */
+const DISTANCIA_CAMERA = 70;
+const DIRECAO_CAMERA = new THREE.Vector3(1, 1, 1).normalize();
 /** Acima deste zoom todos os rótulos entram na disputa por espaço. */
 const ZOOM_ROTULOS = 1.2;
 const ELEVACAO_HOVER = 0.14;
@@ -223,6 +233,19 @@ export function MapaEcossistema({
     return Math.max(precisaVertical, precisaHorizontal, 6) * 1.06 + 2.4;
   }, []);
 
+  /**
+   * Põe a névoa para começar depois do conteúdo. A meia-profundidade do mapa
+   * na direção de visão é extensao/(2·√3) — daí em diante é só água e
+   * horizonte, que é o que deve desbotar.
+   */
+  const ajustarNevoa = useCallback(() => {
+    const nevoa = sceneRef.current?.fog;
+    if (!(nevoa instanceof THREE.Fog)) return;
+    const meiaProfundidade = enquadramentoRef.current.extensao / (2 * Math.sqrt(3));
+    nevoa.near = DISTANCIA_CAMERA + meiaProfundidade + 3;
+    nevoa.far = nevoa.near + Math.max(enquadramentoRef.current.extensao * 1.4, 40);
+  }, []);
+
   const projetosRef = useRef(new Map<string, EntradaProjeto>());
   const estradasRef = useRef<EntradaEstrada[]>([]);
   const gotasRef = useRef<EntradaGota[]>([]);
@@ -360,7 +383,7 @@ export function MapaEcossistema({
     const aspecto = largura / altura;
     const frustum = calcularFrustum(aspecto);
     const camera = new THREE.OrthographicCamera((-frustum * aspecto) / 2, (frustum * aspecto) / 2, frustum / 2, -frustum / 2, 0.1, 400);
-    camera.position.set(60, 60, 60);
+    camera.position.copy(DIRECAO_CAMERA).multiplyScalar(DISTANCIA_CAMERA);
     camera.lookAt(alvoRef.current);
     camera.updateProjectionMatrix();
     cameraRef.current = camera;
@@ -423,7 +446,11 @@ export function MapaEcossistema({
     cenarioRef.current = [];
     nuvensRef.current = [];
 
-    scene.fog = paleta.altoContraste ? null : new THREE.FogExp2(paleta.neblina, 0.026);
+    // Névoa LINEAR, com near/far ajustados em `ajustarNevoa()` para começarem
+    // depois do conteúdo. Exponencial não serve aqui: a densidade teria que
+    // acompanhar a distância da câmera, e qualquer erro apaga o mapa inteiro.
+    scene.fog = paleta.altoContraste ? null : new THREE.Fog(paleta.neblina, DISTANCIA_CAMERA * 2, DISTANCIA_CAMERA * 3);
+    ajustarNevoa();
 
     const ambiente = new THREE.AmbientLight(0xffffff, paleta.altoContraste ? 0.9 : 0.6);
     const sol = new THREE.DirectionalLight(paleta.luzSol, paleta.altoContraste ? 0.9 : 1.25);
@@ -459,7 +486,7 @@ export function MapaEcossistema({
     }
 
     agendar();
-  }, [paleta, agendar]);
+  }, [paleta, agendar, ajustarNevoa]);
 
   // -------------------------------------------------------------------------
   // Terreno: tiles hexagonais instanciados.
@@ -798,11 +825,12 @@ export function MapaEcossistema({
     cam.bottom = -frustum / 2;
     cam.zoom = 1;
     alvoRef.current.copy(alvo);
-    cam.position.set(alvo.x + 80, alvo.y + 80, alvo.z + 80);
+    cam.position.copy(DIRECAO_CAMERA).multiplyScalar(DISTANCIA_CAMERA).add(alvo);
     cam.lookAt(alvoRef.current);
     cam.updateProjectionMatrix();
+    ajustarNevoa();
     agendar();
-  }, [agendar, calcularFrustum]);
+  }, [agendar, calcularFrustum, ajustarNevoa]);
 
   useEffect(() => {
     recentralizar();

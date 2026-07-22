@@ -116,7 +116,11 @@ export function lerPaleta(): PaletaMapa {
   // no claro fica pastel, no alto-contraste vira quase preto com borda viva.
   const soloTopo = altoContraste ? 0x121212 : misturar(accent, bg, claro ? 0.55 : 0.72);
   const soloLado = altoContraste ? 0x000000 : ajustarBrilho(soloTopo, -0.35);
-  const agua = altoContraste ? 0x001018 : misturar(bg, 0x1b3a4b, claro ? 0.28 : 0.55);
+  // Água puxada para perto do fundo: ela é o "fora do mapa", não um campo azul
+  // disputando atenção. Numa projeção isométrica o terreno é um losango, então
+  // a água sempre ocupa a maior parte do quadro — se tiver cor forte, é ela que
+  // o olho vê primeiro.
+  const agua = altoContraste ? 0x001018 : misturar(bg, 0x1b3a4b, claro ? 0.16 : 0.26);
   const costa = altoContraste ? 0xffffff : misturar(soloTopo, bg, 0.5);
   const estrada = altoContraste ? 0xffffff : misturar(soloTopo, 0xc8b48a, claro ? 0.5 : 0.42);
   const neblina = altoContraste ? 0x000000 : bg;

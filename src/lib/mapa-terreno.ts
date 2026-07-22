@@ -365,9 +365,13 @@ export function calcularLayout(nos: NoLayout[], arestas: ArestaLayout[]): Result
     const AUREO = 2.39996323;
     let centro = { x: 0, y: 0 };
     for (let i = 0; i < 400; i++) {
-      const raio = 3.2 * Math.sqrt(i);
+      // Espaçamento enxuto de propósito: um projeto isolado é o seu próprio
+      // bairro, e com muitos deles um passo largo espalhava tudo em ilhotas
+      // perdidas num oceano (medido: 88% do quadro era água). Bairros vizinhos
+      // encostando formam um continente, que é a leitura certa.
+      const raio = 2.1 * Math.sqrt(i);
       const candidato = { x: Math.cos(i * AUREO) * raio, y: Math.sin(i * AUREO) * raio };
-      const colide = centrosColocados.some((c) => Math.hypot(c.x - candidato.x, c.y - candidato.y) < c.raio + raioBairro + 2.6);
+      const colide = centrosColocados.some((c) => Math.hypot(c.x - candidato.x, c.y - candidato.y) < c.raio + raioBairro + 1.3);
       if (!colide) {
         centro = candidato;
         break;
@@ -407,7 +411,9 @@ export function calcularLayout(nos: NoLayout[], arestas: ArestaLayout[]): Result
   }
   for (const tile of posicoes.values()) marcar(tile);
   for (const caminho of caminhos) for (const tile of caminho.tiles) marcar(tile);
-  for (let anel = 0; anel < 2; anel++) {
+  // 3 anéis de margem, não 2: é o que faz as manchas de terra dos bairros
+  // vizinhos se encontrarem em vez de ficarem separadas por um filete de água.
+  for (let anel = 0; anel < 3; anel++) {
     for (const c of Array.from(mapaTerra.values())) for (const v of vizinhos(c)) marcar(v);
   }
 
