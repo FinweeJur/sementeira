@@ -3,11 +3,28 @@ import { calcularScore } from "./refinement-loop";
 
 export type EstagioCrescimento = "semente" | "broto" | "muda" | "arvore";
 
+export const ESTAGIOS: EstagioCrescimento[] = ["semente", "broto", "muda", "arvore"];
+
+/** Nome do estágio. Sem emoji: no mapa a legenda usa miniatura do modelo real. */
+export const ESTAGIO_NOME: Record<EstagioCrescimento, string> = {
+  semente: "Semente",
+  broto: "Broto",
+  muda: "Muda",
+  arvore: "Árvore florida",
+};
+
+export const ESTAGIO_EXPLICACAO: Record<EstagioCrescimento, string> = {
+  semente: "tem bloqueios para resolver",
+  broto: "sem bloqueios, mas com pendências",
+  muda: "quase pronto, falta pouco",
+  arvore: "pronto para exportar",
+};
+
 export const ESTAGIO_ROTULO: Record<EstagioCrescimento, string> = {
-  semente: "🌰 Semente — tem bloqueios 🔴 para resolver",
-  broto: "🌱 Broto — sem bloqueios, mas com pendências",
-  muda: "🌿 Muda — quase pronto, falta pouco",
-  arvore: "🌳 Árvore florida — pronto para exportar",
+  semente: `${ESTAGIO_NOME.semente} — ${ESTAGIO_EXPLICACAO.semente}`,
+  broto: `${ESTAGIO_NOME.broto} — ${ESTAGIO_EXPLICACAO.broto}`,
+  muda: `${ESTAGIO_NOME.muda} — ${ESTAGIO_EXPLICACAO.muda}`,
+  arvore: `${ESTAGIO_NOME.arvore} — ${ESTAGIO_EXPLICACAO.arvore}`,
 };
 
 /**

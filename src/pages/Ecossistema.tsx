@@ -38,6 +38,11 @@ export function Ecossistema({
   const saldos = useMemo(() => calcularSaldosRealistas(projects), [projects]);
   const fundo = useMemo(() => simularFundoRotativo(projects, percentual), [projects, percentual]);
   const cota = useMemo(() => calcularCotaEquidade(projects), [projects]);
+  // Estável entre renders: um Map novo a cada render reconstruía a cena 3D inteira.
+  const ofertasPorProjeto = useMemo(
+    () => carregarClube().ofertas.reduce((mapa, o) => mapa.set(o.projectId, (mapa.get(o.projectId) ?? 0) + 1), new Map<string, number>()),
+    [],
+  );
 
   const alertasLogistica = useMemo(() => {
     const conexoes = derivarConexoes(projects);
@@ -147,14 +152,7 @@ export function Ecossistema({
         ))}
       </div>
 
-      {aba === "mapa" && (
-        <MapaEcossistema
-          projects={projects}
-          percentualFundo={percentual}
-          ofertasPorProjeto={new Map(carregarClube().ofertas.reduce((mapa, o) => mapa.set(o.projectId, (mapa.get(o.projectId) ?? 0) + 1), new Map<string, number>()))}
-          onAbrirProjeto={onAbrirProjeto}
-        />
-      )}
+      {aba === "mapa" && <MapaEcossistema projects={projects} percentualFundo={percentual} ofertasPorProjeto={ofertasPorProjeto} onAbrirProjeto={onAbrirProjeto} />}
 
       {aba === "regiao" && <MapaGeografico projects={projects} onAbrirProjeto={onAbrirProjeto} />}
 
