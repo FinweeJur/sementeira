@@ -14,6 +14,7 @@ import {
   giroDoProjeto,
   carregarKit,
   existeKitGlTF,
+  ALTURA_MAXIMA_ESTAGIO,
 } from "../../lib/mapa-modelos";
 
 /**
@@ -132,29 +133,38 @@ function descartar(obj: THREE.Object3D) {
  * Miniaturas da legenda: renderiza os modelos de verdade num renderer
  * descartável. Emoji não servia — 🌰🌱🌿🌳 não se parecem com o que está na
  * cena, então a legenda explicava outra coisa.
+ *
+ * ESCALA COMUM, e isto é o ponto: a câmera é a mesma para os quatro estágios,
+ * dimensionada pelo mais alto. Enquadrar cada modelo pelo próprio tamanho
+ * fazia semente e árvore saírem do mesmo tamanho na legenda — justo a
+ * informação que a legenda existe para dar. Todos assentam na base (y=0), que
+ * é o chão comum.
  */
 function gerarMiniaturas(paleta: PaletaMapa): Record<EstagioCrescimento, string> | null {
   let renderer: THREE.WebGLRenderer | null = null;
   try {
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(96, 96);
+    renderer.setSize(128, 128);
     renderer.setPixelRatio(2);
+
+    const lado = ALTURA_MAXIMA_ESTAGIO * 0.62;
+    const camera = new THREE.OrthographicCamera(-lado, lado, lado, -lado, 0.1, 50);
+    camera.position.set(2.4, 2.0, 2.4);
+    camera.lookAt(0, ALTURA_MAXIMA_ESTAGIO * 0.42, 0);
 
     const saida = {} as Record<EstagioCrescimento, string>;
     for (const estagio of ESTAGIOS) {
       const cena = new THREE.Scene();
-      cena.add(new THREE.AmbientLight(0xffffff, 0.8));
+      cena.add(new THREE.AmbientLight(0xffffff, 0.85));
       const luz = new THREE.DirectionalLight(paleta.luzSol, 1.5);
       luz.position.set(3, 5, 2);
       cena.add(luz);
+      const contraluz = new THREE.DirectionalLight(paleta.luzContra, 0.45);
+      contraluz.position.set(-3, 2, -3);
+      cena.add(contraluz);
 
-      const { grupo, altura } = construirModelo(estagio, `miniatura-${estagio}`, paleta);
+      const { grupo } = construirModelo(estagio, `miniatura-${estagio}`, paleta);
       cena.add(grupo);
-
-      const lado = altura * 0.78;
-      const camera = new THREE.OrthographicCamera(-lado, lado, lado, -lado, 0.1, 50);
-      camera.position.set(2, 2, 2);
-      camera.lookAt(0, altura * 0.45, 0);
 
       renderer.render(cena, camera);
       saida[estagio] = renderer.domElement.toDataURL("image/png");
@@ -1114,7 +1124,9 @@ export function MapaEcossistema({
                 {ESTAGIOS.map((estagio) => (
                   <li key={estagio} className="flex items-center gap-2">
                     {miniaturas ? (
-                      <img src={miniaturas[estagio]} alt="" aria-hidden width={28} height={28} className="shrink-0" />
+                      // 40px, não 28: com escala comum a semente ocupa uma fração
+                      // pequena do quadro, e num quadro apertado ela sumiria.
+                      <img src={miniaturas[estagio]} alt="" aria-hidden width={40} height={40} className="shrink-0" />
                     ) : (
                       <span aria-hidden className="inline-block h-3 w-3 shrink-0 rounded-[2px]" style={{ background: hexCss(corDoEstagio(estagio, paleta)) }} />
                     )}

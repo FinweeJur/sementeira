@@ -31,6 +31,7 @@ export interface PaletaMapa {
   folhaMedia: number;
   folhaClara: number;
   ouro: number;
+  flor: number;
   madeira: number;
   /** Luz. */
   luzSol: number;
@@ -141,6 +142,9 @@ export function lerPaleta(): PaletaMapa {
     folhaMedia: accent,
     folhaClara: ajustarBrilho(accent, altoContraste ? 0.25 : 0.3),
     ouro: altoContraste ? yellow : misturar(yellow, 0xffe9a8, 0.35),
+    // Flor da árvore madura. No alto contraste vira branco puro: um rosa
+    // pálido sobre fundo preto não passaria como marca distinta.
+    flor: altoContraste ? 0xffffff : misturar(0xf5d9e8, claro ? 0xe08ab4 : 0xffffff, claro ? 0.45 : 0.15),
     madeira: altoContraste ? 0xffffff : misturar(0x8a6a44, bg, claro ? 0.05 : 0.2),
     luzSol: claro ? 0xffffff : 0xfff2d8,
     luzContra: claro ? 0xdfe9ff : 0x8fb6d6,

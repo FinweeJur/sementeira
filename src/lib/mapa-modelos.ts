@@ -196,58 +196,117 @@ function construirMuda(variante: number, paleta: PaletaMapa, mats: THREE.Materia
   return g;
 }
 
+/**
+ * Árvore florida — o estágio "pronto para exportar".
+ *
+ * É de propósito o modelo mais pesado do conjunto: quase o dobro da altura da
+ * muda, tronco com raiz aparente, quatro galhos, copa em domo de sete volumes,
+ * flores e frutas. A diferença entre muda e árvore precisa ser lida de relance,
+ * no mapa e na legenda — se as duas parecerem a mesma planta com tamanhos
+ * parecidos, o estágio deixa de informar.
+ *
+ * As frutas são DOURADAS, não vermelhas: vermelho já é a cor de bloqueio no
+ * trio de severidade, e fruta vermelha na copa competiria com esse sinal.
+ */
 function construirArvore(variante: number, paleta: PaletaMapa, mats: THREE.Material[]): THREE.Group {
   const g = new THREE.Group();
-  g.add(canteiro(paleta, 0.38, mats));
+  g.add(canteiro(paleta, 0.42, mats));
 
-  const tronco = malha(new THREE.CylinderGeometry(0.06, 0.1, 0.72, 7), material(paleta.tronco), mats);
-  tronco.position.y = 0.48;
+  // Raiz aparente: alarga a base e assenta a árvore no chão com peso.
+  const raiz = malha(new THREE.CylinderGeometry(0.15, 0.24, 0.16, 8), material(paleta.tronco), mats);
+  raiz.position.y = 0.16;
+  g.add(raiz);
+
+  const tronco = malha(new THREE.CylinderGeometry(0.085, 0.15, 0.95, 8), material(paleta.tronco), mats);
+  tronco.position.y = 0.6;
   g.add(tronco);
 
-  // Dois galhos baixos dão silhueta de árvore adulta, não de pirulito.
-  for (const lado of [-1, 1]) {
-    const galho = malha(new THREE.CylinderGeometry(0.022, 0.03, 0.26, 5), material(paleta.tronco), mats);
-    galho.position.set(lado * 0.1, 0.66, lado * 0.05 * (variante === 1 ? -1 : 1));
-    galho.rotation.z = lado * 0.7;
+  // Quatro galhos em alturas e ângulos diferentes — silhueta de árvore
+  // adulta, não de pirulito.
+  const galhos: [number, number, number, number][] = [
+    [-1, 0.86, 0.62, 0.05],
+    [1, 0.98, 0.72, -0.05],
+    [-1, 1.06, 0.5, -0.5],
+    [1, 0.78, 0.58, 0.55],
+  ];
+  galhos.forEach(([lado, altura, comprimento, giro], i) => {
+    const galho = malha(new THREE.CylinderGeometry(0.028, 0.045, comprimento, 5), material(paleta.tronco), mats);
+    galho.position.set(lado * 0.16, altura, giro * 0.4);
+    galho.rotation.z = lado * (0.62 + ((i + variante) % 3) * 0.09);
+    galho.rotation.x = giro;
     g.add(galho);
-  }
+  });
 
+  // Copa larga em sete volumes: domo, não bola.
   const copas: [number, number, number, number, number][] = [
-    [0, 1.0, 0, 0.33, paleta.folhaMedia],
-    [-0.2, 0.9, 0.1, 0.24, paleta.folhaEscura],
-    [0.19, 0.94, variante === 2 ? -0.12 : 0.08, 0.22, paleta.folhaClara],
-    [0.02, 1.2, -0.03, 0.19, paleta.folhaClara],
+    [0, 1.46, 0, 0.46, paleta.folhaMedia],
+    [-0.36, 1.3, 0.14, 0.33, paleta.folhaEscura],
+    [0.38, 1.34, variante === 2 ? -0.16 : 0.1, 0.31, paleta.folhaEscura],
+    [0.06, 1.26, -0.34, 0.29, paleta.folhaMedia],
+    [-0.1, 1.24, 0.34, 0.27, paleta.folhaClara],
+    [0.16, 1.76, 0.04, 0.28, paleta.folhaClara],
+    [-0.2, 1.68, -0.1, 0.22, paleta.folhaMedia],
   ];
   copas.forEach(([x, y, z, raio, cor]) => {
     const f = folhagem(raio, cor, mats);
-    f.position.set(x, y, z);
+    f.position.set(x + (variante - 1) * 0.03, y, z);
     g.add(f);
   });
 
-  // Copa dourada: o "pronto para exportar" ganha brilho próprio.
-  for (const [x, y, z] of [
-    [0.12, 1.16, 0.1],
-    [-0.16, 1.04, -0.09],
-    [0.24, 0.86, 0.02],
-  ] as const) {
-    const fruto = malha(new THREE.OctahedronGeometry(0.055, 0), material(paleta.ouro, { emissivo: paleta.ouro, intensidade: 0.55 }), mats);
-    fruto.position.set(x + (variante - 1) * 0.02, y, z);
-    g.add(fruto);
+  // Flores: é "árvore FLORIDA". Espalhadas na superfície da copa.
+  const flores: [number, number, number][] = [
+    [0.3, 1.62, 0.22],
+    [-0.34, 1.5, -0.2],
+    [0.12, 1.94, -0.14],
+    [-0.14, 1.86, 0.26],
+    [0.44, 1.36, -0.12],
+    [-0.44, 1.3, 0.12],
+    [0.02, 1.08, 0.4],
+    [-0.06, 1.12, -0.42],
+  ];
+  for (const [x, y, z] of flores) {
+    const flor = malha(new THREE.IcosahedronGeometry(0.055, 0), material(paleta.flor, { emissivo: paleta.flor, intensidade: 0.22 }), mats);
+    flor.position.set(x, y, z);
+    flor.scale.set(1, 0.7, 1);
+    g.add(flor);
   }
 
-  const p = placa(paleta.accent, 0.56, mats);
-  p.position.set(-0.26, 0.12, 0.18);
+  // Frutas douradas, penduradas na borda de baixo da copa.
+  const frutas: [number, number, number][] = [
+    [0.34, 1.14, 0.2],
+    [-0.3, 1.06, 0.26],
+    [0.2, 1.02, -0.3],
+    [-0.38, 1.16, -0.16],
+    [0.46, 1.2, -0.02],
+    [0.0, 1.6, 0.36],
+  ];
+  for (const [x, y, z] of frutas) {
+    const fruta = malha(new THREE.OctahedronGeometry(0.075, 0), material(paleta.ouro, { emissivo: paleta.ouro, intensidade: 0.6 }), mats);
+    fruta.position.set(x + (variante - 1) * 0.02, y, z);
+    g.add(fruta);
+  }
+
+  const p = placa(paleta.accent, 0.6, mats);
+  p.position.set(-0.3, 0.12, 0.22);
   g.add(p);
 
   return g;
 }
 
-const ALTURA_POR_ESTAGIO: Record<EstagioCrescimento, number> = {
-  semente: 0.5,
+/**
+ * Altura do topo de cada estágio. A progressão é deliberadamente acelerada no
+ * fim (muda → árvore quase dobra) para que "pronto para exportar" se destaque
+ * de relance, no mapa e na legenda.
+ */
+export const ALTURA_POR_ESTAGIO: Record<EstagioCrescimento, number> = {
+  semente: 0.46,
   broto: 0.72,
-  muda: 1.06,
-  arvore: 1.44,
+  muda: 1.04,
+  arvore: 2.08,
 };
+
+/** Altura do estágio mais alto — referência de escala comum das miniaturas. */
+export const ALTURA_MAXIMA_ESTAGIO = Math.max(...Object.values(ALTURA_POR_ESTAGIO));
 
 const CONSTRUTORES: Record<EstagioCrescimento, (v: number, p: PaletaMapa, m: THREE.Material[]) => THREE.Group> = {
   semente: construirSemente,
