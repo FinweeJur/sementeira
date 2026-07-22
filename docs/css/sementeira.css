@@ -368,8 +368,10 @@ section { scroll-margin-top: 80px; }
 
 /* ============================================================
    HOLOFOTE — o brilho que segue o mouse.
-   O JS injeta <div class="holofote"> em tudo que casar com
-   .holofote-alvo e atualiza --mx/--my/--spot.
+
+   Duas camadas, ambas desenhadas com pseudo-elemento. O JS não
+   cria nenhum nó: só atualiza --mx / --my / --spot nos cartões e
+   --mx-secao / --my-secao / --spot-secao nas seções.
    ============================================================ */
 /* --- camada 1: cartões e painéis ---
    Usa ::after, e não um filho injetado, por dois motivos:
