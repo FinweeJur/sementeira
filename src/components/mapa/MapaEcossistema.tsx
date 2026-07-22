@@ -14,6 +14,8 @@ import {
   NIVEL_AGUA,
   ALTURA_RIO,
   ALTURA_TILE_MIN,
+  mundoParaTela,
+  telaParaMundo,
   type Coord,
 } from "../../lib/mapa-terreno";
 import { lerPaleta, observarTema, misturar, ajustarBrilho, type PaletaMapa } from "../../lib/mapa-tema";
@@ -128,7 +130,7 @@ function useDocumentoVisivel(): boolean {
   return visivel;
 }
 
-/** Nome curto para o cartucho: 18 caracteres, quebrando em palavra quando dá. */
+/** Nome curto para o cartucho: 14 caracteres, quebrando em palavra quando dá. */
 function nomeCurto(titulo: string): string {
   const t = (titulo ?? "").trim() || "(sem título)";
   if (t.length <= 14) return t;
@@ -229,20 +231,20 @@ export function MapaEcossistema({
   const sceneRef = useRef<THREE.Scene | null>(null);
   const alvoRef = useRef(new THREE.Vector3(0, 0, 0));
   /**
-   * `extensao` é (largura + profundidade) do mapa em unidades de mundo. O
-   * frustum sai daí, mas só na hora de aplicar, porque depende do aspecto do
-   * container. Projeção isométrica com direção (1,1,1):
-   *   extensão na horizontal da tela = (W+D)/√2  ≈ 0,7071·(W+D)
-   *   extensão na vertical  da tela = (W+D)/√6  ≈ 0,4082·(W+D)
-   * Guardar um `frustum` fixo (como estava) desperdiçava metade do canvas.
+   * Extensão do mapa medida NO ESPAÇO DA TELA (ver `mundoParaTela`), não na
+   * caixa do mundo. A versão anterior estimava por trigonometria a partir de
+   * (largura + profundidade) supondo uma região retangular; com o continente
+   * em forma de elipse a estimativa sobrava e virava mar no quadro.
    */
-  const enquadramentoRef = useRef({ extensao: 14, alvo: new THREE.Vector3(0, 0, 0) });
+  const enquadramentoRef = useRef({ larguraTela: 14, alturaTela: 8, alvo: new THREE.Vector3(0, 0, 0) });
   const calcularFrustum = useCallback((aspecto: number) => {
-    const { extensao } = enquadramentoRef.current;
-    const precisaVertical = extensao * 0.4082;
-    const precisaHorizontal = aspecto > 0 ? (extensao * 0.7071) / aspecto : precisaVertical;
-    // Folga para a altura dos modelos e para o cartucho que fica acima deles.
-    return Math.max(precisaVertical, precisaHorizontal, 6) * 1.06 + 2.4;
+    const { larguraTela, alturaTela } = enquadramentoRef.current;
+    const precisaHorizontal = aspecto > 0 ? larguraTela / aspecto : alturaTela;
+    // Sem folga: a faixa de costa (2,6 tiles antes do primeiro projeto) já é a
+    // margem, e deixá-la sangrar pela borda do quadro é preferível a emoldurar
+    // o continente com mar. Medido, cada 0,1 de multiplicador aqui custa ~3
+    // pontos percentuais de água na tela.
+    return Math.max(alturaTela, precisaHorizontal, 6) * 0.95 + 0.2;
   }, []);
 
   /**
@@ -253,9 +255,10 @@ export function MapaEcossistema({
   const ajustarNevoa = useCallback(() => {
     const nevoa = sceneRef.current?.fog;
     if (!(nevoa instanceof THREE.Fog)) return;
-    const meiaProfundidade = enquadramentoRef.current.extensao / (2 * Math.sqrt(3));
-    nevoa.near = DISTANCIA_CAMERA + meiaProfundidade + 3;
-    nevoa.far = nevoa.near + Math.max(enquadramentoRef.current.extensao * 1.4, 40);
+    const { larguraTela, alturaTela } = enquadramentoRef.current;
+    const diagonal = Math.hypot(larguraTela, alturaTela);
+    nevoa.near = DISTANCIA_CAMERA + diagonal * 0.6 + 3;
+    nevoa.far = nevoa.near + Math.max(diagonal * 1.4, 40);
   }, []);
 
   const projetosRef = useRef(new Map<string, EntradaProjeto>());
@@ -478,24 +481,18 @@ export function MapaEcossistema({
     const contraluz = new THREE.DirectionalLight(paleta.luzContra, paleta.altoContraste ? 0.2 : 0.5);
     contraluz.position.set(-12, 8, -14);
 
-    const agua = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), new THREE.MeshStandardMaterial({ color: paleta.agua, roughness: 0.35, metalness: 0.1 }));
+    // Fosca: com roughness baixa o sol acendia um especular sobre um plano de
+    // 600x600 e a água virava o elemento mais claro do quadro.
+    const agua = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), new THREE.MeshStandardMaterial({ color: paleta.agua, roughness: 0.95, metalness: 0 }));
     agua.rotation.x = -Math.PI / 2;
     agua.position.y = NIVEL_AGUA;
 
     scene.add(ambiente, sol, contraluz, agua);
     cenarioRef.current.push(ambiente, sol, contraluz, agua);
 
-    if (!paleta.altoContraste) {
-      for (let i = 0; i < 3; i++) {
-        const matNuvem = new THREE.MeshStandardMaterial({ color: ajustarBrilho(paleta.text, 0.2), transparent: true, opacity: 0.14, flatShading: true });
-        const nuvem = new THREE.Mesh(new THREE.IcosahedronGeometry(1.5 + i * 0.4, 0), matNuvem);
-        nuvem.scale.set(2.2, 0.5, 1.4);
-        nuvem.position.set(-24 + i * 17, 8 + i * 1.1, -8 + i * 9);
-        scene.add(nuvem);
-        cenarioRef.current.push(nuvem);
-        nuvensRef.current.push(nuvem);
-      }
-    }
+    // Sem nuvens. Um icosaedro de baixo poli achatado e semitransparente não lê
+    // como nuvem numa câmera isométrica travada: lê como polígono pálido pairando
+    // sobre o mapa — parecia defeito de render, não atmosfera.
 
     agendar();
   }, [paleta, agendar, ajustarNevoa]);
@@ -831,23 +828,27 @@ export function MapaEcossistema({
     }
 
     // ---- Enquadramento ---------------------------------------------------
-    let minX = Infinity;
-    let maxX = -Infinity;
-    let minZ = Infinity;
-    let maxZ = -Infinity;
+    // Medido no espaço da tela: é a extensão que a câmera de fato precisa
+    // cobrir. Estimar isso pela caixa no mundo sobrava e virava mar no quadro.
+    let minU = Infinity;
+    let maxU = -Infinity;
+    let minV = Infinity;
+    let maxV = -Infinity;
     for (const tile of layout.terreno) {
       const { x, z } = hexParaMundo(tile.q, tile.r);
-      minX = Math.min(minX, x);
-      maxX = Math.max(maxX, x);
-      minZ = Math.min(minZ, z);
-      maxZ = Math.max(maxZ, z);
+      const { u, v } = mundoParaTela(x, z);
+      minU = Math.min(minU, u);
+      maxU = Math.max(maxU, u);
+      minV = Math.min(minV, v);
+      maxV = Math.max(maxV, v);
     }
-    if (Number.isFinite(minX)) {
-      const centroX = (minX + maxX) / 2;
-      const centroZ = (minZ + maxZ) / 2;
-      // Guarda só (W+D); o frustum sai disso em `calcularFrustum`, que conhece
-      // o aspecto real do container.
-      enquadramentoRef.current = { extensao: maxX - minX + (maxZ - minZ), alvo: new THREE.Vector3(centroX, 0, centroZ) };
+    if (Number.isFinite(minU)) {
+      const centro = telaParaMundo((minU + maxU) / 2, (minV + maxV) / 2);
+      enquadramentoRef.current = {
+        larguraTela: maxU - minU,
+        alturaTela: maxV - minV,
+        alvo: new THREE.Vector3(centro.x, 0, centro.z),
+      };
     }
 
     agendar();

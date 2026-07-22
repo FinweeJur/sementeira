@@ -42,6 +42,36 @@ export function chaveTile(c: Coord): string {
   return `${c.q},${c.r}`;
 }
 
+/**
+ * Proporção largura/altura do continente medida na tela. Fixa de propósito: se
+ * dependesse do tamanho da janela, o mapa se redesenharia a cada resize.
+ */
+export const ASPECTO_CONTINENTE = 2.0;
+
+/**
+ * Expoente da superelipse da costa. Uma elipse (expoente 2) preenche só π/4 ≈
+ * 78% da própria caixa, e todo o resto vira mar no quadro; com expoente 4 sobe
+ * para ~87% sem a costa virar retângulo — o ruído por cima quebra o que sobra.
+ */
+const EXPOENTE_COSTA = 5;
+
+/**
+ * Mundo (plano XZ) → coordenadas da tela na câmera isométrica (1,1,1), em
+ * unidades de mundo. É a base para medir o mapa como ele é VISTO: quase tudo
+ * que importa para enquadramento e para a forma do continente vive aqui, não
+ * no plano XZ.
+ */
+export function mundoParaTela(x: number, z: number): { u: number; v: number } {
+  return { u: (x - z) / Math.SQRT2, v: (x + z) / Math.sqrt(6) };
+}
+
+/** Inverso de `mundoParaTela`. */
+export function telaParaMundo(u: number, v: number): { x: number; z: number } {
+  const a = u * Math.SQRT2;
+  const b = v * Math.sqrt(6);
+  return { x: (a + b) / 2, z: (b - a) / 2 };
+}
+
 /** Axial pointy-top → mundo (plano XZ). */
 export function hexParaMundo(q: number, r: number, raio: number = TILE_RAIO): { x: number; z: number } {
   return { x: raio * Math.sqrt(3) * (q + r / 2), z: raio * 1.5 * r };
@@ -403,7 +433,9 @@ function gerarRio(tiles: Coord[]): Set<string> {
   const larguraMundo = Math.max(maxX - minX, TILE_RAIO * 4);
   const profundidade = Math.max(maxZ - minZ, TILE_RAIO * 4);
   const amplitude = Math.max(profundidade * 0.2, TILE_RAIO * 1.6);
-  const margem = TILE_RAIO * 7;
+  // Folga larga: o rio é traçado sobre a caixa dos projetos, mas precisa
+  // atravessar o continente inteiro, que é maior, e desaguar nos dois lados.
+  const margem = TILE_RAIO * 11;
 
   const passos = Math.max(80, Math.round(larguraMundo / (TILE_RAIO * 0.35)));
   const traco: Coord[] = [];
@@ -432,9 +464,77 @@ function gerarRio(tiles: Coord[]): Set<string> {
 }
 
 /**
+ * Continente: uma massa de terra própria, não a sombra dos projetos.
+ *
+ * A versão anterior derivava a terra dos tiles ocupados (projetos + estradas +
+ * um anel de margem) e por isso herdava o espalhamento deles — o mapa saía como
+ * um arquipélago, com mais mar do que chão. Aqui a terra é um disco em volta do
+ * centro dos projetos, com raio suficiente para conter todos, e a costa é
+ * modulada por duas ondas mais ruído para não virar um círculo perfeito.
+ *
+ * A modulação é levemente para dentro (≈0,86–1,10) de propósito: fosse para
+ * fora, a bounding box cresceria e a câmera se afastaria de novo.
+ */
+function gerarContinente(tilesProjetos: Coord[]): Map<string, Coord> {
+  const mapa = new Map<string, Coord>();
+  if (tilesProjetos.length === 0) return mapa;
+
+  let cx = 0;
+  let cz = 0;
+  for (const t of tilesProjetos) {
+    const { x, z } = hexParaMundo(t.q, t.r);
+    cx += x;
+    cz += z;
+  }
+  cx /= tilesProjetos.length;
+  cz /= tilesProjetos.length;
+
+  // Semi-eixos medidos NO ESPAÇO DA TELA, não no mundo. Um disco no mundo
+  // projeta como elipse de 2R x 1,155R e ocupa no máximo ~26% de um quadro
+  // retangular — daí a sensação de "mais mar que chão" por mais terra que se
+  // gere. Modelando a massa já em (u,v) ela preenche o quadro.
+  let maxU = 0;
+  let maxV = 0;
+  for (const t of tilesProjetos) {
+    const { x, z } = hexParaMundo(t.q, t.r);
+    const { u, v } = mundoParaTela(x - cx, z - cz);
+    maxU = Math.max(maxU, Math.abs(u));
+    maxV = Math.max(maxV, Math.abs(v));
+  }
+  // Margem de costa: os projetos da borda não podem ficar na beira do penhasco.
+  const margemCosta = TILE_RAIO * 2.6;
+  let semiU = maxU + margemCosta;
+  let semiV = maxV + margemCosta;
+  if (semiU / semiV < ASPECTO_CONTINENTE) semiU = semiV * ASPECTO_CONTINENTE;
+  else semiV = semiU / ASPECTO_CONTINENTE;
+
+  const centroHex = mundoParaHex(cx, cz);
+  const alcance = Math.ceil(((semiU + semiV) * 1.6) / (TILE_RAIO * 1.5)) + 3;
+  for (let dq = -alcance; dq <= alcance; dq++) {
+    for (let dr = -alcance; dr <= alcance; dr++) {
+      const c: Coord = { q: centroHex.q + dq, r: centroHex.r + dr };
+      const { x, z } = hexParaMundo(c.q, c.r);
+      const { u, v } = mundoParaTela(x - cx, z - cz);
+      const angulo = Math.atan2(v, u);
+      const modulacao =
+        0.98 + 0.09 * Math.sin(angulo * 3 + 0.7) + 0.05 * Math.sin(angulo * 5 - 1.9) + 0.07 * (ruidoSuave(c.q, c.r, 3.4, SEMENTE_RELEVO ^ 0x3c1d) - 0.5) * 2;
+      // Superelipse, não elipse: |u/A|^n + |v/B|^n <= 1. Com n=1 seria um
+      // losango e n=2 uma elipse (preenche só 78% da própria caixa).
+      const n = EXPOENTE_COSTA;
+      const normalizado = Math.pow(Math.pow(Math.abs(u / semiU), n) + Math.pow(Math.abs(v / semiV), n), 1 / n);
+      if (normalizado <= modulacao) mapa.set(chaveTile(c), c);
+    }
+  }
+
+  // Nenhum projeto pode acabar fora da terra por causa do ruído da costa.
+  for (const t of tilesProjetos) mapa.set(chaveTile(t), t);
+  return mapa;
+}
+
+/**
  * Preenche buracos internos: qualquer tile que não seja terra mas também não
- * seja alcançável a partir de fora vira terra. É o que garante "sem espaços
- * vazios" — sem isto a massa fica furada onde os bairros não se encostam.
+ * seja alcançável a partir de fora vira terra. Fecha os entalhes que o ruído da
+ * costa abre.
  */
 function preencherFuros(terra: Set<string>, mapaTerra: Map<string, Coord>) {
   if (mapaTerra.size === 0) return;
@@ -542,21 +642,17 @@ export function calcularLayout(nos: NoLayout[], arestas: ArestaLayout[]): Result
     caminhos.push({ deId: a.deId, paraId: a.paraId, tiles: linhaHex(de, para) });
   }
 
-  // Terra = projetos + estradas + 2 anéis de margem, e então os furos internos
-  // preenchidos: o resultado é uma massa contínua, sem vão entre bairros.
-  const terra = new Set<string>();
-  const mapaTerra = new Map<string, Coord>();
+  // Terra: massa própria em volta do centro dos projetos, não a silhueta deles.
+  const mapaTerra = gerarContinente(Array.from(posicoes.values()));
+  const terra = new Set<string>(mapaTerra.keys());
   function marcar(c: Coord) {
     const k = chaveTile(c);
     if (terra.has(k)) return;
     terra.add(k);
     mapaTerra.set(k, c);
   }
-  for (const tile of posicoes.values()) marcar(tile);
+  // Estrada fora do continente seria ponte para lugar nenhum.
   for (const caminho of caminhos) for (const tile of caminho.tiles) marcar(tile);
-  // 1 anel só: o preenchimento de furos faz o resto do trabalho de fechar a
-  // massa. Mais anéis inflam o continente e obrigam a câmera a se afastar.
-  for (const c of Array.from(mapaTerra.values())) for (const v of vizinhos(c)) marcar(v);
   preencherFuros(terra, mapaTerra);
   // O leito do rio faz parte do terreno (renderiza afundado); sem isto ele
   // abriria um rasgo de nada no meio do continente.
