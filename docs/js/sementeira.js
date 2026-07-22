@@ -10,73 +10,69 @@
 
   /* ---------- 1. holofote ---------- */
 
-  // Tudo que ganha o brilho ao passar o mouse.
-  var ALVOS = [
-    '.cartao', '.modelo', '.cenario', '.papel', '.passo-linha', '.passo-instalar',
-    '.painel-regra', '.painel-ia', '.caixa-fala', '.faq-item', '.bloco',
-    '.mock', '.selo-ico'
-  ].join(',');
+  // Duas camadas independentes. A de seção acende junto com a de cartão,
+  // então o mouse ilumina a página inteira, e não só o cartão sob o cursor.
+  // O desenho de cada camada é ::after (cartões) e ::before (seções), no CSS.
+  var CAMADAS = [
+    {
+      sel: '.cartao,.modelo,.cenario,.papel,.passo-linha,.passo-instalar,' +
+           '.painel-regra,.painel-ia,.caixa-fala,.faq-item,.bloco,.mock,.selo-ico',
+      x: '--mx', y: '--my', ligado: '--spot',
+      atual: null, caixa: null
+    },
+    {
+      sel: 'section,header.hero,header.pagina-topo',
+      x: '--mx-secao', y: '--my-secao', ligado: '--spot-secao',
+      atual: null, caixa: null
+    }
+  ];
 
   var podeHover = !window.matchMedia || window.matchMedia('(hover: hover)').matches;
   var reduzido = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   if (podeHover && !reduzido) {
-    // Injeta a camada de brilho em quem ainda não tem.
-    var prepara = function (raiz) {
-      var els = (raiz || document).querySelectorAll(ALVOS);
-      for (var i = 0; i < els.length; i++) {
-        var el = els[i];
-        if (el.querySelector(':scope > .holofote')) continue;
-        var luz = document.createElement('div');
-        luz.className = 'holofote';
-        luz.setAttribute('aria-hidden', 'true');
-        el.insertBefore(luz, el.firstChild);
-      }
-    };
-    prepara(document);
-
-    // Um único listener delegado: o brilho acompanha o cartão sob o cursor.
-    // O retângulo do elemento fica em cache e só é medido de novo quando o
-    // cursor troca de cartão, ou quando a página rola / muda de tamanho.
-    var atual = null;
-    var caixa = null;
-
-    var apaga = function () {
-      if (atual) atual.style.setProperty('--spot', '0');
-      atual = null;
-      caixa = null;
+    var apaga = function (c) {
+      if (c.atual) c.atual.style.setProperty(c.ligado, '0');
+      c.atual = null;
+      c.caixa = null;
     };
 
+    // Um listener só, delegado, cuidando das duas camadas.
+    // O retângulo fica em cache e só é medido de novo quando o cursor troca
+    // de elemento, ou quando a página rola / muda de tamanho.
     document.addEventListener('pointermove', function (e) {
       if (e.pointerType === 'touch') return;
-      var alvo = e.target && e.target.closest ? e.target.closest(ALVOS) : null;
+      if (!e.target || !e.target.closest) return;
 
-      if (alvo !== atual) {
-        apaga();
-        if (!alvo) return;
-        atual = alvo;
-        caixa = alvo.getBoundingClientRect();
-      } else if (!caixa) {
-        caixa = alvo.getBoundingClientRect();
+      for (var i = 0; i < CAMADAS.length; i++) {
+        var c = CAMADAS[i];
+        var alvo = e.target.closest(c.sel);
+
+        // Fora de qualquer alvo desta camada: apaga e passa adiante.
+        // Precisa vir antes da comparação — com alvo e atual ambos nulos,
+        // "alvo !== c.atual" é falso e o código seguiria com c.atual nulo.
+        if (!alvo) { apaga(c); continue; }
+
+        if (alvo !== c.atual) { apaga(c); c.atual = alvo; }
+        if (!c.caixa) c.caixa = alvo.getBoundingClientRect();
+
+        alvo.style.setProperty(c.x, (e.clientX - c.caixa.left) + 'px');
+        alvo.style.setProperty(c.y, (e.clientY - c.caixa.top) + 'px');
+        alvo.style.setProperty(c.ligado, '1');
       }
-
-      atual.style.setProperty('--mx', (e.clientX - caixa.left) + 'px');
-      atual.style.setProperty('--my', (e.clientY - caixa.top) + 'px');
-      atual.style.setProperty('--spot', '1');
     }, { passive: true });
 
-    // Rolar ou redimensionar invalida a medida guardada.
-    var invalida = function () { caixa = null; };
+    // Rolar ou redimensionar invalida as medidas guardadas.
+    var invalida = function () {
+      for (var i = 0; i < CAMADAS.length; i++) CAMADAS[i].caixa = null;
+    };
     window.addEventListener('scroll', invalida, { passive: true });
     window.addEventListener('resize', invalida, { passive: true });
 
-    // Sai da janela: apaga o que estiver aceso.
-    document.addEventListener('pointerleave', apaga);
-
-    // <details> que abre muda de altura: garante a camada nos filhos novos.
-    document.addEventListener('toggle', function (e) {
-      if (e.target && e.target.tagName === 'DETAILS') prepara(e.target);
-    }, true);
+    // Sai da janela: apaga tudo que estiver aceso.
+    document.addEventListener('pointerleave', function () {
+      for (var i = 0; i < CAMADAS.length; i++) apaga(CAMADAS[i]);
+    });
   }
 
   /* ---------- 2. revelar ao rolar ---------- */

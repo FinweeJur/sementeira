@@ -371,20 +371,40 @@ section { scroll-margin-top: 80px; }
    O JS injeta <div class="holofote"> em tudo que casar com
    .holofote-alvo e atualiza --mx/--my/--spot.
    ============================================================ */
-.holofote {
-  position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 0;
+/* --- camada 1: cartões e painéis ---
+   Usa ::after, e não um filho injetado, por dois motivos:
+   1. um filho colidiria com a regra "conteúdo acima do brilho" logo abaixo;
+   2. <details> fechado esconde os filhos, e o FAQ ficaria sem luz. */
+.cartao, .modelo, .cenario, .papel, .passo-linha, .passo-instalar,
+.painel-regra, .painel-ia, .caixa-fala, .faq-item, .bloco, .selo-ico, .mock {
+  position: relative; overflow: hidden;
+}
+.cartao::after, .modelo::after, .cenario::after, .papel::after,
+.passo-linha::after, .passo-instalar::after, .painel-regra::after,
+.painel-ia::after, .caixa-fala::after, .faq-item::after, .bloco::after,
+.selo-ico::after, .mock::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  pointer-events: none; z-index: 0;
   opacity: var(--spot, 0); transition: opacity .3s;
   background: radial-gradient(var(--spot-raio, 240px) circle at var(--mx, 50%) var(--my, 50%),
               var(--spot-cor, rgba(111,174,85,.14)), transparent 62%);
 }
-/* Tudo que recebe holofote precisa conter o filho absoluto. */
-.cartao, .modelo, .cenario, .papel, .passo-linha, .passo-instalar,
-.painel-regra, .painel-ia, .caixa-fala, .faq-item, .bloco, .selo-ico {
-  position: relative; overflow: hidden;
-}
 /* O conteúdo fica acima do brilho. */
 .cartao > *, .cenario > *, .papel > *, .passo-linha > *, .passo-instalar > *,
 .painel-regra > *, .painel-ia > *, .caixa-fala > *, .bloco > * { position: relative; z-index: 1; }
+
+/* --- camada 2: a seção inteira ---
+   Brilho largo e fraco, para o mouse acender qualquer lugar da página,
+   inclusive o espaço vazio entre os cartões. */
+section, header.hero, header.pagina-topo { position: relative; }
+section::before, header.hero::before, header.pagina-topo::before {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  opacity: var(--spot-secao, 0); transition: opacity .5s;
+  background: radial-gradient(680px circle at var(--mx-secao, 50%) var(--my-secao, 50%),
+              rgba(111,174,85,.075), transparent 62%);
+}
+section > .wrap, section > .wrap-estreito,
+header > .wrap, header > .wrap-estreito { position: relative; z-index: 1; }
 /* Cores de holofote por contexto. */
 .painel-regra { --spot-cor: rgba(225,92,80,.16); }
 .painel-ia    { --spot-cor: rgba(143,163,232,.16); }
