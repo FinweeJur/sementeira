@@ -21,10 +21,17 @@ export const TILE_RAIO = 0.62;
 /** Semente fixa do relevo. Mudar isto muda o desenho do terreno para todo mundo. */
 const SEMENTE_RELEVO = 0x5e3e17;
 
-export const ALTURA_TILE_MIN = 0.24;
-export const ALTURA_TILE_MAX = 0.42;
+/**
+ * Faixa de altura do relevo. Estreita de propósito: com variação grande, a
+ * parede lateral de cada prisma aparece entre um tile e o vizinho e o terreno
+ * lê como um tabuleiro de peças soltas, não como chão contínuo.
+ */
+export const ALTURA_TILE_MIN = 0.26;
+export const ALTURA_TILE_MAX = 0.35;
 /** Nível da água — abaixo do tile mais baixo, para a costa aparecer. */
 export const NIVEL_AGUA = 0.1;
+/** Leito do rio: abaixo do nível da água, então o plano de água o cobre. */
+export const ALTURA_RIO = 0.04;
 
 export interface Coord {
   q: number;
@@ -171,8 +178,10 @@ export interface ResultadoLayout {
   caminhos: CaminhoLayout[];
   /** todos os tiles de terra (ocupados + estrada + margem) */
   terreno: Coord[];
-  /** tiles de terra que fazem fronteira com água — recebem a borda de costa */
+  /** tiles de terra que fazem fronteira com água (mar ou rio) — recebem a borda de costa */
   costa: Set<string>;
+  /** leito do rio: renderiza afundado, abaixo do nível da água */
+  rio: Set<string>;
   /** bairro → id dos projetos, para rótulo de região */
   bairros: Map<string, string[]>;
 }
@@ -203,7 +212,7 @@ function componentesConectados(ids: string[], adjacencia: Map<string, Set<string
  */
 function forcaDirigida(ids: string[], adjacencia: Map<string, Set<string>>, iteracoes = 180): Map<string, { x: number; y: number }> {
   const pos = new Map<string, { x: number; y: number }>();
-  const raioInicial = 1.4 * Math.sqrt(Math.max(ids.length, 1));
+  const raioInicial = 1.1 * Math.sqrt(Math.max(ids.length, 1));
   ids.forEach((id, i) => {
     // Ângulo pelo índice (espalha) + desvio pelo hash (quebra a simetria de relógio).
     const angulo = (i / ids.length) * Math.PI * 2 + (hashTexto(id) % 1000) / 1000 - 0.5;
@@ -212,7 +221,9 @@ function forcaDirigida(ids: string[], adjacencia: Map<string, Set<string>>, iter
   });
   if (ids.length < 2) return pos;
 
-  const k = 2.2; // distância ideal entre vizinhos, em unidades de tile
+  // Distância ideal entre vizinhos, em tiles. Enxuta: o mapa espalhado fazia a
+  // câmera se afastar tanto que um tile virava 14px e um broto 8px na tela.
+  const k = 1.75;
   let temperatura = raioInicial * 0.6;
   const resfriamento = temperatura / (iteracoes + 1);
 
@@ -297,13 +308,192 @@ function tileLivreProximo(alvo: Coord, ocupados: Set<string>): Coord {
   return alvo;
 }
 
-export function calcularLayout(nos: NoLayout[], arestas: ArestaLayout[]): ResultadoLayout {
+/**
+ * Coloca cada bairro numa espiral de ângulo áureo e cada projeto num tile
+ * livre. `bloqueados` são tiles proibidos (o leito do rio) — é o que permite
+ * rodar a colocação duas vezes: uma para descobrir a extensão do mapa, outra
+ * já desviando do rio.
+ */
+function colocarProjetos(
+  chavesOrdenadas: string[],
+  bairros: Map<string, string[]>,
+  adjacencia: Map<string, Set<string>>,
+  bloqueados: Set<string>,
+): Map<string, Coord> {
   const posicoes = new Map<string, Coord>();
+  const centrosColocados: { x: number; y: number; raio: number }[] = [];
+  const ocupados = new Set<string>(bloqueados);
+
+  for (const chave of chavesOrdenadas) {
+    const membros = bairros.get(chave)!;
+    const local = forcaDirigida(membros, adjacencia);
+
+    // Centraliza e mede o raio do bairro.
+    let cx = 0;
+    let cy = 0;
+    for (const id of membros) {
+      const p = local.get(id)!;
+      cx += p.x;
+      cy += p.y;
+    }
+    cx /= membros.length;
+    cy /= membros.length;
+    let raioBairro = 0;
+    for (const id of membros) {
+      const p = local.get(id)!;
+      p.x -= cx;
+      p.y -= cy;
+      raioBairro = Math.max(raioBairro, Math.hypot(p.x, p.y));
+    }
+    raioBairro = Math.max(raioBairro, 1);
+
+    const AUREO = 2.39996323;
+    let centro = { x: 0, y: 0 };
+    for (let i = 0; i < 400; i++) {
+      // Passo curto e margem mínima: bairros vizinhos precisam encostar. Com
+      // passo largo o mapa virava ilhotas num oceano e a câmera se afastava
+      // tanto que um tile dava 14px na tela.
+      const raio = 1.55 * Math.sqrt(i);
+      const candidato = { x: Math.cos(i * AUREO) * raio, y: Math.sin(i * AUREO) * raio };
+      const colide = centrosColocados.some((c) => Math.hypot(c.x - candidato.x, c.y - candidato.y) < c.raio + raioBairro + 0.7);
+      if (!colide) {
+        centro = candidato;
+        break;
+      }
+    }
+    centrosColocados.push({ ...centro, raio: raioBairro });
+
+    for (const id of membros) {
+      const p = local.get(id)!;
+      const alvo = arredondarAxial(centro.x + p.x, centro.y + p.y);
+      const tile = tileLivreProximo(alvo, ocupados);
+      ocupados.add(chaveTile(tile));
+      posicoes.set(id, tile);
+    }
+  }
+
+  return posicoes;
+}
+
+/**
+ * Rio serpenteando pelo meio do mapa, de costa a costa.
+ *
+ * Traçado determinístico: duas senoides (uma longa que dá a curva grande, uma
+ * curta que tira a regularidade) ao longo do eixo X do mapa, amostradas denso e
+ * costuradas com `linhaHex` para o leito nunca ter buraco. Estende-se além da
+ * borda da terra dos dois lados, senão o rio "começa" no meio do continente e
+ * lê como lago.
+ */
+function gerarRio(tiles: Coord[]): Set<string> {
+  const rio = new Set<string>();
+  if (tiles.length === 0) return rio;
+
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minZ = Infinity;
+  let maxZ = -Infinity;
+  for (const t of tiles) {
+    const { x, z } = hexParaMundo(t.q, t.r);
+    minX = Math.min(minX, x);
+    maxX = Math.max(maxX, x);
+    minZ = Math.min(minZ, z);
+    maxZ = Math.max(maxZ, z);
+  }
+  const centroZ = (minZ + maxZ) / 2;
+  const larguraMundo = Math.max(maxX - minX, TILE_RAIO * 4);
+  const profundidade = Math.max(maxZ - minZ, TILE_RAIO * 4);
+  const amplitude = Math.max(profundidade * 0.2, TILE_RAIO * 1.6);
+  const margem = TILE_RAIO * 7;
+
+  const passos = Math.max(80, Math.round(larguraMundo / (TILE_RAIO * 0.35)));
+  const traco: Coord[] = [];
+  for (let i = 0; i <= passos; i++) {
+    const t = i / passos;
+    const x = minX - margem + (larguraMundo + margem * 2) * t;
+    const z = centroZ + Math.sin(t * Math.PI * 2 * 1.15 + 0.6) * amplitude + Math.sin(t * Math.PI * 2 * 2.7 + 2.1) * amplitude * 0.26;
+    traco.push(mundoParaHex(x, z));
+  }
+
+  for (let i = 0; i < traco.length; i++) {
+    rio.add(chaveTile(traco[i]));
+    if (i > 0) for (const c of linhaHex(traco[i - 1], traco[i])) rio.add(chaveTile(c));
+  }
+
+  // Alarga em parte do percurso, sempre na direção transversal ao fluxo (o rio
+  // corre no eixo X, então o "através" são os vizinhos em r).
+  for (const k of Array.from(rio)) {
+    const [q, r] = k.split(",").map(Number);
+    const sorte = hashInteiros(q, r, 0x21ab);
+    if (sorte > 0.62) rio.add(chaveTile({ q, r: r + 1 }));
+    else if (sorte > 0.34) rio.add(chaveTile({ q, r: r - 1 }));
+  }
+
+  return rio;
+}
+
+/**
+ * Preenche buracos internos: qualquer tile que não seja terra mas também não
+ * seja alcançável a partir de fora vira terra. É o que garante "sem espaços
+ * vazios" — sem isto a massa fica furada onde os bairros não se encostam.
+ */
+function preencherFuros(terra: Set<string>, mapaTerra: Map<string, Coord>) {
+  if (mapaTerra.size === 0) return;
+  let minQ = Infinity;
+  let maxQ = -Infinity;
+  let minR = Infinity;
+  let maxR = -Infinity;
+  for (const c of mapaTerra.values()) {
+    minQ = Math.min(minQ, c.q);
+    maxQ = Math.max(maxQ, c.q);
+    minR = Math.min(minR, c.r);
+    maxR = Math.max(maxR, c.r);
+  }
+  minQ -= 1;
+  maxQ += 1;
+  minR -= 1;
+  maxR += 1;
+
+  const dentro = (c: Coord) => c.q >= minQ && c.q <= maxQ && c.r >= minR && c.r <= maxR;
+  const exterior = new Set<string>();
+  const fila: Coord[] = [];
+  const semear = (c: Coord) => {
+    const k = chaveTile(c);
+    if (terra.has(k) || exterior.has(k)) return;
+    exterior.add(k);
+    fila.push(c);
+  };
+  for (let q = minQ; q <= maxQ; q++) {
+    semear({ q, r: minR });
+    semear({ q, r: maxR });
+  }
+  for (let r = minR; r <= maxR; r++) {
+    semear({ q: minQ, r });
+    semear({ q: maxQ, r });
+  }
+  while (fila.length > 0) {
+    const atual = fila.pop() as Coord;
+    for (const v of vizinhos(atual)) {
+      if (!dentro(v)) continue;
+      semear(v);
+    }
+  }
+
+  for (let q = minQ; q <= maxQ; q++) {
+    for (let r = minR; r <= maxR; r++) {
+      const k = `${q},${r}`;
+      if (terra.has(k) || exterior.has(k)) continue;
+      terra.add(k);
+      mapaTerra.set(k, { q, r });
+    }
+  }
+}
+
+export function calcularLayout(nos: NoLayout[], arestas: ArestaLayout[]): ResultadoLayout {
   const caminhos: CaminhoLayout[] = [];
   const bairros = new Map<string, string[]>();
 
   if (nos.length === 0) {
-    return { posicoes, caminhos, terreno: [], costa: new Set(), bairros };
+    return { posicoes: new Map(), caminhos, terreno: [], costa: new Set(), rio: new Set(), bairros };
   }
 
   const ids = nos.map((n) => n.id);
@@ -334,59 +524,11 @@ export function calcularLayout(nos: NoLayout[], arestas: ArestaLayout[]): Result
     return d !== 0 ? d : a.localeCompare(b);
   });
 
-  const centrosColocados: { x: number; y: number; raio: number }[] = [];
-  const ocupados = new Set<string>();
-
-  for (const chave of chavesOrdenadas) {
-    const membros = bairros.get(chave)!;
-    const local = forcaDirigida(membros, adjacencia);
-
-    // Centraliza e mede o raio do bairro.
-    let cx = 0;
-    let cy = 0;
-    for (const id of membros) {
-      const p = local.get(id)!;
-      cx += p.x;
-      cy += p.y;
-    }
-    cx /= membros.length;
-    cy /= membros.length;
-    let raioBairro = 0;
-    for (const id of membros) {
-      const p = local.get(id)!;
-      p.x -= cx;
-      p.y -= cy;
-      raioBairro = Math.max(raioBairro, Math.hypot(p.x, p.y));
-    }
-    raioBairro = Math.max(raioBairro, 1);
-
-    // Coloca o centro do bairro numa espiral de ângulo áureo, empurrando até
-    // não encostar em nenhum bairro já colocado.
-    const AUREO = 2.39996323;
-    let centro = { x: 0, y: 0 };
-    for (let i = 0; i < 400; i++) {
-      // Espaçamento enxuto de propósito: um projeto isolado é o seu próprio
-      // bairro, e com muitos deles um passo largo espalhava tudo em ilhotas
-      // perdidas num oceano (medido: 88% do quadro era água). Bairros vizinhos
-      // encostando formam um continente, que é a leitura certa.
-      const raio = 2.1 * Math.sqrt(i);
-      const candidato = { x: Math.cos(i * AUREO) * raio, y: Math.sin(i * AUREO) * raio };
-      const colide = centrosColocados.some((c) => Math.hypot(c.x - candidato.x, c.y - candidato.y) < c.raio + raioBairro + 1.3);
-      if (!colide) {
-        centro = candidato;
-        break;
-      }
-    }
-    centrosColocados.push({ ...centro, raio: raioBairro });
-
-    for (const id of membros) {
-      const p = local.get(id)!;
-      const alvo = arredondarAxial(centro.x + p.x, centro.y + p.y);
-      const tile = tileLivreProximo(alvo, ocupados);
-      ocupados.add(chaveTile(tile));
-      posicoes.set(id, tile);
-    }
-  }
+  // Duas passadas: a primeira só para descobrir a extensão do mapa e traçar o
+  // rio; a segunda coloca os projetos de verdade, já desviando do leito.
+  const provisorias = colocarProjetos(chavesOrdenadas, bairros, adjacencia, new Set());
+  const rio = gerarRio(Array.from(provisorias.values()));
+  const posicoes = colocarProjetos(chavesOrdenadas, bairros, adjacencia, rio);
 
   // Estradas: linha de tiles entre os pares conectados, sem repetir o par.
   const paresVistos = new Set<string>();
@@ -400,7 +542,8 @@ export function calcularLayout(nos: NoLayout[], arestas: ArestaLayout[]): Result
     caminhos.push({ deId: a.deId, paraId: a.paraId, tiles: linhaHex(de, para) });
   }
 
-  // Terra = tiles ocupados + tiles de estrada + margem de 2 anéis em volta.
+  // Terra = projetos + estradas + 2 anéis de margem, e então os furos internos
+  // preenchidos: o resultado é uma massa contínua, sem vão entre bairros.
   const terra = new Set<string>();
   const mapaTerra = new Map<string, Coord>();
   function marcar(c: Coord) {
@@ -411,17 +554,30 @@ export function calcularLayout(nos: NoLayout[], arestas: ArestaLayout[]): Result
   }
   for (const tile of posicoes.values()) marcar(tile);
   for (const caminho of caminhos) for (const tile of caminho.tiles) marcar(tile);
-  // 3 anéis de margem, não 2: é o que faz as manchas de terra dos bairros
-  // vizinhos se encontrarem em vez de ficarem separadas por um filete de água.
-  for (let anel = 0; anel < 3; anel++) {
-    for (const c of Array.from(mapaTerra.values())) for (const v of vizinhos(c)) marcar(v);
+  // 1 anel só: o preenchimento de furos faz o resto do trabalho de fechar a
+  // massa. Mais anéis inflam o continente e obrigam a câmera a se afastar.
+  for (const c of Array.from(mapaTerra.values())) for (const v of vizinhos(c)) marcar(v);
+  preencherFuros(terra, mapaTerra);
+  // O leito do rio faz parte do terreno (renderiza afundado); sem isto ele
+  // abriria um rasgo de nada no meio do continente.
+  for (const k of rio) {
+    if (terra.has(k)) continue;
+    const [q, r] = k.split(",").map(Number);
+    // Só o trecho que corta a terra — o resto do traçado já é mar.
+    if (vizinhos({ q, r }).some((v) => terra.has(chaveTile(v)))) marcar({ q, r });
   }
 
-  // Costa = tile de terra com pelo menos um vizinho fora da terra.
+  // Costa = tile de terra na borda do mar OU na margem do rio.
   const costa = new Set<string>();
   for (const [k, c] of mapaTerra) {
-    if (vizinhos(c).some((v) => !terra.has(chaveTile(v)))) costa.add(k);
+    if (rio.has(k)) continue;
+    if (vizinhos(c).some((v) => {
+      const vk = chaveTile(v);
+      return !terra.has(vk) || rio.has(vk);
+    })) {
+      costa.add(k);
+    }
   }
 
-  return { posicoes, caminhos, terreno: Array.from(mapaTerra.values()), costa, bairros };
+  return { posicoes, caminhos, terreno: Array.from(mapaTerra.values()), costa, rio, bairros };
 }

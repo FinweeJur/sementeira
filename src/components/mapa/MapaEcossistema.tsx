@@ -3,7 +3,19 @@ import * as THREE from "three";
 import type { Project } from "../../lib/types";
 import { calcularSaldosRealistas } from "../../lib/ecosystem";
 import { estagioDoProjeto, derivarConexoes, ESTAGIOS, ESTAGIO_NOME, ESTAGIO_EXPLICACAO, type EstagioCrescimento } from "../../lib/mapa-estagios";
-import { calcularLayout, hexParaMundo, alturaDoTile, tomDoTile, chaveTile, distanciaHex, TILE_RAIO, NIVEL_AGUA, type Coord } from "../../lib/mapa-terreno";
+import {
+  calcularLayout,
+  hexParaMundo,
+  alturaDoTile,
+  tomDoTile,
+  chaveTile,
+  distanciaHex,
+  TILE_RAIO,
+  NIVEL_AGUA,
+  ALTURA_RIO,
+  ALTURA_TILE_MIN,
+  type Coord,
+} from "../../lib/mapa-terreno";
 import { lerPaleta, observarTema, misturar, ajustarBrilho, type PaletaMapa } from "../../lib/mapa-tema";
 import {
   construirModelo,
@@ -119,10 +131,10 @@ function useDocumentoVisivel(): boolean {
 /** Nome curto para o cartucho: 18 caracteres, quebrando em palavra quando dá. */
 function nomeCurto(titulo: string): string {
   const t = (titulo ?? "").trim() || "(sem título)";
-  if (t.length <= 18) return t;
-  const corte = t.slice(0, 18);
+  if (t.length <= 14) return t;
+  const corte = t.slice(0, 14);
   const espaco = corte.lastIndexOf(" ");
-  return `${(espaco > 8 ? corte.slice(0, espaco) : corte).trimEnd()}…`;
+  return `${(espaco > 6 ? corte.slice(0, espaco) : corte).trimEnd()}…`;
 }
 
 function hexCss(cor: number): string {
@@ -508,7 +520,9 @@ export function MapaEcossistema({
 
     // Prisma com o topo em y=0: a matriz de instância escala para baixo, então
     // o topo cai exatamente na altura do tile e o modelo assenta reto.
-    const geometria = new THREE.CylinderGeometry(TILE_RAIO * 0.985, TILE_RAIO * 0.985, 1, 6);
+    // Raio cheio (nada de 0,985): qualquer folga vira um filete de fundo entre
+    // um tile e o vizinho, e o chão deixa de ler como contínuo.
+    const geometria = new THREE.CylinderGeometry(TILE_RAIO, TILE_RAIO, 1, 6);
     geometria.translate(0, -0.5, 0);
     const material = new THREE.MeshStandardMaterial({ roughness: 1, metalness: 0, flatShading: true });
     const malha = new THREE.InstancedMesh(geometria, material, layout.terreno.length);
@@ -519,13 +533,20 @@ export function MapaEcossistema({
     const cor = new THREE.Color();
     layout.terreno.forEach((tile, i) => {
       const { x, z } = hexParaMundo(tile.q, tile.r);
-      const alturaTopo = alturaDoTile(tile);
+      const chave = chaveTile(tile);
+      const ehRio = layout.rio.has(chave);
+      // Leito do rio afunda abaixo do nível da água: o próprio plano de água
+      // cobre o tile e o rio aparece cavado no terreno, sem geometria extra.
+      const alturaTopo = ehRio ? ALTURA_RIO : alturaDoTile(tile);
       matriz.makeScale(1, alturaTopo + 0.9, 1);
       matriz.setPosition(x, alturaTopo, z);
       malha.setMatrixAt(i, matriz);
 
-      const naCosta = layout.costa.has(chaveTile(tile));
-      const base = naCosta ? misturar(paleta.soloTopo, paleta.costa, 0.55) : paleta.soloTopo;
+      const base = ehRio
+        ? ajustarBrilho(paleta.agua, -0.25)
+        : layout.costa.has(chave)
+          ? misturar(paleta.soloTopo, paleta.costa, 0.55)
+          : paleta.soloTopo;
       // Tom sutil: ±7% de brilho, descorrelacionado da altura.
       cor.setHex(ajustarBrilho(base, (tomDoTile(tile) - 0.5) * 0.14));
       malha.setColorAt(i, cor);
@@ -584,8 +605,14 @@ export function MapaEcossistema({
 
     const topoDoTile = (tile: Coord) => {
       const { x, z } = hexParaMundo(tile.q, tile.r);
-      return new THREE.Vector3(x, alturaDoTile(tile), z);
+      return new THREE.Vector3(x, layout.rio.has(chaveTile(tile)) ? ALTURA_RIO : alturaDoTile(tile), z);
     };
+
+    /**
+     * Altura da estrada no tile. Sobre o rio ela não acompanha o leito — vira
+     * ponte: uma fita que mergulhasse na água leria como estrada afogada.
+     */
+    const alturaDaEstrada = (tile: Coord) => (layout.rio.has(chaveTile(tile)) ? ALTURA_TILE_MIN + 0.02 : alturaDoTile(tile));
 
     // ---- Projetos --------------------------------------------------------
     for (const p of projects) {
@@ -657,10 +684,12 @@ export function MapaEcossistema({
         "white-space:nowrap",
         "display:flex",
         "align-items:center",
-        "gap:5px",
-        "padding:3px 7px",
-        "border-radius:5px",
-        "font-size:13px",
+        // Compacto de propósito: medido, o cartucho antigo tinha 204px de
+        // largura contra 17px de um tile — o rótulo virava o mapa.
+        "gap:4px",
+        "padding:2px 5px",
+        "border-radius:4px",
+        "font-size:12px",
         "line-height:1.15",
         "visibility:hidden",
         "transform:translate(-9999px,-9999px)",
@@ -671,19 +700,31 @@ export function MapaEcossistema({
       ].join(";");
 
       const ponto = document.createElement("span");
-      ponto.style.cssText = `width:7px;height:7px;border-radius:2px;flex:none;background:${hexCss(corEstagio)}`;
+      ponto.style.cssText = `width:6px;height:6px;border-radius:2px;flex:none;background:${hexCss(corEstagio)}`;
       el.appendChild(ponto);
 
       const texto = document.createElement("span");
       texto.textContent = nomeCurto(p.titulo);
       el.appendChild(texto);
 
+      // Ofertas do Clube: só o número num disco dourado. "1 oferta" por extenso
+      // custava ~60px de cartucho por projeto; a legenda explica o disco.
       const ofertas = ofertasPorProjeto.get(p.id) ?? 0;
       if (ofertas > 0) {
-        const pilula = document.createElement("span");
-        pilula.textContent = `${ofertas} oferta${ofertas > 1 ? "s" : ""}`;
-        pilula.style.cssText = ["font-size:11px", "padding:1px 5px", "border-radius:99px", `color:${hexCss(paleta.ouro)}`, `border:1px solid ${hexCss(paleta.ouro)}`].join(";");
-        el.appendChild(pilula);
+        const disco = document.createElement("span");
+        disco.textContent = String(Math.min(ofertas, 9));
+        disco.title = `${ofertas} oferta${ofertas > 1 ? "s" : ""} do Clube de Benefícios`;
+        disco.style.cssText = [
+          "font-size:10px",
+          "line-height:13px",
+          "min-width:13px",
+          "height:13px",
+          "text-align:center",
+          "border-radius:99px",
+          `color:${hexCss(paleta.ouro)}`,
+          `border:1px solid ${hexCss(paleta.ouro)}`,
+        ].join(";");
+        el.appendChild(disco);
       }
 
       container.appendChild(el);
@@ -701,7 +742,9 @@ export function MapaEcossistema({
         somaR += t.r;
       }
       const centro: Coord = { q: Math.round(somaQ / layout.terreno.length), r: Math.round(somaR / layout.terreno.length) };
-      const livres = layout.terreno.filter((t) => !ocupados.has(chaveTile(t))).sort((a, b) => distanciaHex(a, centro) - distanciaHex(b, centro));
+      const livres = layout.terreno
+        .filter((t) => !ocupados.has(chaveTile(t)) && !layout.rio.has(chaveTile(t)))
+        .sort((a, b) => distanciaHex(a, centro) - distanciaHex(b, centro));
       const tileSilo = livres[0] ?? layout.terreno[0];
       const base = topoDoTile(tileSilo);
       const { grupo, anel, altura } = construirSilo(paleta);
@@ -733,9 +776,8 @@ export function MapaEcossistema({
     for (const caminho of layout.caminhos) {
       if (caminho.tiles.length < 2) continue;
       const pontos = caminho.tiles.map((t) => {
-        const ponto = topoDoTile(t);
-        ponto.y += 0.014;
-        return ponto;
+        const { x, z } = hexParaMundo(t.q, t.r);
+        return new THREE.Vector3(x, alturaDaEstrada(t) + 0.014, z);
       });
       const material = new THREE.MeshStandardMaterial({
         color: paleta.estrada,
@@ -1166,7 +1208,7 @@ export function MapaEcossistema({
               </ul>
               <p className="border-t border-[color:var(--sm-border)] pt-2 text-[color:var(--sm-text-dim)]">
                 Projetos ligados entre si ficam no mesmo bairro. <strong>Estradas</strong> ligam quem fornece a quem. <strong>Gotas douradas</strong> vão de/para o silo do Fundo
-                Rotativo. Clique 1× seleciona, 2× abre.
+                Rotativo. O <strong>número num círculo dourado</strong> no rótulo é quantas ofertas do Clube o projeto tem. Clique 1× seleciona, 2× abre.
               </p>
               <p className="text-[color:var(--sm-text-dim)]">
                 Prefere ler em texto? A aba <strong>Lista</strong> traz os mesmos dados sem o mapa.
