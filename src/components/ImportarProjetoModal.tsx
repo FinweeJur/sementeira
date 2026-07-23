@@ -1,9 +1,18 @@
 import { useState } from "react";
 import { novoProjetoVazio, type Project } from "../lib/types";
-import { importarProjetoDeArquivo } from "../lib/importar-projeto";
+import { importarProjetoDeArquivo, type CausaSemIa, type ImportarResultado } from "../lib/importar-projeto";
 import { ThinkingIndicator } from "./ThinkingIndicator";
 import { useTasks } from "../lib/task-context";
 import { Upload, FileText, Settings } from "lucide-react";
+
+/** Título do aviso por causa — a pessoa precisa saber QUE tipo de tropeço foi. */
+const TITULO_POR_CAUSA: Record<CausaSemIa, string> = {
+  "ia-nao-configurada": "Importado sem a ajuda da IA",
+  "ia-indisponivel": "A IA não respondeu — importei sem ela",
+  "resposta-ininteligivel": "Não entendi a resposta da IA — importei sem ela",
+  "resposta-vazia": "A IA não preencheu nada — importei sem ela",
+  "ia-pediu-informacoes": "A IA pediu mais informações — importei o que deu",
+};
 
 /** Nome do campo como a pessoa vê na tela, não como o código chama. */
 const NOMES_CAMPOS: Record<string, string> = {
@@ -33,7 +42,7 @@ export function ImportarProjetoModal({
   const [processando, setProcessando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [mostrarAcaoModelo, setMostrarAcaoModelo] = useState(false);
-  const [semIa, setSemIa] = useState<{ projeto: Project; campos: string[]; motivo: string } | null>(null);
+  const [semIa, setSemIa] = useState<{ projeto: Project; info: NonNullable<ImportarResultado["semIa"]>; acao?: ImportarResultado["acao"] } | null>(null);
   const [nomeArquivo, setNomeArquivo] = useState<string | null>(null);
   const { registrar, concluir, falhar } = useTasks();
 
@@ -68,10 +77,10 @@ export function ImportarProjetoModal({
 
     concluir(taskId, undefined, `📄 ${arquivo.name}`);
 
-    // Sem IA o projeto foi montado pela heurística: não fecha calado, mostra
-    // o que ficou preenchido para a pessoa saber o que ainda falta.
+    // Plano B: o projeto veio da heurística, não da IA. Não fecha calado —
+    // mostra por que e o que ficou preenchido, para a pessoa saber o que falta.
     if (resultado.semIa) {
-      setSemIa({ projeto: resultado.projeto, campos: resultado.semIa.camposPreenchidos, motivo: resultado.semIa.motivo });
+      setSemIa({ projeto: resultado.projeto, info: resultado.semIa, acao: resultado.acao });
       return;
     }
 
@@ -99,15 +108,30 @@ export function ImportarProjetoModal({
         {semIa ? (
           <div className="space-y-3">
             <div className="rounded border border-[color:var(--sm-atencao-border)] bg-[color:var(--sm-atencao-bg)] p-3 text-xs">
-              <p className="font-medium text-[color:var(--sm-atencao-text)]">Importado sem a ajuda da IA</p>
-              <p className="mt-1 text-[color:var(--sm-text-dim)]">{semIa.motivo}</p>
+              <p className="font-medium text-[color:var(--sm-atencao-text)]">{TITULO_POR_CAUSA[semIa.info.causa]}</p>
+              <p className="mt-1 text-[color:var(--sm-text-dim)]">{semIa.info.motivo}</p>
+              {semIa.info.detalheTecnico && (
+                <p className="mt-1 text-[color:var(--sm-text-dim)] opacity-70">Detalhe: {semIa.info.detalheTecnico}</p>
+              )}
               <p className="mt-2 text-[color:var(--sm-text-dim)]">
                 O documento foi lido e fica anexado ao projeto. Preenchi automaticamente o que consegui reconhecer pelos títulos
-                {semIa.campos.length > 0 ? ": " : "."}
-                {semIa.campos.length > 0 && <span className="text-[color:var(--sm-text)]">{semIa.campos.map((c) => NOMES_CAMPOS[c] ?? c).join(", ")}</span>}
-                {semIa.campos.length > 0 && ". "}
+                {semIa.info.camposPreenchidos.length > 0 ? ": " : "."}
+                {semIa.info.camposPreenchidos.length > 0 && (
+                  <span className="text-[color:var(--sm-text)]">{semIa.info.camposPreenchidos.map((c) => NOMES_CAMPOS[c] ?? c).join(", ")}</span>
+                )}
+                {semIa.info.camposPreenchidos.length > 0 && ". "}
                 O resto você completa à mão, com o texto do documento à vista.
               </p>
+              {semIa.info.perguntas && semIa.info.perguntas.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-[color:var(--sm-text-dim)]">A IA achou que faltava saber:</p>
+                  <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[color:var(--sm-text)]">
+                    {semIa.info.perguntas.map((p, i) => (
+                      <li key={i}>{p}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
             <div className="flex gap-2">
               <button
@@ -119,12 +143,25 @@ export function ImportarProjetoModal({
               >
                 Abrir o projeto assim
               </button>
-              <button
-                onClick={onAbrirConfigModelo}
-                className="rounded border border-[color:var(--sm-border)] px-3 py-2 text-sm hover:border-[color:var(--sm-accent)]"
-              >
-                Configurar a IA
-              </button>
+              {semIa.acao === "configurar-modelo" && (
+                <button
+                  onClick={onAbrirConfigModelo}
+                  className="rounded border border-[color:var(--sm-border)] px-3 py-2 text-sm hover:border-[color:var(--sm-accent)]"
+                >
+                  Configurar a IA
+                </button>
+              )}
+              {semIa.acao === "tentar-ia-novamente" && (
+                <button
+                  onClick={() => {
+                    setSemIa(null);
+                    document.querySelector<HTMLInputElement>("#sm-importar-arquivo")?.click();
+                  }}
+                  className="rounded border border-[color:var(--sm-border)] px-3 py-2 text-sm hover:border-[color:var(--sm-accent)]"
+                >
+                  Tentar a IA de novo
+                </button>
+              )}
             </div>
           </div>
         ) : processando ? (
@@ -138,7 +175,7 @@ export function ImportarProjetoModal({
             <FileText size={32} strokeWidth={1.5} className="text-[color:var(--sm-accent)]" />
             <span className="text-sm font-medium">Clique para escolher um arquivo</span>
             <span className="text-xs text-[color:var(--sm-text-dim)]">PDF (.pdf) ou Word (.docx)</span>
-            <input type="file" accept=".pdf,.docx" className="hidden" onChange={handleArquivo} />
+            <input id="sm-importar-arquivo" type="file" accept=".pdf,.docx" className="hidden" onChange={handleArquivo} />
           </label>
         )}
 

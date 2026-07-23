@@ -113,6 +113,22 @@ export function interpretarRespostaRascunho(texto: string): RascunhoResultado {
   }
 }
 
+/**
+ * Quantos campos o rascunho realmente traz.
+ *
+ * Um JSON sintaticamente perfeito com todos os campos vazios faz
+ * `interpretarRespostaRascunho` devolver sucesso. Sem esta contagem, o app
+ * aplicaria um rascunho oco como se a IA tivesse preenchido — e o plano B
+ * nunca entraria justamente quando é mais necessário.
+ */
+export function contarCamposPreenchidos(dados: RascunhoDados): number {
+  return Object.values(dados).filter((v) => {
+    if (typeof v === "string") return v.trim().length > 0;
+    if (Array.isArray(v)) return v.length > 0;
+    return v !== undefined && v !== null;
+  }).length;
+}
+
 export function formatarPerguntas(perguntas: string[]): string {
   return "Antes de rascunhar, preciso entender melhor:\n" + perguntas.map((p, i) => `${i + 1}. ${p}`).join("\n");
 }
