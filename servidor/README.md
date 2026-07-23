@@ -115,32 +115,47 @@ Pages:
 pelo proxy da Cloudflare pode conflitar. O hub Floresta de Apps e `/paraopeba/`
 continuam servidos pelo Pages, intocados.
 
-### 2. O túnel
+### 2. Criar o túnel
 
-O túnel `sementeira` **já foi criado** (id
-`0c10d031-1b13-4fd6-839a-db961f8ed040`), reusando a credencial da conta —
-sem `tunnel login`, para não sobrescrever o `cert.pem` do Foz Juris, que vive
-na mesma conta Cloudflare.
+```bash
+cloudflared tunnel login
+cloudflared tunnel create sementeira
+cloudflared tunnel route dns sementeira app.sementeiraprojetos.com.br
+```
 
-⚠️ **O apontamento (route dns) foi feito pelo painel, não pela CLI.** A CLI
-`cloudflared tunnel route dns` falha aqui porque o `cert.pem` está amarrado à
-zona do `fozjuris.com.br` — ao rotear na zona da Sementeira ele cria um nome
-torto (`app.sementeiraprojetos.com.br.fozjuris.com.br`). O certo é criar na mão,
-no painel da Cloudflare → zona `sementeiraprojetos.com.br` → DNS:
+`config.yml`:
 
-| Type | Name | Target | Proxy |
-|---|---|---|---|
-| CNAME | `app` | `0c10d031-1b13-4fd6-839a-db961f8ed040.cfargotunnel.com` | **Proxied (laranja)** |
+```yaml
+tunnel: sementeira
+credentials-file: C:\Users\<voce>\.cloudflared\<uuid>.json
 
-**Laranja** aqui, ao contrário dos registros do site (cinza): endereço de túnel
-só funciona proxied.
+ingress:
+  - hostname: app.sementeiraprojetos.com.br
+    service: http://127.0.0.1:7010
+  - service: http_status:404
+```
 
-### 3. Rodar no PC servidor
+```bash
+cloudflared tunnel run sementeira
+```
 
-O túnel roda **em outra máquina** (não na que o criou). O passo a passo completo
-— clonar, compilar, copiar a credencial, configurar e pôr para subir sozinho —
-está em **[RODAR-NO-SERVIDOR.md](RODAR-NO-SERVIDOR.md)**, com o modelo de
-configuração em [config.exemplo.yml](config.exemplo.yml).
+### 3. Rodar como serviço do Windows
+
+Para não depender de um terminal aberto:
+
+```bash
+cloudflared service install
+```
+
+O servidor Node também precisa subir sozinho. A forma mais simples é uma tarefa
+agendada no logon:
+
+```powershell
+$acao = New-ScheduledTaskAction -Execute "C:\Users\teste\AppData\Local\hermes\node\node.exe" `
+  -Argument "X:\DevCoder\sementeira\servidor\sementeira-servidor.cjs"
+$gatilho = New-ScheduledTaskTrigger -AtLogOn
+Register-ScheduledTask -TaskName "Sementeira Web" -Action $acao -Trigger $gatilho
+```
 
 ---
 
