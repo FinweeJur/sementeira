@@ -1,762 +1,396 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Sementeira — da ideia à reparação</title>
-<meta name="description" content="Programa de computador que ajuda quem foi atingido pelo rompimento da barragem de Brumadinho a transformar uma ideia em um projeto comunitário pronto para a Governança Popular. Funciona sem internet." />
-<meta property="og:title" content="Sementeira — da ideia à reparação" />
-<meta property="og:description" content="Você tem a ideia. A Sementeira ajuda a escrever o projeto." />
-<meta property="og:type" content="website" />
-<meta property="og:locale" content="pt_BR" />
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%8C%B1</text></svg>" />
-<link rel="preconnect" href="https://api.fontshare.com" />
-<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=panchang@600,700&f[]=chillax@500,600&f[]=synonym@400,500,600&display=swap" />
-<link rel="stylesheet" href="css/sementeira.css?v=2" />
-<script>document.documentElement.classList.add('js');</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Floresta de Apps — ferramentas com propósito, construídas do zero</title>
+<meta name="description" content="Uma floresta de software feito com IA: transparência pública, gestão jurídica, reparação socioambiental e cultura. Ferramentas com propósito, em busca de apoiadores.">
+<meta property="og:title" content="Floresta de Apps">
+<meta property="og:description" content="Ferramentas com propósito, construídas do zero — transparência pública, justiça, reparação e cultura.">
+<meta property="og:type" content="website">
+<link rel="stylesheet" href="tokens.css">
 </head>
 <body>
 
-<a class="pular" href="#conteudo">Pular para o conteúdo</a>
-
-<!-- ===================== NAV ===================== -->
-<nav class="nav">
-  <a class="marca" href="#topo">
-    <span class="marca-selo" aria-hidden="true">🌱</span>
-    <span class="marca-nome">Sementeira</span>
-  </a>
-  <div class="nav-dir">
-    <div class="nav-links">
-      <a href="#como-funciona">Como funciona</a>
-      <a href="#avisos">O que ela avisa</a>
-      <a href="modelos/">Modelos</a>
-      <a href="#perguntas">Perguntas</a>
-    </div>
-    <a class="btn btn-principal" href="baixar.html">Baixar</a>
-  </div>
-</nav>
-
-<!-- ===================== HERO ===================== -->
-<header class="hero" id="topo">
-  <div class="hero-grade-fundo" aria-hidden="true"></div>
-  <div class="hero-brilho" aria-hidden="true"></div>
-  <div class="marca-dagua" style="left:-70px; bottom:-90px;" aria-hidden="true"><span class="ico">h</span></div>
-
-  <div class="wrap hero-grade">
-    <div>
-      <p class="selo-status">
-        <span class="ponto-vivo" aria-hidden="true"></span>
-        Programa de computador · funciona sem internet
-      </p>
-
-      <h1>Da ideia à<br />reparação</h1>
-
-      <p class="hero-linha"><strong>Você tem a ideia. A Sementeira ajuda a escrever o projeto.</strong></p>
-      <p class="hero-linha-2">
-        Para quem foi atingido pelo rompimento da barragem de Brumadinho.
-        Do primeiro rascunho até o documento pronto para a Governança Popular.
-      </p>
-
-      <div class="hero-acoes">
-        <a class="btn btn-principal" href="baixar.html">⬇ Baixar o programa</a>
-        <a class="btn btn-vazado" href="#como-funciona">Ver como funciona</a>
-      </div>
-
-      <p class="hero-rodape">
-        <span class="bolinha" aria-hidden="true"></span>
-        De graça. Nasce da luta do MAB pela reparação integral.
-      </p>
-    </div>
-
-    <!-- Mock: tela de orçamento -->
-    <div class="mock">
-      <div class="mock-corpo">
-        <div class="mock-topo">
-          <div>
-            <div class="mock-passo">Passo 6 de 14 · o programa está ajudando</div>
-            <div class="mock-titulo">Orçamento</div>
-          </div>
-          <span class="selo-stop">
-            <span class="losango" aria-hidden="true"></span>
-            1 item não pode
-          </span>
-        </div>
-
-        <div class="linha-orc">
-          <div class="linha-orc-topo">
-            <div>
-              <div class="linha-orc-cat">Material</div>
-              <div class="linha-orc-nome">Sementes e mudas nativas</div>
-            </div>
-            <div class="linha-orc-valor">R$ 12.400</div>
-          </div>
-          <div class="linha-orc-nota"><span class="bolinha" aria-hidden="true"></span> Pode. O programa conferiu.</div>
-        </div>
-
-        <div class="linha-orc bloqueio">
-          <div class="linha-orc-topo">
-            <div>
-              <div class="linha-orc-cat">Equipamento</div>
-              <div class="linha-orc-nome">Trator e implementos</div>
-            </div>
-            <div class="linha-orc-valor">R$ 45.000</div>
-          </div>
-          <div class="linha-orc-nota"><span class="losango" aria-hidden="true"></span> Não pode. O valor passa do limite do acordo.</div>
-        </div>
-
-        <div class="mock-total">
-          <span>Total do orçamento</span>
-          <span>R$ 57.400</span>
-        </div>
-      </div>
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="#topo" aria-label="Floresta de Apps — início">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 21V10.5"></path>
+        <path d="M12 10.5c0-3.4 2.6-5.5 6.4-5.5.2 3.9-2.5 6-6.4 6"></path>
+        <path d="M12 13c0-3-2.4-4.8-5.8-4.8C6 11.4 8.5 13.3 12 13.3"></path>
+      </svg>
+      Floresta de Apps
+    </a>
+    <div class="nav-actions">
+      <button class="theme-toggle" id="themeBtn" type="button" aria-label="Alternar tema claro/escuro" title="Tema claro/escuro">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v1M12 20v1M4.2 4.2l.7.7M19.1 19.1l.7.7M3 12h1M20 12h1M4.2 19.8l.7-.7M19.1 4.9l.7-.7"></path><circle cx="12" cy="12" r="4"></circle></svg>
+      </button>
     </div>
   </div>
 </header>
 
-<!-- ===================== FAIXA DE INDEPENDÊNCIA ===================== -->
-<div class="faixa-aviso">
-  <div class="wrap">
-    <span class="marca-selo" aria-hidden="true">🌱</span>
-    <span>
-      Ferramenta independente, feita para a causa do MAB. Quem decide é sempre a assembleia:
-      a Sementeira só prepara o material que chega até ela.
-    </span>
-  </div>
-</div>
+<main id="topo">
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-blob" aria-hidden="true"></div>
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow rise d1">Software com propósito, feito com IA</p>
+        <h1 class="rise d2">Uma floresta de ferramentas construídas do zero.</h1>
+        <p class="lead rise d3">Transparência do dinheiro público, gestão para quem trabalha sozinho, reparação de comunidades atingidas e cultura de rua — cada projeto nasce de uma dor real e roda perto de quem precisa: no computador do usuário, sem depender de nuvem de terceiros. Este é o mapa de tudo o que já existe e do que está brotando.</p>
 
-<main id="conteudo">
+        <div class="hero-stats rise d4">
+          <div class="hero-stat"><span class="num" data-count="14">0</span><span class="label">projetos</span></div>
+          <div class="hero-stat"><span class="num accent-green" data-count="5">0</span><span class="label">no ar</span></div>
+          <div class="hero-stat"><span class="num accent-accent" data-count="8">0</span><span class="label">em construção</span></div>
+        </div>
 
-<!-- ===================== O PROBLEMA ===================== -->
-<section class="pad tem-marca" id="problema">
-  <div class="marca-dagua" style="right:-40px; top:20px;" aria-hidden="true"><span class="ico">t</span></div>
-  <div class="wrap-estreito">
-    <div class="selo-ico revela" aria-hidden="true"><span class="ico">t</span></div>
-    <p class="olho revela">O que muita gente sente</p>
-    <h2 class="titulo-secao revela">“Eu tenho a ideia.<br />Mas não sei por onde começar.”</h2>
-    <p class="linha-secao revela">
-      A comunidade sabe do que precisa. Horta, padaria, cozinha, galpão de reciclagem.
-      A ideia já está lá. O difícil é colocar no papel, do jeito que o acordo exige.
-    </p>
-
-    <div class="caixa-fala revela">
-      <div class="rotulo"><span class="ico" aria-hidden="true">t</span> Situação comum</div>
-      <p>
-        “A gente queria montar uma cozinha comunitária, pra dar renda pras mulheres.
-        Mas na hora de escrever o projeto, não sabíamos o que podia e o que não podia.
-        Nem quanto pedir. Nem como mostrar que ia se sustentar. O projeto ficou parado.”
-      </p>
-    </div>
-
-    <p class="citacao revela">
-      A Sementeira encurta esse caminho. Do “eu quero” até o projeto pronto.
-    </p>
-  </div>
-</section>
-
-<!-- ===================== COMO FUNCIONA (3 PASSOS) ===================== -->
-<section class="pad faixa-alt" id="como-funciona">
-  <div class="wrap">
-    <div class="cabecalho-secao">
-      <div class="selo-ico revela" aria-hidden="true"><span class="ico">h</span></div>
-      <p class="olho revela">Como funciona</p>
-      <h2 class="titulo-secao revela">Em 3 passos</h2>
-      <p class="linha-secao revela">Não precisa entender de computador. O programa pergunta e você responde.</p>
-    </div>
-
-    <div class="grade grade-3">
-      <article class="cartao revela">
-        <div class="cartao-ico" aria-hidden="true"><span class="ico">m</span></div>
-        <div class="cartao-num">1</div>
-        <h3>Você conta a ideia</h3>
-        <p>Escreve do seu jeito. Por exemplo: “quero uma horta comunitária pras famílias do bairro”.</p>
-        <p class="detalhe">O programa sugere qual dano ela ajuda a reparar. E qual modelo de projeto é mais parecido.</p>
-      </article>
-
-      <article class="cartao revela">
-        <div class="cartao-ico" aria-hidden="true"><span class="ico">g</span></div>
-        <div class="cartao-num">2</div>
-        <h3>O programa escreve o projeto</h3>
-        <p>Objetivo, metas, orçamento, equipe. Tudo no formato que o acordo pede.</p>
-        <p class="detalhe">Você muda o que quiser. Nada vale sem o seu OK.</p>
-      </article>
-
-      <article class="cartao revela">
-        <div class="cartao-ico" aria-hidden="true"><span class="ico">s</span></div>
-        <div class="cartao-num">3</div>
-        <h3>O programa avisa o que não pode</h3>
-        <p>E mostra se o projeto se paga sozinho depois que o dinheiro acabar.</p>
-        <p class="detalhe">No fim, é só exportar em PDF, Word ou Excel e levar para a Governança.</p>
-      </article>
-    </div>
-  </div>
-</section>
-
-<!-- ===================== EXEMPLO ===================== -->
-<section class="pad" id="exemplo">
-  <div class="wrap-estreito">
-    <p class="olho revela">Exemplo de uso</p>
-    <h2 class="titulo-secao revela">
-      <span class="ico" style="font-size:.95em; color:var(--accent); margin-right:.22em; vertical-align:-.1em;" aria-hidden="true">m</span>
-      A horta da Dona Maria
-    </h2>
-
-    <div class="caixa-fala revela">
-      <div class="rotulo"><span class="ico" aria-hidden="true">b</span> O que ela escreveu</div>
-      <p>“Quero uma horta onde as famílias possam plantar e vender o que sobra, pras mulheres terem renda.”</p>
-    </div>
-
-    <div class="revela">
-      <div class="passo-linha">
-        <span class="marcador" aria-hidden="true">🪄</span>
-        <p><strong>O programa preencheu tudo.</strong> Ligou a ideia ao dano “perda de renda”. Escolheu o modelo “Horta Comunitária”. Escreveu objetivo, metas, orçamento e uma equipe de 3 pessoas.</p>
+        <div class="cta rise d4">
+          <a class="btn btn-primary" href="#projetos">Ver os projetos <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+          <a class="btn btn-ghost" href="#apoio">Como apoiar</a>
+        </div>
       </div>
-      <div class="passo-linha">
-        <span class="marcador" aria-hidden="true">🛡</span>
-        <p><strong>O programa avisou.</strong> “Pagar alguém sem prazo e sem dizer de onde vem o dinheiro depois: não pode.” Maria mudou para 6 meses.</p>
-      </div>
-      <div class="passo-linha">
-        <span class="marcador" aria-hidden="true">💰</span>
-        <p><strong>As contas fecharam.</strong> Vendendo R$ 2.000 por mês do que sobra, a horta se paga. O projeto ficou verde. Pronto para levar.</p>
+
+      <!-- cena 3D: núcleo orbitado por sementes -->
+      <div class="hero-scene rise d3" aria-hidden="true">
+        <div class="hero-scene-inner" id="heroScene">
+          <div class="hero-scene-core">
+            <svg width="88" height="88" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 21V10.5"></path>
+              <path d="M12 10.5c0-3.4 2.6-5.5 6.4-5.5.2 3.9-2.5 6-6.4 6"></path>
+              <path d="M12 13c0-3-2.4-4.8-5.8-4.8C6 11.4 8.5 13.3 12 13.3"></path>
+            </svg>
+          </div>
+          <div class="hero-orbit hero-orbit-1"><div class="ring"><span class="dot dot-accent"></span></div></div>
+          <div class="hero-orbit hero-orbit-2"><div class="ring"><span class="dot dot-green"></span></div></div>
+          <div class="hero-orbit hero-orbit-3"><div class="ring"><span class="dot dot-primary"></span></div></div>
+          <span class="hero-mote hero-mote-1" style="background:var(--accent)"></span>
+          <span class="hero-mote hero-mote-2" style="background:var(--green)"></span>
+          <span class="hero-mote hero-mote-3" style="background:var(--primary)"></span>
+        </div>
       </div>
     </div>
 
-    <p class="nota-pe revela">Exemplo ilustrativo, feito para mostrar como o programa funciona na prática.</p>
-  </div>
-</section>
+    <a class="scroll-hint" href="#projetos" aria-label="Rolar para projetos">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"></path></svg>
+    </a>
+  </section>
 
-<!-- ===================== O QUE ELA AVISA ===================== -->
-<section class="pad faixa-alt" id="avisos">
-  <div class="wrap grade-motor">
-    <div>
-      <div class="selo-ico revela" aria-hidden="true"><span class="ico">s</span></div>
-      <p class="olho revela">O que ela avisa</p>
-      <h2 class="titulo-secao revela">A IA sugere.<br />As regras decidem.</h2>
-      <p class="linha-secao revela">
-        A Sementeira conhece as regras do acordo. Ela confere cada linha do seu orçamento.
-        Se alguma coisa não pode, ela avisa na hora — antes de o projeto chegar à Governança.
-      </p>
-      <p class="linha-secao revela" style="font-size:17px; color:var(--dim-2); margin-top:16px;">
-        Quando a inteligência artificial discorda das regras, o programa mostra as duas coisas.
-        Ele nunca resolve escondido.
-      </p>
-    </div>
+  <div id="projetos"></div>
 
-    <div class="revela">
-      <div class="painel-regra">
-        <div class="painel-topo">
-          <span class="painel-nome"><span class="losango" style="width:12px; height:12px;" aria-hidden="true"></span> Não pode</span>
-          <span class="painel-fonte"><span class="bolinha" aria-hidden="true"></span> conferido pelo programa</span>
-        </div>
-        <p>Pagar salário para sempre, sem dizer de onde vem o dinheiro depois que o repasse acabar. O acordo não deixa.</p>
-      </div>
+  <!-- JURÍDICO & GOVERNAMENTAL -->
+  <section class="section">
+    <div class="wrap">
+      <span class="kicker">Justiça, transparência e reparação</span>
+      <h2>Direito público e cívico</h2>
+      <div class="grid">
 
-      <div class="painel-ia">
-        <div class="painel-topo">
-          <span class="painel-nome"><span class="circulo-ia" aria-hidden="true"></span> A IA sugere</span>
-        </div>
-        <p>Colocar no projeto uma renda que continue depois. Por exemplo: a venda do que o próprio projeto produz. É uma sugestão — você decide se aceita.</p>
-      </div>
-    </div>
-  </div>
-</section>
+        <!-- Foz Juris -->
+        <article class="card">
+          <div class="card-top">
+            <div class="card-ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 8h14M5 8l-3.5 7a3.5 3.5 0 0 0 7 0L5 8ZM19 8l-3.5 7a3.5 3.5 0 0 0 7 0L19 8ZM9 21h6"></path></svg></div>
+            <span class="pill pill-live"><span class="dot"></span>No ar</span>
+          </div>
+          <div><h3>Foz Juris</h3><p class="sub">Gestão jurídica local-first</p></div>
+          <p class="desc">Sistema de gestão para escritórios de advocacia onde toda demanda vira um protocolo com prazo, anexos criptografados e histórico imutável. Paga uma vez, roda no seu computador — sem mensalidade, sem seus dados na nuvem.</p>
+          <details><summary>ver funcionalidades</summary><ul><li>Protocolos com prazo e 2FA obrigatório</li><li>Anexos com criptografia AES-256</li><li>Chat de IA com pseudonimização de dados</li></ul></details>
+          <div class="tagrow"><span class="tag">Jurídico</span><span class="tag">Desktop</span><span class="tag">LGPD</span></div>
+          <div class="actions"><a class="btn btn-primary" href="https://fozjuris.com.br" target="_blank" rel="noopener">Visitar <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a></div>
+        </article>
 
-<!-- ===================== E DEPOIS? ===================== -->
-<section class="pad" id="depois">
-  <div class="wrap">
-    <div class="cabecalho-secao">
-      <div class="selo-ico revela" aria-hidden="true"><span class="ico">n</span></div>
-      <p class="olho revela">E depois?</p>
-      <h2 class="titulo-secao revela">“E no dia seguinte, quando o dinheiro acabar?”</h2>
-      <p class="linha-secao revela">
-        O programa faz as contas de três jeitos. Assim você vê se o projeto se mantém sozinho.
-        As máquinas se gastam com o tempo — isso também entra na conta.
-      </p>
-    </div>
+        <!-- Vaire -->
+        <article class="card">
+          <div class="card-top">
+            <div class="card-ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></div>
+            <span class="pill pill-dev"><span class="dot"></span>Em desenvolvimento</span>
+          </div>
+          <div><h3>Vaire</h3><p class="sub">Cinco agentes para ações coletivas</p></div>
+          <p class="desc">Acompanha processos judiciais coletivos (ACP/ADPF) com um pipeline de cinco agentes de IA que coletam, analisam e redigem — sempre com um humano aprovando antes de qualquer publicação. Feito para a luta de Brumadinho/Paraopeba.</p>
+          <details><summary>ver funcionalidades</summary><ul><li>Rastreio de movimentações via DataJud/CNJ</li><li>Gate humano inegociável antes de publicar</li><li>Filtro de dados pessoais antes de gravar</li></ul></details>
+          <div class="tagrow"><span class="tag">Agentes de IA</span><span class="tag">Jurídico</span><span class="tag">Gate humano</span></div>
+          <div class="actions"><a class="btn btn-primary" href="vaire.html">Conhecer <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a></div>
+        </article>
 
-    <div class="grade grade-3">
-      <article class="cenario bom revela">
-        <div class="emoji" aria-hidden="true">🌤</div>
-        <h3>Tudo dá certo</h3>
-        <p>Vende como esperado. Os custos não sobem. As máquinas duram o tempo previsto.</p>
-      </article>
-      <article class="cenario meio revela">
-        <div class="emoji" aria-hidden="true">🌥</div>
-        <h3>O mais provável</h3>
-        <p>Os preços mudam um pouco. As máquinas se gastam. É a conta mais realista.</p>
-      </article>
-      <article class="cenario ruim revela">
-        <div class="emoji" aria-hidden="true">🌧</div>
-        <h3>Se der errado</h3>
-        <p>Vende menos e gasta mais. Mostra a hora em que o projeto aperta.</p>
-      </article>
-    </div>
+        <!-- Terras Devolutas -->
+        <article class="card">
+          <div class="card-top">
+            <div class="card-ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.4-7-11a7 7 0 0 1 14 0c0 5.6-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg></div>
+            <span class="pill pill-dev"><span class="dot"></span>Em desenvolvimento</span>
+          </div>
+          <div><h3>Terras Devolutas</h3><p class="sub">Terra pública subaproveitada, no mapa</p></div>
+          <p class="desc">Cruza dados oficiais e sensoriamento remoto para apontar terra pública ociosa em Minas Gerais — candidatos a verificação, nunca acusação. Destino: convênio com o INCRA para dar função social à terra.</p>
+          <details><summary>ver funcionalidades</summary><ul><li>Fontes oficiais (SPU, INCRA, IDE-Sisema, MapBiomas)</li><li>Taxa de falso-positivo medida e publicada</li><li>Copiloto de IA sobre os dados</li></ul></details>
+          <div class="tagrow"><span class="tag">Geoespacial</span><span class="tag">Dados públicos</span><span class="tag">INCRA</span></div>
+          <div class="actions"><a class="btn btn-primary" href="terras-devolutas.html">Conhecer <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a></div>
+        </article>
 
-    <!-- Ciclo de Lapidação -->
-    <div style="margin-top:72px;">
-      <div class="cabecalho-secao" style="margin-bottom:36px;">
-        <p class="olho revela">Ciclo de Lapidação</p>
-        <h2 class="titulo-secao revela" style="font-size:clamp(26px,3.4vw,38px);">Seis ajudantes revisam o projeto. Quem aprova é você.</h2>
-        <p class="linha-secao revela">Um de cada vez, nesta ordem. Cada um lê o trabalho do anterior e melhora o projeto.</p>
-      </div>
+        <!-- Sementeira -->
+        <article class="card">
+          <div class="card-top">
+            <div class="card-ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V10.5"></path><path d="M12 10.5c0-3.4 2.6-5.5 6.4-5.5.2 3.9-2.5 6-6.4 6"></path><path d="M12 13c0-3-2.4-4.8-5.8-4.8C6 11.4 8.5 13.3 12 13.3"></path></svg></div>
+            <span class="pill pill-live"><span class="dot"></span>No ar</span>
+          </div>
+          <div><h3>Sementeira</h3><p class="sub">Da ideia ao projeto de reparação</p></div>
+          <p class="desc">Ajuda pessoas atingidas pela barragem de Brumadinho a transformar uma ideia em um projeto comunitário completo do Anexo I.1 — com um motor que avisa o que as regras não permitem e um simulador do "dia seguinte ao fim do dinheiro".</p>
+          <details><summary>ver funcionalidades</summary><ul><li>Motor de conformidade determinístico (Ofícios 45/46)</li><li>Simulador de sustentabilidade em 3 cenários</li><li>Funciona sem internet, dados no seu computador</li></ul></details>
+          <div class="tagrow"><span class="tag">Reparação</span><span class="tag">Offline-first</span><span class="tag">Paraopeba</span></div>
+          <div class="actions"><a class="btn btn-primary" href="paraopeba/">Visitar <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a></div>
+        </article>
 
-      <div class="grade grade-4">
-        <div class="papel revela"><span class="n">1</span><div><h3>Escritor</h3><p>Deixa o texto do projeto mais claro.</p></div></div>
-        <div class="papel revela"><span class="n">2</span><div><h3>Orçamentista</h3><p>Confere os valores e de onde vem o dinheiro.</p></div></div>
-        <div class="papel revela"><span class="n">3</span><div><h3>Crítico</h3><p>Mostra os pontos fracos da justificativa e das metas.</p></div></div>
-        <div class="papel revela"><span class="n">4</span><div><h3>Analista de risco</h3><p>Olha riscos de terra, de conflito e de sobrecarregar uma pessoa só.</p></div></div>
-        <div class="papel revela"><span class="n">5</span><div><h3>Sugestor</h3><p>Propõe melhorias concretas a partir das críticas.</p></div></div>
-        <div class="papel revela"><span class="n">6</span><div><h3>Compilador</h3><p>Junta tudo numa versão só.</p></div></div>
-      </div>
+        <!-- Controle Popular Betim -->
+        <article class="card">
+          <div class="card-top">
+            <div class="card-ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"></path></svg></div>
+            <span class="pill pill-live"><span class="dot"></span>No ar</span>
+          </div>
+          <div><h3>Controle Popular · Betim</h3><p class="sub">Transparência da prefeitura</p></div>
+          <p class="desc">Portal cívico independente que centraliza o dinheiro público de Betim-MG: contratos, indicadores da cidade e perfis de vereadores — cada dado com a fonte oficial linkada. Sem vínculo com o governo.</p>
+          <details><summary>ver funcionalidades</summary><ul><li>Contratos públicos via API do PNCP</li><li>Indicadores oficiais (IBGE, Base dos Dados)</li><li>Temas por vereador, com fonte em cada número</li></ul></details>
+          <div class="tagrow"><span class="tag">Transparência</span><span class="tag">Cívico</span><span class="tag">Dados abertos</span></div>
+          <div class="actions"><a class="btn btn-primary" href="https://controlepopular.vercel.app/betim" target="_blank" rel="noopener">Visitar <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a></div>
+        </article>
 
-      <p class="aviso-verde revela">
-        <span class="bolinha" aria-hidden="true"></span>
-        Nada muda sem você clicar em confirmar. E dá para voltar atrás em qualquer versão.
-      </p>
-    </div>
-  </div>
-</section>
+        <!-- Controle Popular Congresso -->
+        <article class="card">
+          <div class="card-top">
+            <div class="card-ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M4 21V10M20 21V10M4 10l8-6 8 6M9 21v-5h6v5"></path></svg></div>
+            <span class="pill pill-dev"><span class="dot"></span>Em desenvolvimento</span>
+          </div>
+          <div><h3>Controle Popular · Congresso</h3><p class="sub">O que o Congresso faz com seus direitos</p></div>
+          <p class="desc">O eixo legislativo federal: monitora projetos de lei por tema e por bancada, com uma análise garantista × reducionista que sempre cita o dispositivo legal — e gera o ofício pronto para você enviar ao parlamentar.</p>
+          <details><summary>ver funcionalidades</summary><ul><li>Dados oficiais da Câmara e do Senado</li><li>Classificação auditável (o LLM extrai, não julga)</li><li>Ofício de apoio/repúdio exportável</li></ul></details>
+          <div class="tagrow"><span class="tag">Legislativo</span><span class="tag">Direitos</span><span class="tag">IA auditável</span></div>
+          <div class="actions"><a class="btn btn-primary" href="congresso.html">Conhecer <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a></div>
+        </article>
 
-<!-- ===================== O QUE MAIS VEM JUNTO ===================== -->
-<section class="pad faixa-alt" id="mais">
-  <div class="wrap">
-    <div class="cabecalho-secao">
-      <div class="selo-ico revela" aria-hidden="true"><span class="ico">g</span></div>
-      <p class="olho revela">O que mais vem junto</p>
-      <h2 class="titulo-secao revela">Outras coisas que o programa faz</h2>
-    </div>
-
-    <div class="grade grade-4">
-      <article class="cartao revela">
-        <div class="cartao-ico" aria-hidden="true"><span class="ico">t</span></div>
-        <h3>Já tem um projeto escrito?</h3>
-        <p>Abra o arquivo em PDF ou Word. O programa lê e preenche os campos para você conferir.</p>
-      </article>
-      <article class="cartao revela">
-        <div class="cartao-ico" aria-hidden="true"><span class="ico">a</span></div>
-        <h3>Mapa dos projetos</h3>
-        <p>Os projetos da região num mapa só. Mostra quem pode comprar de quem, sem sair da bacia.</p>
-      </article>
-      <article class="cartao revela">
-        <div class="cartao-ico" aria-hidden="true"><span class="ico">n</span></div>
-        <h3>Calendário e dinheiro</h3>
-        <p>Quanto entra e quanto sai, mês a mês. E o calendário de tudo que precisa acontecer.</p>
-      </article>
-      <article class="cartao revela">
-        <div class="cartao-ico" aria-hidden="true"><span class="ico">h</span></div>
-        <h3>Documentos da associação</h3>
-        <p>Modelos de estatuto, ata de fundação e regimento. Um advogado precisa revisar antes de assinar.</p>
-      </article>
-    </div>
-  </div>
-</section>
-
-<!-- ===================== TERRITÓRIO ===================== -->
-<section class="pad territorio" id="territorio">
-  <div class="wrap-estreito">
-    <div class="selo-ico revela" aria-hidden="true"><span class="ico">u</span></div>
-    <p class="olho revela">O território</p>
-    <h2 class="titulo-secao revela">A bacia do Paraopeba</h2>
-    <p class="linha-secao revela">
-      São cerca de 26 municípios. O rio, a mata e os bichos que a lama alcançou.
-      São esses territórios que queremos melhorar.
-    </p>
-    <!-- Ícones decorativos da fonte "Ícones do Brasil". -->
-    <div class="faixa-icones revela" aria-hidden="true">
-      <span class="ico">s</span>
-      <span class="ico">a</span>
-      <span class="ico">n</span>
-      <span class="ico">h</span>
-      <span class="ico">u</span>
-    </div>
-  </div>
-</section>
-
-<!-- ===================== MODELOS ===================== -->
-<section class="pad faixa-alt" id="modelos">
-  <div class="wrap">
-    <div class="cabecalho-secao">
-      <div class="selo-ico revela" aria-hidden="true"><span class="ico">a</span></div>
-      <p class="olho revela">Modelos de projeto</p>
-      <h2 class="titulo-secao revela">Já temos algumas ideias prontas para começar</h2>
-      <p class="linha-secao revela">
-        Escolha a que mais parece com a sua e mude o que precisar.
-        Ou comece do zero: se a sua ideia não estiver aqui, é só escrever e a Sementeira monta o projeto do mesmo jeito.
-      </p>
-    </div>
-
-    <div class="grade grade-modelos">
-      <a class="modelo revela" href="modelos/fabrica-de-tijolos-ecologicos.html">
-        <div class="modelo-foto"><img src="img/modelos/fabrica-de-tijolos-ecologicos.jpg" alt="" loading="lazy" width="760" height="424" /></div>
-        <div class="modelo-corpo">
-          <span class="etiqueta">Infraestrutura</span>
-          <h3>Fábrica de Tijolos Ecológicos</h3>
-          <p>Tijolos feitos de terra e cimento, prensados a frio, para construir casas populares.</p>
-          <span class="explorar">Ver o modelo <span class="seta" aria-hidden="true">→</span></span>
-        </div>
-      </a>
-
-      <a class="modelo revela" href="modelos/empreiteira-popular.html">
-        <div class="modelo-foto"><img src="img/modelos/empreiteira-popular.jpg" alt="" loading="lazy" width="760" height="424" /></div>
-        <div class="modelo-corpo">
-          <span class="etiqueta">Infraestrutura</span>
-          <h3>Empreiteira Popular</h3>
-          <p>Construção de casas e obras da comunidade, com gente da própria região trabalhando.</p>
-          <span class="explorar">Ver o modelo <span class="seta" aria-hidden="true">→</span></span>
-        </div>
-      </a>
-
-      <a class="modelo revela" href="modelos/cozinha-industrial-solidaria.html">
-        <div class="modelo-foto"><img src="img/modelos/cozinha-industrial-solidaria.jpg" alt="" loading="lazy" width="760" height="424" /></div>
-        <div class="modelo-corpo">
-          <span class="etiqueta">Alimentação</span>
-          <h3>Cozinha Industrial Solidária</h3>
-          <p>Refeições e marmitas congeladas para famílias que estão passando aperto.</p>
-          <span class="explorar">Ver o modelo <span class="seta" aria-hidden="true">→</span></span>
-        </div>
-      </a>
-
-      <a class="modelo revela" href="modelos/fabrica-de-alimentos.html">
-        <div class="modelo-foto"><img src="img/modelos/fabrica-de-alimentos.jpg" alt="" loading="lazy" width="760" height="424" /></div>
-        <div class="modelo-corpo">
-          <span class="etiqueta">Alimentação</span>
-          <h3>Fábrica de Alimentos</h3>
-          <p>Pães, biscoitos, polpas de fruta e temperos feitos na comunidade.</p>
-          <span class="explorar">Ver o modelo <span class="seta" aria-hidden="true">→</span></span>
-        </div>
-      </a>
-
-      <a class="modelo revela" href="modelos/quintais-produtivos.html">
-        <div class="modelo-foto"><img src="img/modelos/quintais-produtivos.jpg" alt="" loading="lazy" width="760" height="424" /></div>
-        <div class="modelo-corpo">
-          <span class="etiqueta">Alimentação</span>
-          <h3>Quintais Produtivos</h3>
-          <p>Horta sem terra, caixa d'água da chuva e criação de galinha no quintal de casa.</p>
-          <span class="explorar">Ver o modelo <span class="seta" aria-hidden="true">→</span></span>
-        </div>
-      </a>
-
-      <a class="modelo revela" href="modelos/piscicultura-tanque-rede.html">
-        <div class="modelo-foto"><img src="img/modelos/piscicultura-tanque-rede.jpg" alt="" loading="lazy" width="760" height="424" /></div>
-        <div class="modelo-corpo">
-          <span class="etiqueta">Alimentação</span>
-          <h3>Criação de Peixe</h3>
-          <p>Peixe criado em tanque-rede, limpo e embalado ali mesmo para vender.</p>
-          <span class="explorar">Ver o modelo <span class="seta" aria-hidden="true">→</span></span>
-        </div>
-      </a>
-
-      <a class="modelo revela" href="modelos/centro-de-desenvolvimento-de-apps.html">
-        <div class="modelo-foto"><img src="img/modelos/centro-de-desenvolvimento-de-apps.jpg" alt="" loading="lazy" width="760" height="424" /></div>
-        <div class="modelo-corpo">
-          <span class="etiqueta">Tecnologia</span>
-          <h3>Centro de Programação</h3>
-          <p>Curso de programação para a juventude e apoio para criar aplicativos da comunidade.</p>
-          <span class="explorar">Ver o modelo <span class="seta" aria-hidden="true">→</span></span>
-        </div>
-      </a>
-
-      <a class="modelo revela" href="modelos/centro-de-comunicacao-popular.html">
-        <div class="modelo-foto"><img src="img/modelos/centro-de-comunicacao-popular.jpg" alt="" loading="lazy" width="760" height="424" /></div>
-        <div class="modelo-corpo">
-          <span class="etiqueta">Tecnologia</span>
-          <h3>Centro de Comunicação Popular</h3>
-          <p>Curso de rádio, vídeo e redes sociais, para a comunidade contar a própria história.</p>
-          <span class="explorar">Ver o modelo <span class="seta" aria-hidden="true">→</span></span>
-        </div>
-      </a>
-
-      <a class="modelo revela" href="modelos/estamparia-e-costura.html">
-        <div class="modelo-foto"><img src="img/modelos/estamparia-e-costura.jpg" alt="" loading="lazy" width="760" height="424" /></div>
-        <div class="modelo-corpo">
-          <span class="etiqueta">Indústria</span>
-          <h3>Estamparia e Costura</h3>
-          <p>Roupa, estampa e uniforme feitos por costureiras da região.</p>
-          <span class="explorar">Ver o modelo <span class="seta" aria-hidden="true">→</span></span>
-        </div>
-      </a>
-
-      <a class="modelo revela" href="modelos/galpao-de-reciclagem-e-artesanato.html">
-        <div class="modelo-foto"><img src="img/modelos/galpao-de-reciclagem-e-artesanato.jpg" alt="" loading="lazy" width="760" height="424" /></div>
-        <div class="modelo-corpo">
-          <span class="etiqueta">Indústria</span>
-          <h3>Galpão de Reciclagem</h3>
-          <p>Separação de material reciclável e artesanato feito com o que seria jogado fora.</p>
-          <span class="explorar">Ver o modelo <span class="seta" aria-hidden="true">→</span></span>
-        </div>
-      </a>
-
-      <a class="modelo revela" href="modelos/usina-solar-comunitaria.html">
-        <div class="modelo-foto"><img src="img/modelos/usina-solar-comunitaria.jpg" alt="" loading="lazy" width="760" height="424" /></div>
-        <div class="modelo-corpo">
-          <span class="etiqueta">Energia</span>
-          <h3>Usina Solar Comunitária</h3>
-          <p>Placas de sol que geram energia para a comunidade. O que sobra é vendido.</p>
-          <span class="explorar">Ver o modelo <span class="seta" aria-hidden="true">→</span></span>
-        </div>
-      </a>
-
-      <a class="modelo revela" href="modelos/transportadora-popular.html">
-        <div class="modelo-foto"><img src="img/modelos/transportadora-popular.jpg" alt="" loading="lazy" width="760" height="424" /></div>
-        <div class="modelo-corpo">
-          <span class="etiqueta">Logística</span>
-          <h3>Transportadora Popular</h3>
-          <p>Transporte de gente e de carga, ligando as comunidades entre os municípios.</p>
-          <span class="explorar">Ver o modelo <span class="seta" aria-hidden="true">→</span></span>
-        </div>
-      </a>
-    </div>
-
-    <p class="aviso-verde revela">
-      <span class="bolinha" aria-hidden="true"></span>
-      Não achou a sua ideia? Melhor ainda. Escreva do seu jeito na primeira tela e o programa monta o projeto a partir dela.
-    </p>
-  </div>
-</section>
-
-<!-- ===================== SEUS DADOS ===================== -->
-<section class="pad" id="dados">
-  <div class="wrap">
-    <div class="cabecalho-secao">
-      <div class="selo-ico revela" aria-hidden="true"><span class="ico">n</span></div>
-      <p class="olho revela">Seus dados são seus</p>
-      <h2 class="titulo-secao revela">Tudo fica no seu computador</h2>
-      <p class="linha-secao revela">Nada é mandado para a internet sem você querer.</p>
-    </div>
-
-    <div class="grade grade-3">
-      <article class="cartao revela">
-        <div class="cartao-num" aria-hidden="true">🔒</div>
-        <h3>Fica salvo aqui</h3>
-        <p>Seus projetos não saem do seu computador até você exportar e decidir compartilhar.</p>
-      </article>
-      <article class="cartao revela">
-        <div class="cartao-num" aria-hidden="true">📡</div>
-        <h3>Funciona sem internet</h3>
-        <p>Só precisa de internet para usar a IA na nuvem ou pesquisar preços. O resto funciona offline.</p>
-      </article>
-      <article class="cartao revela">
-        <div class="cartao-num" aria-hidden="true">🏠</div>
-        <h3>IA no seu próprio PC</h3>
-        <p>Dá para rodar a inteligência artificial dentro do seu computador. Sem custo e sem mandar nada para fora.</p>
-      </article>
-    </div>
-  </div>
-</section>
-
-<!-- ===================== PERGUNTAS E RESPOSTAS ===================== -->
-<section class="pad faixa-alt tem-marca" id="perguntas">
-  <div class="marca-dagua" style="right:-50px; bottom:-60px;" aria-hidden="true"><span class="ico">g</span></div>
-  <div class="wrap-estreito">
-    <div class="cabecalho-secao">
-      <div class="selo-ico revela" aria-hidden="true"><span class="ico">g</span></div>
-      <p class="olho revela">Perguntas e respostas</p>
-      <h2 class="titulo-secao revela">Dúvidas que quase todo mundo tem</h2>
-      <p class="linha-secao revela">Clique na pergunta para ver a resposta.</p>
-    </div>
-
-    <div class="faq">
-      <details class="faq-item revela">
-        <summary>Preciso saber mexer bem no computador?</summary>
-        <div class="faq-resposta">
-          <p>Não. Se você sabe abrir um programa e escrever, já dá.</p>
-          <p>A Sementeira faz uma pergunta de cada vez e você responde com as suas palavras. Não existe campo técnico para preencher sozinho.</p>
-        </div>
-      </details>
-
-      <details class="faq-item revela">
-        <summary>Custa alguma coisa?</summary>
-        <div class="faq-resposta">
-          <p>Não. O programa é de graça e não tem mensalidade.</p>
-          <p>Se você quiser usar a inteligência artificial pela internet, alguns serviços cobram por uso. Mas dá para rodar tudo no seu computador, sem pagar nada.</p>
-        </div>
-      </details>
-
-      <details class="faq-item revela">
-        <summary>O que é essa tal de “inteligência artificial”?</summary>
-        <div class="faq-resposta">
-          <p>É um ajudante que escreve rascunho. Você conta a ideia e ele monta um texto no formato do acordo.</p>
-          <p><strong>Ele erra às vezes.</strong> Por isso tudo o que ele escreve aparece para você conferir e mudar. E as regras do acordo são checadas por outra parte do programa, que não erra: ela só compara com a lista do que pode e do que não pode.</p>
-        </div>
-      </details>
-
-      <details class="faq-item revela">
-        <summary>A Sementeira decide o meu projeto?</summary>
-        <div class="faq-resposta">
-          <p>Não. Ela sugere e avisa. Quem decide é você.</p>
-          <p>E depois de você, quem decide é a assembleia, a Comissão de Atingidos e a Governança Popular. A Sementeira serve para o projeto chegar lá pronto, sem precisar voltar para arrumar.</p>
-        </div>
-      </details>
-
-      <details class="faq-item revela">
-        <summary>Preciso de internet?</summary>
-        <div class="faq-resposta">
-          <p>Só para baixar o programa na primeira vez.</p>
-          <p>Depois disso ele funciona sem internet. A internet só volta a ser necessária se você quiser pesquisar preços ou usar a inteligência artificial pela nuvem.</p>
-        </div>
-      </details>
-
-      <details class="faq-item revela">
-        <summary>Funciona no celular?</summary>
-        <div class="faq-resposta">
-          <p>Ainda não. É um programa de computador com Windows.</p>
-          <p>Se você não tem computador em casa, dá para usar o de um ponto de apoio, de uma escola ou da associação. O arquivo do projeto fica salvo e pode ser levado num pen drive.</p>
-        </div>
-      </details>
-
-      <details class="faq-item revela">
-        <summary>Preciso já ter uma associação ou um CNPJ?</summary>
-        <div class="faq-resposta">
-          <p>Para escrever o projeto, não.</p>
-          <p>O programa até gera modelos de estatuto, ata de fundação e regimento interno, para o caso de a comunidade decidir abrir uma associação. <strong>Esses modelos precisam da revisão de um advogado</strong> antes de qualquer assinatura.</p>
-        </div>
-      </details>
-
-      <details class="faq-item revela">
-        <summary>E se eu não souber quanto custam as coisas?</summary>
-        <div class="faq-resposta">
-          <p>Tudo bem. O programa propõe um orçamento inicial a partir da sua ideia.</p>
-          <p>Quando há internet, ele procura preços de mercado e mostra de onde tirou cada número. Sem internet, ele avisa que a pesquisa está indisponível — ele nunca inventa um valor.</p>
-        </div>
-      </details>
-
-      <details class="faq-item revela">
-        <summary>O que quer dizer “se o projeto se sustenta”?</summary>
-        <div class="faq-resposta">
-          <p>É a resposta para uma pergunta simples: <strong>e quando o dinheiro do acordo acabar?</strong></p>
-          <p>O programa faz as contas de três jeitos — se tudo der certo, se der mais ou menos e se der errado. Assim a comunidade sabe se o projeto continua de pé sozinho ou se vai parar no meio do caminho.</p>
-        </div>
-      </details>
-
-      <details class="faq-item revela">
-        <summary>O que é o Anexo I.1?</summary>
-        <div class="faq-resposta">
-          <p>É a parte do acordo judicial de Brumadinho que trata dos projetos propostos pelas próprias comunidades atingidas.</p>
-          <p>É esse pedaço do acordo que diz o que um projeto precisa ter e o que ele não pode pedir. A Sementeira conhece essas regras e avisa quando alguma coisa sai da linha.</p>
-        </div>
-      </details>
-
-      <details class="faq-item revela">
-        <summary>Já escrevi meu projeto no Word. Perco tudo?</summary>
-        <div class="faq-resposta">
-          <p>Não. Abra o arquivo dentro da Sementeira, em PDF ou Word.</p>
-          <p>O programa lê o que você já escreveu, preenche os campos e mostra tudo para você conferir. Daí em diante ele segue ajudando a completar o que falta.</p>
-        </div>
-      </details>
-
-      <details class="faq-item revela">
-        <summary>Meus dados vão para alguém?</summary>
-        <div class="faq-resposta">
-          <p>Não. O projeto fica salvo no seu computador e só sai de lá quando você exporta o arquivo.</p>
-          <p>Não existe cadastro, não existe login e não existe servidor da Sementeira guardando nada.</p>
-        </div>
-      </details>
-    </div>
-  </div>
-</section>
-
-<!-- ===================== FECHAMENTO ===================== -->
-<section class="pad fechamento">
-  <div class="wrap-estreito">
-    <p class="citacao-grande revela">
-      A luta é por <em>reparação integral</em>. A Sementeira ajuda a escrever, na linguagem que o acordo entende,
-      <em>o que a comunidade já sabe que precisa</em>.
-    </p>
-    <!-- Ícones decorativos da fonte "Ícones do Brasil". -->
-    <div class="faixa-icones revela" aria-hidden="true">
-      <span class="ico">m</span>
-      <span class="ico">t</span>
-      <span class="ico">w</span>
-      <span class="ico">g</span>
-      <span class="ico">l</span>
-    </div>
-  </div>
-</section>
-
-<!-- ===================== INSTALAR ===================== -->
-<section class="pad instalar" id="instalar">
-  <div class="wrap-estreito">
-    <div class="selo-ico revela" aria-hidden="true"><span class="ico">h</span></div>
-    <p class="olho revela">Instalação</p>
-    <h2 class="titulo-secao revela">Plante a primeira ideia hoje</h2>
-    <p class="linha-secao revela">Baixe o programa para Windows. Depois de instalado, funciona sem internet.</p>
-
-    <div class="grade grade-3">
-      <div class="passo-instalar revela">
-        <div class="cartao-num">1</div>
-        <p>Clique no botão verde. Baixe o arquivo.</p>
-      </div>
-      <div class="passo-instalar revela">
-        <div class="cartao-num">2</div>
-        <p>Dê dois cliques no arquivo baixado.</p>
-      </div>
-      <div class="passo-instalar revela">
-        <div class="cartao-num">3</div>
-        <p>Siga: Próximo, Próximo, Concluir. Pronto.</p>
       </div>
     </div>
+  </section>
 
-    <div class="cta-dupla revela" style="justify-content:center;">
-      <a class="btn btn-principal btn-grande" href="baixar.html">⬇ Baixar o programa</a>
-      <a class="btn btn-vazado" href="#perguntas">Ainda tenho dúvidas</a>
+  <!-- GESTÃO & NEGÓCIO -->
+  <section class="section">
+    <div class="wrap">
+      <span class="kicker">Gestão de negócio</span>
+      <h2>Para quem toca tudo sozinho</h2>
+      <div class="grid">
+        <!-- YGG -->
+        <article class="card">
+          <div class="card-top">
+            <div class="card-ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M4 7l8 5 8-5M4 12l8 5 8-5"></path></svg></div>
+            <span class="pill pill-dev"><span class="dot"></span>Em desenvolvimento</span>
+          </div>
+          <div><h3>YGG</h3><p class="sub">Gestão completa do escritório</p></div>
+          <p class="desc">Um programa só para growth, financeiro, cotações, ordens de serviço, patrimônio e mensageria — com um copiloto de IA que consulta o próprio sistema. Roda no desktop, com Ollama local por padrão.</p>
+          <details><summary>ver funcionalidades</summary><ul><li>Cotações (RFQ) com portal para fornecedores</li><li>Ordens de serviço rastreáveis por token</li><li>Copiloto LLM com tool-calling local-first</li></ul></details>
+          <div class="tagrow"><span class="tag">ERP leve</span><span class="tag">Django</span><span class="tag">Ollama</span></div>
+          <div class="actions"><a class="btn btn-primary" href="ygg.html">Conhecer <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a></div>
+        </article>
+      </div>
     </div>
+  </section>
 
-    <p class="letrinha revela">
-      A página de download explica o passo a passo com calma, inclusive o que fazer se o Windows reclamar.
-    </p>
-  </div>
-</section>
+  <!-- IA & LLM -->
+  <section class="section">
+    <div class="wrap">
+      <span class="kicker">Inteligência artificial</span>
+      <h2>Agentes e assistentes</h2>
+      <div class="grid">
+        <!-- Cutia -->
+        <article class="card">
+          <div class="card-top">
+            <div class="card-ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="2"></rect><path d="M12 8V4M8 3h8M9 13v2M15 13v2"></path></svg></div>
+            <span class="pill pill-dev"><span class="dot"></span>Em desenvolvimento</span>
+          </div>
+          <div><h3>Cutia</h3><p class="sub">Seu workspace de IA, em português</p></div>
+          <p class="desc">A tradução PT-BR do Odysseus: um espaço de trabalho de IA que roda na sua máquina — chat, agente, pesquisa, documentos, e-mail e memória — usando modelos locais ou APIs, sem entregar seus dados a ninguém.</p>
+          <details><summary>ver funcionalidades</summary><ul><li>Chat e agente com modelos locais (Ollama/vLLM)</li><li>Pesquisa profunda e comparação de modelos</li><li>Tudo self-hosted, privacidade por padrão</li></ul></details>
+          <div class="tagrow"><span class="tag">Self-hosted</span><span class="tag">PT-BR</span><span class="tag">Privacidade</span></div>
+          <div class="actions"><a class="btn btn-primary" href="cutia.html">Conhecer <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a></div>
+        </article>
 
+        <!-- Lattes Agent -->
+        <article class="card">
+          <div class="card-top">
+            <div class="card-ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10L12 5 2 10l10 5 10-5zM6 12v5c0 1 2.7 2.5 6 2.5s6-1.5 6-2.5v-5"></path></svg></div>
+            <span class="pill pill-dev"><span class="dot"></span>Em desenvolvimento</span>
+          </div>
+          <div><h3>Lattes Agent</h3><p class="sub">Seu Currículo Lattes por conversa</p></div>
+          <p class="desc">Um assistente de chat que atualiza o Currículo Lattes para você — em modo orientação (guia passo a passo) ou edição direta (preenche os formulários reais da Plataforma, sempre pedindo confirmação antes de salvar).</p>
+          <details><summary>ver funcionalidades</summary><ul><li>Automação real da Plataforma Lattes</li><li>Importa artigo por DOI (CrossRef)</li><li>Modelos locais ou DeepSeek/Maritaca</li></ul></details>
+          <div class="tagrow"><span class="tag">Acadêmico</span><span class="tag">Automação</span><span class="tag">CNPq</span></div>
+          <div class="actions"><a class="btn btn-primary" href="lattes.html">Conhecer <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- CULTURA & TERRITÓRIO -->
+  <section class="section">
+    <div class="wrap">
+      <span class="kicker">Cultura e território</span>
+      <h2>Organização de base e produção cultural</h2>
+      <div class="grid">
+        <!-- Agitprop -->
+        <article class="card">
+          <div class="card-top">
+            <div class="card-ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12L3 13zM11.6 16.8A3 3 0 0 1 6 15"></path></svg></div>
+            <span class="pill pill-dev"><span class="dot"></span>Em desenvolvimento</span>
+          </div>
+          <div><h3>Agitprop</h3><p class="sub">Planejador de campanhas de base</p></div>
+          <p class="desc">App de mapa para planejar panfletagem e ações de rua: rotas a pé, dados eleitorais por bairro, gestão de equipe e um índice de onde vale a pena investir esforço. 100% offline, dados no seu computador.</p>
+          <details><summary>ver funcionalidades</summary><ul><li>Mapa com rotas e áreas de atuação</li><li>IPEE — potencial de expansão por bairro</li><li>Dados sensíveis cifrados, IA com anonimização</li></ul></details>
+          <div class="tagrow"><span class="tag">Mapa</span><span class="tag">Eleitoral</span><span class="tag">Offline</span></div>
+          <div class="actions"><a class="btn btn-primary" href="agitprop.html">Conhecer <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a></div>
+        </article>
+
+        <!-- Produção Eventos -->
+        <article class="card">
+          <div class="card-top">
+            <div class="card-ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01"></path></svg></div>
+            <span class="pill pill-dev"><span class="dot"></span>Em desenvolvimento</span>
+          </div>
+          <div><h3>Produção Eventos</h3><p class="sub">Gestão de produção cultural</p></div>
+          <p class="desc">Um app instalável (funciona offline) que organiza eventos culturais: tarefas por criticidade, distribuição inteligente na equipe e um chat que entende comandos em português. Sem conta, sem servidor, sem rastreadores.</p>
+          <details><summary>ver funcionalidades</summary><ul><li>Modelos prontos (show, seminário, ato)</li><li>Distribuição de tarefas por aptidão e carga</li><li>Exporta PDF/Word/Excel no dispositivo</li></ul></details>
+          <div class="tagrow"><span class="tag">PWA</span><span class="tag">Offline-first</span><span class="tag">Cultura</span></div>
+          <div class="actions"><a class="btn btn-primary" href="producao-eventos.html">Conhecer <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a></div>
+        </article>
+
+        <!-- BH Cultural -->
+        <article class="card">
+          <div class="card-top">
+            <div class="card-ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.4-7-11a7 7 0 0 1 14 0c0 5.6-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg></div>
+            <span class="pill pill-concept"><span class="dot"></span>Conceito</span>
+          </div>
+          <div><h3>Experimenta Turismo</h3><p class="sub">Cultura e turismo de BH</p></div>
+          <p class="desc">Guia de turismo cultural de Belo Horizonte — atrações, agenda, roteiros e mapa. O protótipo já validou a ideia; a versão final em Next.js + Supabase está em construção.</p>
+          <details><summary>ver funcionalidades</summary><ul><li>10 categorias culturais da cidade</li><li>Roteiros temáticos e mapa</li><li>Conteúdo multilíngue (pt/en/es)</li></ul></details>
+          <div class="tagrow"><span class="tag">Turismo</span><span class="tag">Next.js</span><span class="tag">BH</span></div>
+          <div class="actions"><a class="btn btn-ghost" href="#apoio">Em breve</a></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- FERRAMENTAS & ACERVO -->
+  <section class="section">
+    <div class="wrap">
+      <span class="kicker">Ferramentas e acervo</span>
+      <h2>Utilitários e material de apoio</h2>
+      <div class="grid">
+        <!-- AppLivre -->
+        <article class="card">
+          <div class="card-top">
+            <div class="card-ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg></div>
+            <span class="pill pill-live"><span class="dot"></span>No ar</span>
+          </div>
+          <div><h3>AppLivre</h3><p class="sub">Catálogo de ferramentas gratuitas</p></div>
+          <p class="desc">Um catálogo público em português de mais de 300 ferramentas gratuitas e open source, cada uma explicada em três níveis — pra leigo, pra curioso e pra técnico.</p>
+          <details><summary>ver funcionalidades</summary><ul><li>311 ferramentas em 10 categorias</li><li>Kits e fluxos de uso prontos</li><li>Filtros: grátis, open source, sem cadastro</li></ul></details>
+          <div class="tagrow"><span class="tag">Catálogo</span><span class="tag">Open source</span><span class="tag">PT-BR</span></div>
+          <div class="actions"><a class="btn btn-primary" href="https://applivre.pages.dev" target="_blank" rel="noopener">Visitar <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a></div>
+        </article>
+
+        <!-- Acervo HTML -->
+        <article class="card">
+          <div class="card-top">
+            <div class="card-ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4zM4 9h16M9 9v11"></path></svg></div>
+            <span class="pill pill-live"><span class="dot"></span>No ar</span>
+          </div>
+          <div><h3>Acervo HTML</h3><p class="sub">Apresentações e painéis</p></div>
+          <p class="desc">Peças autocontidas de comunicação: decks de pitch, painel de cobertura midiática da Paraopeba, pesquisa de mestrado sobre o lítio do Jequitinhonha e o site da Comissão de Direitos Humanos da OAB/MG.</p>
+          <details><summary>ver o que tem</summary><ul><li>Painel Paraopeba — cobertura midiática</li><li>Mestrado PPGER — lítio no Jequitinhonha</li><li>Site CDH OAB/MG e decks de projeto</li></ul></details>
+          <div class="tagrow"><span class="tag">Apresentação</span><span class="tag">Pesquisa</span><span class="tag">Institucional</span></div>
+          <div class="actions"><a class="btn btn-ghost" href="../Sementeira de Apps.html">Abrir acervo</a></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- APOIO -->
+  <section class="section" id="apoio">
+    <div class="wrap">
+      <div class="band">
+        <h2>Ferramentas com propósito, em busca de apoiadores</h2>
+        <p>Todos esses projetos nascem de dores reais — de quem trabalha sozinho, de comunidades atingidas, de quem quer fiscalizar o dinheiro público. Se algum faz sentido para você, sua organização ou seu movimento, vamos conversar sobre parceria, apoio ou implantação.</p>
+        <a class="btn btn-primary" href="mailto:arturcolito@gmail.com">Falar sobre apoio</a>
+      </div>
+    </div>
+  </section>
 </main>
 
-<!-- ===================== RODAPÉ ===================== -->
-<footer>
-  <div class="wrap rodape-grade">
-    <div>
-      <a class="marca" href="#topo">
-        <span class="marca-selo" aria-hidden="true">🌱</span>
-        <span class="marca-nome">Sementeira</span>
-      </a>
-      <p class="rodape-sobre">
-        Da ideia à reparação. Programa de computador que ajuda quem foi atingido pela barragem de Brumadinho
-        a montar projetos da comunidade.
-      </p>
-    </div>
-
-    <div>
-      <h3>O programa</h3>
-      <div class="rodape-col">
-        <a href="#como-funciona">Como funciona</a>
-        <a href="#avisos">O que ela avisa</a>
-        <a href="modelos/">Modelos de projeto</a>
-        <a href="#perguntas">Perguntas e respostas</a>
-        <a href="baixar.html">Baixar</a>
-      </div>
-    </div>
-
-    <div>
-      <h3>Movimento</h3>
-      <div class="rodape-col">
-        <a href="https://mab.org.br">mab.org.br</a>
-        <span>A luta pela reparação integral</span>
-      </div>
-    </div>
-
-    <div>
-      <h3>Projeto</h3>
-      <div class="rodape-col">
-        <a href="https://github.com/FinweeJur/sementeira">Código no GitHub</a>
-        <a href="apresentacao-sementeira.pdf">Apresentação em PDF</a>
-        <span>Versão 0.2.0 · Windows</span>
-      </div>
-    </div>
-  </div>
-
-  <div class="wrap rodape-fim">
-    <span>© 2026 Artur Colito · todos os direitos reservados</span>
-    <span>Ferramenta independente. Não substitui a Governança Popular, as Comissões de Atingidos ou as assembleias.</span>
+<footer class="foot">
+  <div class="wrap">
+    Floresta de Apps — software com propósito, construído do zero, local-first e com privacidade por padrão.<br>
+    Feito em Minas Gerais. Cada ferramenta roda perto de quem precisa dela.
   </div>
 </footer>
 
-<script src="js/sementeira.js?v=2"></script>
+<script>
+  (function () {
+    var root = document.documentElement, btn = document.getElementById('themeBtn');
+    var saved = null;
+    try { saved = localStorage.getItem('sementeira-theme'); } catch (e) {}
+    if (saved) root.setAttribute('data-theme', saved);
+    else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) root.setAttribute('data-theme', 'dark');
+    btn && btn.addEventListener('click', function () {
+      var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('sementeira-theme', next); } catch (e) {}
+    });
+  })();
+
+  (function () {
+    var cards = document.querySelectorAll('.card');
+    if (!('IntersectionObserver' in window) || !cards.length) {
+      cards.forEach(function (c) { c.classList.add('in-view'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in-view');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+    cards.forEach(function (c) { io.observe(c); });
+  })();
+
+  (function () {
+    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var nums = document.querySelectorAll('.hero-stat .num');
+    if (!nums.length) return;
+    if (reduced) {
+      nums.forEach(function (n) { n.textContent = n.getAttribute('data-count'); });
+    } else {
+      var start = null, dur = 1300;
+      var targets = Array.prototype.map.call(nums, function (n) { return parseInt(n.getAttribute('data-count'), 10) || 0; });
+      function step(ts) {
+        if (start === null) start = ts;
+        var k = Math.min(1, (ts - start) / dur);
+        var e = 1 - Math.pow(1 - k, 3);
+        nums.forEach(function (n, i) { n.textContent = Math.round(targets[i] * e); });
+        if (k < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    var scene = document.getElementById('heroScene');
+    var sceneWrap = scene && scene.closest('.hero-scene');
+    if (scene && sceneWrap && !reduced) {
+      sceneWrap.addEventListener('mousemove', function (e) {
+        var r = scene.getBoundingClientRect();
+        var px = (e.clientX - r.left) / r.width - 0.5;
+        var py = (e.clientY - r.top) / r.height - 0.5;
+        scene.style.transform = 'rotateX(' + (-py * 16) + 'deg) rotateY(' + (px * 16) + 'deg)';
+      });
+      sceneWrap.addEventListener('mouseleave', function () {
+        scene.style.transform = 'rotateX(0deg) rotateY(0deg)';
+      });
+    }
+  })();
+</script>
 </body>
 </html>

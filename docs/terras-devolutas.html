@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Terras Devolutas — a terra pública ociosa, finalmente no mapa</title>
+<meta name="description" content="App geoespacial que aponta terra pública subaproveitada em Minas Gerais a partir de dados oficiais — candidatos a verificação, com taxa de erro medida. Rumo a um convênio com o INCRA.">
+<link rel="stylesheet" href="tokens.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="index.html" aria-label="Voltar ao hub">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"></path></svg>
+      Terras Devolutas
+    </a>
+    <div class="nav-actions">
+      <button class="theme-toggle" id="themeBtn" type="button" aria-label="Alternar tema"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v1M12 20v1M4.2 4.2l.7.7M19.1 19.1l.7.7M3 12h1M20 12h1M4.2 19.8l.7-.7M19.1 4.9l.7-.7"></path><circle cx="12" cy="12" r="4"></circle></svg></button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="hero-blob" aria-hidden="true"></div>
+    <div class="hero-icon" aria-hidden="true">
+      <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 21V10.5"></path>
+        <path d="M12 10.5c0-3.4 2.6-5.5 6.4-5.5.2 3.9-2.5 6-6.4 6"></path>
+        <path d="M12 13c0-3-2.4-4.8-5.8-4.8C6 11.4 8.5 13.3 12 13.3"></path>
+      </svg>
+    </div>
+    <div class="wrap-narrow">
+      <p class="eyebrow rise d1">Geoespacial a serviço da função social da terra</p>
+      <h1 class="rise d2">Existe terra pública ociosa. O problema é enxergá-la.</h1>
+      <p class="lead rise d3">Terras Devolutas cruza dados oficiais e imagens de satélite para apontar, município a município, onde há terra pública subaproveitada em Minas Gerais. Não acusa ninguém: entrega candidatos a verificação, com a taxa de erro medida e publicada. O destino é um convênio com o INCRA — o órgão que tem, por lei, o poder de aferir a função social da terra.</p>
+      <div class="cta rise d4">
+        <a class="btn btn-primary" href="#como">Como funciona</a>
+        <a class="btn btn-ghost" href="index.html">Ver os outros projetos</a>
+      </div>
+      <a class="scroll-hint" href="#como" aria-label="Rolar para o conteúdo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"></path></svg>
+      </a>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap-narrow">
+      <span class="kicker">O que ele é — e o que ele nunca será</span>
+      <h2>Uma ferramenta de apoio, não um veredito.</h2>
+      <p class="desc" style="font-size:var(--text-md);line-height:1.6;">A Constituição condiciona a propriedade à função social, mas saber onde há terra pública mal aproveitada exige cruzar bases dispersas e imagens de sensoriamento — um trabalho que quase ninguém faz na escala municipal. Terras Devolutas automatiza esse cruzamento. A palavra final é sempre de perícia oficial (INCRA, SPU, Justiça); o app aponta indícios, com honestidade sobre sua própria margem de erro.</p>
+    </div>
+  </section>
+
+  <section class="section" id="como">
+    <div class="wrap">
+      <span class="kicker">Como funciona</span>
+      <h2>Fontes oficiais, método medido, três eixos.</h2>
+      <div class="grid">
+        <div class="feature"><div class="fico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.4-7-11a7 7 0 0 1 14 0c0 5.6-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg></div><h3>Só dado oficial</h3><p>SPU, Acervo Fundiário do INCRA, IDE-Sisema (MG), MapBiomas, Atlas das Pastagens, CAR/SICAR. Tudo baixado e trabalhado localmente — sem depender de API instável no ar.</p></div>
+        <div class="feature"><div class="fico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M7 14l4-4 3 3 5-6"></path></svg></div><h3>Erro medido, não escondido</h3><p>A prova de conceito em Curvelo mede a taxa de falso-positivo à mão, contra a verdade oficial do INCRA. Nenhum resultado sai sem esse número junto — credibilidade é o ativo mais valioso de um produto fundiário.</p></div>
+        <div class="feature"><div class="fico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4zM9 4v16M4 9h5"></path></svg></div><h3>Proveniência por polígono</h3><p>Cada candidato carrega qual base, qual data e qual regra o gerou. Você audita a origem de cada área apontada — não é uma caixa-preta.</p></div>
+        <div class="feature"><div class="fico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"></path></svg></div><h3>Eixo INCRA</h3><p>Para o convênio: score de função social de imóvel, em tier restrito e autenticado — nunca com linguagem de acusação, sempre "indício para verificação oficial".</p></div>
+        <div class="feature"><div class="fico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg></div><h3>Eixo Pesquisa</h3><p>Busca automática em notícias e sites por imóveis vazios e inutilizados, georreferenciados no mapa.</p></div>
+        <div class="feature"><div class="fico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10h8M8 14h5"></path><rect x="3" y="4" width="18" height="16" rx="2"></rect></svg></div><h3>Eixo Copiloto</h3><p>Um chatbot de IA que conversa sobre os dados e executa tarefas no app — filtra, exporta, abre um candidato, pede um relatório.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap-narrow">
+      <span class="kicker">Guardrails inegociáveis</span>
+      <h2>Terra é assunto sério. O produto se comporta como tal.</h2>
+      <p class="desc" style="font-size:var(--text-md);line-height:1.6;">O tier público classifica só terra pública e devoluta candidata. Score de imóvel privado, se existir, fica atrás de autenticação, restrito a órgão com mandato legal. A linguagem nunca afirma descumprimento — só "indício que merece verificação". CPF e titularidade nunca são expostos. E o app repete, em todo texto, que arrecadar devoluta e aferir função social são atos oficiais, não do software.</p>
+      <div class="note" style="margin-top:var(--sp-6);">Estado atual: o projeto mais ativo do grupo. Pipeline geoespacial testado, backend e mapa em pé, Fase 0 executada com dados reais em Curvelo. Próximo marco formal: fechar a medição de falso-positivo antes de escalar para novos municípios da bacia do Paraopeba.</div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="band">
+        <h2>Órgão público, movimento ou pesquisa fundiária?</h2>
+        <p>Terras Devolutas foi desenhado para virar convênio e para servir a quem estuda ou disputa o uso da terra em Minas. Vamos conversar.</p>
+        <a class="btn btn-primary" href="mailto:arturcolito@gmail.com">Falar sobre o projeto</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot"><div class="wrap">Terras Devolutas — terra pública subaproveitada no mapa, com erro medido. Parte da <a href="index.html">Sementeira de Apps</a>.</div></footer>
+<script>(function(){var r=document.documentElement,b=document.getElementById('themeBtn'),s=null;try{s=localStorage.getItem('sementeira-theme');}catch(e){}if(s)r.setAttribute('data-theme',s);else if(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)r.setAttribute('data-theme','dark');b&&b.addEventListener('click',function(){var n=r.getAttribute('data-theme')==='dark'?'light':'dark';r.setAttribute('data-theme',n);try{localStorage.setItem('sementeira-theme',n);}catch(e){}});})();</script>
+<script>
+  (function () {
+    var items = document.querySelectorAll('.card, .feature');
+    if (!('IntersectionObserver' in window) || !items.length) {
+      items.forEach(function (c) { c.classList.add('in-view'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in-view');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+    items.forEach(function (c) { io.observe(c); });
+  })();
+</script>
+</body>
+</html>
