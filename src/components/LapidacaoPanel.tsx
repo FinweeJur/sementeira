@@ -206,7 +206,7 @@ export function LapidacaoPanel({
   const introduziuBloqueio = resultado?.voltas.some((v) => v.introduziuBloqueio) ?? false;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div className="max-h-[85vh] w-full max-w-lg space-y-3 overflow-y-auto rounded-lg border border-[color:var(--sm-border)] bg-[color:var(--sm-panel)] p-4">
         <div className="flex items-center justify-between">
           <h2 className="flex items-center gap-1.5 text-base font-semibold">

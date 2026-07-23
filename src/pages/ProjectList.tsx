@@ -94,7 +94,7 @@ export function ProjectList({
 
   return (
     <div className="flex w-full">
-    <div className="mx-auto w-full max-w-3xl flex-1 space-y-6 p-8 min-w-0">
+    <div className="mx-auto w-full max-w-3xl flex-1 space-y-6 p-4 sm:p-8 min-w-0">
       <CabecalhoSecao
         icone="h"
         olho="Seu portfólio"

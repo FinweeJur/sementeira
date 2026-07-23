@@ -1041,7 +1041,7 @@ export function ProjectWizard({
             <p className="text-xs text-[color:var(--sm-text-dim)]">
               Terreno, construção, água, energia, internet, telefone, contabilidade, jurídico, propaganda — marque os que se aplicam. O valor já vem com uma estimativa inicial de referência para o porte "{porte}" — ajuste conforme sua realidade, e informe a fonte futura.
             </p>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {custosCatalogo.map((c) => {
                 const marcado = project.custosNaoCobertos.find((x) => x.id === c.id);
                 return (
@@ -1079,7 +1079,7 @@ export function ProjectWizard({
       info: { id: "simulador", titulo: "Sustentabilidade" },
       conteudo: (
         <Section title="Simulador: o dia seguinte ao fim do dinheiro">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {project.cenarios.map((c) => (
               <div key={c.nome} className="space-y-2 rounded border border-[color:var(--sm-border)] p-2">
                 <p className="text-sm font-medium capitalize">{c.nome}</p>
@@ -1410,7 +1410,7 @@ export function ProjectWizard({
 
   return (
     <div className="flex w-full">
-    <div className="mx-auto w-full max-w-4xl flex-1 space-y-4 p-6 min-w-0">
+    <div className="mx-auto w-full max-w-4xl flex-1 space-y-4 p-4 sm:p-6 min-w-0">
       <div className="flex items-center justify-between">
         <button onClick={onVoltar} className="text-sm text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]">
           ← Meus projetos

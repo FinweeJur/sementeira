@@ -68,7 +68,7 @@ export function CompareProjects({
           {selecionados.length < 3 && (
             <div className="mb-8">
               <h3 className="font-semibold mb-4">Adicionar projeto à comparação:</h3>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {projects
                   .filter((p) => !selecionados.includes(p.id))
                   .map((p) => (

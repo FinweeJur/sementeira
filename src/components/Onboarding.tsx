@@ -76,7 +76,7 @@ export function Onboarding({ onConcluir }: { onConcluir: (comecarProjeto: boolea
   const ultimo = passo === TELAS.length - 1;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <div className="w-full max-w-md rounded-lg border border-[color:var(--sm-border)] bg-[color:var(--sm-panel)] p-6 space-y-4">
         <div className="flex gap-1">
           {TELAS.map((_, i) => (

@@ -185,6 +185,54 @@ function exigirToken(req, res) {
 // Rotas /api
 // ---------------------------------------------------------------------------
 
+/**
+ * Limite de taxa simples, em memória, por cliente — só nas rotas caras (LLM e
+ * busca). O app é público: sem isto, qualquer um com o token poderia disparar
+ * chamadas ilimitadas e drenar as chaves pagas do gateway. NÃO substitui teto
+ * de gasto no provedor nem regra de Rate Limiting no Cloudflare — soma a eles.
+ */
+const LIMITE_JANELA_MS = 60_000;
+const LIMITE_MAX = 20;
+const acessos = new Map();
+
+function chaveCliente(req) {
+  // Atrás do Cloudflare Tunnel o IP real vem em CF-Connecting-IP; o
+  // remoteAddress é sempre 127.0.0.1 (o túnel conecta localmente).
+  const ip = req.headers["cf-connecting-ip"];
+  if (typeof ip === "string" && ip.trim()) return ip.trim();
+  const tok = req.headers["x-sementeira-token"];
+  return typeof tok === "string" && tok ? `tok:${tok.slice(0, 8)}` : "desconhecido";
+}
+
+function dentroDoLimite(req, res) {
+  const agora = Date.now();
+  const chave = chaveCliente(req);
+  const recentes = (acessos.get(chave) ?? []).filter((t) => agora - t < LIMITE_JANELA_MS);
+  if (recentes.length >= LIMITE_MAX) {
+    res.writeHead(429, {
+      ...cabecalhosBase(),
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+      "Retry-After": "60",
+    });
+    res.end(JSON.stringify({ ok: false, erro: "Muitas requisições em pouco tempo. Espere um minuto e tente de novo." }));
+    return false;
+  }
+  recentes.push(agora);
+  acessos.set(chave, recentes);
+  return true;
+}
+
+// Faxina periódica para o mapa não crescer sem limite. `unref` para não segurar o processo vivo sozinho.
+setInterval(() => {
+  const agora = Date.now();
+  for (const [chave, ts] of acessos) {
+    const vivos = ts.filter((t) => agora - t < LIMITE_JANELA_MS);
+    if (vivos.length === 0) acessos.delete(chave);
+    else acessos.set(chave, vivos);
+  }
+}, LIMITE_JANELA_MS).unref();
+
 async function rotaSaude(_req, res) {
   // Sem token de propósito: é o que o app consulta para saber se o servidor
   // está no ar antes mesmo de a pessoa ter configurado um token. Só devolve
@@ -204,6 +252,7 @@ async function rotaSaude(_req, res) {
 
 async function rotaChat(req, res) {
   if (!exigirToken(req, res)) return;
+  if (!dentroDoLimite(req, res)) return;
 
   let corpo;
   try {
@@ -240,6 +289,7 @@ async function rotaChat(req, res) {
 
 async function rotaModelosOllama(req, res) {
   if (!exigirToken(req, res)) return;
+  if (!dentroDoLimite(req, res)) return;
   try {
     const modelos = await listarModelosOllama(PROVEDORES.ollama.baseUrl);
     responderJson(res, 200, { ok: true, modelos });
@@ -250,6 +300,7 @@ async function rotaModelosOllama(req, res) {
 
 async function rotaBuscaWeb(req, res) {
   if (!exigirToken(req, res)) return;
+  if (!dentroDoLimite(req, res)) return;
   if (!TAVILY_API_KEY) {
     return responderJson(res, 503, { ok: false, erro: "O servidor não tem chave da Tavily configurada." });
   }
@@ -290,7 +341,9 @@ async function servirEstatico(req, res, caminhoUrl) {
   const destino = path.join(DIRETORIO_ESTATICO, relativo);
 
   // Trava de path traversal: `..` no caminho não pode escapar de dist/.
-  if (!destino.startsWith(DIRETORIO_ESTATICO)) {
+  // Checa com separador final para não casar uma pasta-irmã tipo `dist-ssr/`
+  // (prefixo solto `startsWith(base)` deixaria `../dist-ssr/x` passar).
+  if (destino !== DIRETORIO_ESTATICO && !destino.startsWith(DIRETORIO_ESTATICO + path.sep)) {
     return responderJson(res, 403, { ok: false, erro: "Caminho inválido." });
   }
 

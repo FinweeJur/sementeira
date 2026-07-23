@@ -88,7 +88,7 @@ export function Biblioteca({ onVoltar }: { onVoltar: () => void }) {
   const leituras = itens.filter((r) => r.categoria === "leitura");
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4 p-6">
+    <div className="mx-auto max-w-4xl space-y-4 p-4 sm:p-6">
       <button onClick={onVoltar} className="text-sm text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]">
         ← Meus projetos
       </button>
@@ -133,7 +133,7 @@ export function Biblioteca({ onVoltar }: { onVoltar: () => void }) {
           ))}
         </div>
 
-        <div className="grid grid-cols-2 gap-2 pt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
           <Field label="Título do documento">
             <input className={inputClass} value={novaReferencia.titulo} onChange={(e) => setNovaReferencia({ ...novaReferencia, titulo: e.target.value })} placeholder="Ex.: Ofício 44/2026" />
           </Field>
@@ -185,7 +185,7 @@ export function Biblioteca({ onVoltar }: { onVoltar: () => void }) {
           {leituras.length === 0 && <p className="text-sm text-[color:var(--sm-text-dim)]">Nenhuma leitura cadastrada ainda.</p>}
         </div>
 
-        <div className="grid grid-cols-3 gap-2 pt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2">
           <Field label="Título">
             <input className={inputClass} value={novaLeitura.titulo} onChange={(e) => setNovaLeitura({ ...novaLeitura, titulo: e.target.value })} />
           </Field>

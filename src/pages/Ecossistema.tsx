@@ -119,7 +119,7 @@ export function Ecossistema({
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4 p-6">
+    <div className="mx-auto max-w-4xl space-y-4 p-4 sm:p-6">
       <div className="flex items-center justify-between">
         <button onClick={onVoltar} className="text-sm text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]">
           ← Meus projetos
