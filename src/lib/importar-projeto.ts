@@ -160,7 +160,7 @@ export async function importarProjetoDeArquivo(arquivo: File, projetoBase: Proje
     const diretrizes = montarBlocoDiretrizesGlobais();
     resposta = await enviarMensagemLLM(config, [
       { role: "user", content: diretrizes ? `${prompt}\n\n${diretrizes}` : prompt },
-    ]);
+    ], { esperaJson: true });
   } catch (e) {
     return planoB("ia-indisponivel", "Não foi possível falar com a IA agora.", {
       acao: "configurar-modelo",

@@ -270,7 +270,13 @@ export function ProjectWizard({
       return;
     }
     setRevisao(resultado.dado);
-    concluir(taskId, undefined, resultado.dado.adequado ? "✅ Projeto adequado" : "⚠ Ajustes sugeridos");
+    const rotuloVeredito =
+      resultado.dado.adequado === "adequado"
+        ? "✅ Projeto adequado"
+        : resultado.dado.adequado === "inadequado"
+          ? "⚠ Ajustes sugeridos"
+          : "⚠ Veredito ilegível";
+    concluir(taskId, undefined, rotuloVeredito);
   }
 
   function aplicarMudancasDaRevisao() {
@@ -1233,8 +1239,14 @@ export function ProjectWizard({
             {revisao && (
               <div className="space-y-2 rounded border border-[color:var(--sm-border)] p-2 text-sm">
                 <div className="flex items-center gap-2">
-                  <Badge severidade={revisao.adequado ? "ok" : "atencao"} />
-                  <span>{revisao.adequado ? "O agente considera o projeto adequado às regras." : "O agente sugere ajustes antes de finalizar."}</span>
+                  <Badge severidade={revisao.adequado === "adequado" ? "ok" : "atencao"} />
+                  <span>
+                    {revisao.adequado === "adequado"
+                      ? "O agente considera o projeto adequado às regras."
+                      : revisao.adequado === "inadequado"
+                        ? "O agente sugere ajustes antes de finalizar."
+                        : "O agente não devolveu um veredito legível — não dá para afirmar nada a partir dele. Vale o que o motor de conformidade diz."}
+                  </span>
                 </div>
                 {revisao.divergeDoMotor && (
                   <p className="flex items-center gap-1.5 text-xs text-[color:var(--sm-yellow)]">

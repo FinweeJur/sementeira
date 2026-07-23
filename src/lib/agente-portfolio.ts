@@ -15,12 +15,40 @@ import { mesAtualDoProjeto, orientacaoDoMes } from "./acompanhamento";
  * no resto do app (mesmo gate de segurança: versionamento reversível,
  * motor de conformidade como juiz).
  */
-export type AcaoAgente = "lapidar_projeto" | "abrir_projeto" | "gerar_documento" | "consultar_status" | "registrar_voluntario" | "marcar_projeto_iniciado" | null;
+export const ACOES_VALIDAS = [
+  "lapidar_projeto",
+  "abrir_projeto",
+  "gerar_documento",
+  "consultar_status",
+  "registrar_voluntario",
+  "marcar_projeto_iniciado",
+] as const;
+
+export type AcaoAgente = (typeof ACOES_VALIDAS)[number] | null;
 
 export interface ComandoInterpretado {
   resposta: string;
   acao: AcaoAgente;
   parametros: Record<string, unknown>;
+}
+
+/**
+ * `parseJsonDeResposta<ComandoInterpretado>` é só um CAST — em runtime não
+ * garante nada. Se o modelo ecoar o exemplo do prompt ou inventar um nome de
+ * ação, o objeto errado passaria adiante e o app executaria algo que ninguém
+ * pediu. Aqui a forma é conferida de verdade antes de executar.
+ */
+export function validarComando(bruto: unknown): ComandoInterpretado | null {
+  if (!bruto || typeof bruto !== "object") return null;
+  const o = bruto as Record<string, unknown>;
+  if (typeof o.resposta !== "string" || !o.resposta.trim()) return null;
+  const acao = o.acao ?? null;
+  if (acao !== null && !(ACOES_VALIDAS as readonly string[]).includes(acao as string)) return null;
+  return {
+    resposta: o.resposta,
+    acao: acao as AcaoAgente,
+    parametros: o.parametros && typeof o.parametros === "object" ? (o.parametros as Record<string, unknown>) : {},
+  };
 }
 
 export interface ContextoAgente {
@@ -69,11 +97,11 @@ export async function interpretarComando(mensagem: string, historico: ChatMessag
     ...historico,
     { role: "user", content: mensagem },
   ];
-  const resultado = await enviarMensagemLLM(config, messages);
+  const resultado = await enviarMensagemLLM(config, messages, { esperaJson: true });
   if (!resultado.ok || !resultado.conteudo) return { ok: false, erro: resultado.erro ?? "Sem resposta do modelo de IA." };
 
-  const dado = parseJsonDeResposta<ComandoInterpretado>(resultado.conteudo);
-  if (!dado) return { ok: false, erro: "Não consegui interpretar a resposta da IA." };
+  const dado = validarComando(parseJsonDeResposta<unknown>(resultado.conteudo));
+  if (!dado) return { ok: false, erro: "Não consegui interpretar a resposta da IA — nenhuma ação foi executada." };
   return { ok: true, dado };
 }
 

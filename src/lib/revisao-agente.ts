@@ -6,8 +6,31 @@ import { montarBlocoDiretrizesGlobais } from "./diretrizes-globais";
 import { montarBlocoBiblioteca } from "./biblioteca";
 import { extrairBlocoJson } from "./json-parsing";
 
+/**
+ * Veredito do agente revisor. `indefinido` existe porque modelo pequeno
+ * respondendo em português devolve `"adequado": "não"` (string) com
+ * frequência — e `Boolean("não")` é `true`. Afirmar "adequado" quando o
+ * agente não deu veredito legível é a pior falha possível num app de
+ * conformidade: mais honesto dizer que não deu para ler.
+ *
+ * Isto é SUGESTÃO — o motor determinístico continua sendo a palavra final.
+ */
+export type VereditoAgente = "adequado" | "inadequado" | "indefinido";
+
+/** Aceita booleano de verdade e as grafias que modelos costumam devolver. */
+export function lerVeredito(valor: unknown): VereditoAgente {
+  if (valor === true) return "adequado";
+  if (valor === false) return "inadequado";
+  if (typeof valor === "string") {
+    const v = valor.trim().toLowerCase();
+    if (["true", "sim", "adequado"].includes(v)) return "adequado";
+    if (["false", "nao", "não", "inadequado"].includes(v)) return "inadequado";
+  }
+  return "indefinido";
+}
+
 export interface RevisaoResultado {
-  adequado: boolean;
+  adequado: VereditoAgente;
   divergeDoMotor: boolean;
   mudancasSugeridas: RascunhoDados;
   mudancasResumo: string[];
@@ -59,7 +82,7 @@ export async function revisarProjetoComOficios(project: Project): Promise<{ ok: 
   const findingsMotor = avaliarConformidade(project);
   const prompt = montarPromptRevisao(project, findingsMotor);
   const config = carregarConfigLLM();
-  const resposta = await enviarMensagemLLM(config, [{ role: "user", content: prompt }]);
+  const resposta = await enviarMensagemLLM(config, [{ role: "user", content: prompt }], { esperaJson: true });
 
   if (!resposta.ok) return { ok: false, erro: resposta.erro };
 
@@ -69,8 +92,8 @@ export async function revisarProjetoComOficios(project: Project): Promise<{ ok: 
   try {
     const obj = JSON.parse(bloco.trim());
     const dado: RevisaoResultado = {
-      adequado: Boolean(obj.adequado),
-      divergeDoMotor: Boolean(obj.divergeDoMotor),
+      adequado: lerVeredito(obj.adequado),
+      divergeDoMotor: obj.divergeDoMotor === true,
       mudancasSugeridas: {
         objetivo: typeof obj.mudancasSugeridas?.objetivo === "string" ? obj.mudancasSugeridas.objetivo : undefined,
         justificativa: typeof obj.mudancasSugeridas?.justificativa === "string" ? obj.mudancasSugeridas.justificativa : undefined,

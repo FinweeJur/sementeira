@@ -413,6 +413,17 @@ export function LapidacaoPanel({
               </div>
             )}
 
+            {ultimaVolta.papeisIlegiveis && ultimaVolta.papeisIlegiveis.length > 0 && (
+              <div className="rounded border border-[color:var(--sm-atencao-border)] bg-[color:var(--sm-atencao-bg)] p-2">
+                <p className="text-sm font-medium text-[color:var(--sm-atencao-text)]">Esta volta saiu incompleta</p>
+                <p className="mt-1 text-xs text-[color:var(--sm-text-dim)]">
+                  Não foi possível ler a resposta de: {ultimaVolta.papeisIlegiveis.map((e) => ETAPAS_ROTULO[e]).join(", ")}. Uma lista de problemas vazia aqui
+                  não quer dizer que está tudo certo — quer dizer que essa avaliação se perdeu. Rode de novo, ou use um modelo maior. O motor de conformidade
+                  continua sendo a palavra final.
+                </p>
+              </div>
+            )}
+
             {ultimaVolta.problemasApontados.length > 0 && (
               <div>
                 <p className="text-sm font-medium">O que o crítico apontou</p>

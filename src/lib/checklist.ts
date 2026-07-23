@@ -34,8 +34,11 @@ export function montarChecklistFinal(project: Project, revisao: RevisaoResultado
     proximosPassos.push("Completar as pendências listadas antes de exportar.");
   }
   proximosPassos.push(`Exigência de Plano Obrigatório de Sustentabilidade (POS) para este porte: ${exigenciaPOS(project)}.`);
-  if (revisao && !revisao.adequado) {
+  if (revisao?.adequado === "inadequado") {
     proximosPassos.push("Revisar as mudanças sugeridas pelo agente de revisão (Ofícios 45/46 + Proposta) antes de finalizar.");
+  }
+  if (revisao?.adequado === "indefinido") {
+    proximosPassos.push("O agente de revisão não devolveu um veredito legível — rode a revisão de novo. O motor de conformidade continua valendo como palavra final.");
   }
 
   return {

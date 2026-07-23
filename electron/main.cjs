@@ -18,14 +18,26 @@ let mainWindow = null;
  * Maritaca/Sabiá (ambos expõem uma API estilo /chat/completions); 'ollama'
  * usa a API local do Ollama.
  */
-async function chamarLLM({ kind, baseUrl, apiKey, model, messages }) {
+async function chamarLLM({ kind, baseUrl, apiKey, model, messages, esperaJson }) {
   if (kind === "ollama") {
+    const corpo = { model, messages, stream: false };
+    if (esperaJson) {
+      // `format: "json"` restringe a decodificação a JSON sintaticamente
+      // válido. Sem isso, modelo pequeno entrega JSON truncado, vírgula
+      // sobrando ou quebra de linha crua dentro de string — e a resposta
+      // inteira era descartada.
+      corpo.format = "json";
+      // Sem `num_ctx` explícito o Ollama usa um contexto curto por padrão, e
+      // o prompt de importação (documento + listas de danos e arquétipos)
+      // passa disso com folga: a resposta saía cortada no meio.
+      corpo.options = { num_ctx: 8192, num_predict: 2048 };
+    }
     let resp;
     try {
       resp = await fetch(`${baseUrl}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model, messages, stream: false }),
+        body: JSON.stringify(corpo),
       });
     } catch {
       throw new Error(
@@ -43,13 +55,16 @@ async function chamarLLM({ kind, baseUrl, apiKey, model, messages }) {
   }
 
   // openai-compatible (DeepSeek, Maritaca/Sabiá)
+  const corpoOpenai = { model, messages };
+  // Equivalente do `format: "json"` do Ollama nessa família de API.
+  if (esperaJson) corpoOpenai.response_format = { type: "json_object" };
   const resp = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({ model, messages }),
+    body: JSON.stringify(corpoOpenai),
   });
   if (!resp.ok) throw new Error(`Provedor respondeu ${resp.status}: ${await resp.text()}`);
   const data = await resp.json();

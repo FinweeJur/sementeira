@@ -122,21 +122,26 @@ export async function analisarEcossistemaComIA(projects: Project[]): Promise<{ o
   ].join("\n");
 
   const config = carregarConfigLLM();
-  const resposta = await enviarMensagemLLM(config, [{ role: "user", content: prompt }]);
+  const resposta = await enviarMensagemLLM(config, [{ role: "user", content: prompt }], { esperaJson: true });
   if (!resposta.ok) return { ok: false, erro: resposta.erro };
 
   const bloco = extrairBlocoJson(resposta.conteudo ?? "");
   if (!bloco) return { ok: false, erro: "Não foi possível interpretar a resposta da IA." };
   try {
     const obj = JSON.parse(bloco.trim());
-    return {
-      ok: true,
-      dado: {
-        complementaridades: Array.isArray(obj.complementaridades) ? obj.complementaridades.filter((s: unknown) => typeof s === "string") : [],
-        redundancias: Array.isArray(obj.redundancias) ? obj.redundancias.filter((s: unknown) => typeof s === "string") : [],
-        mercadosCompradores: Array.isArray(obj.mercadosCompradores) ? obj.mercadosCompradores.filter((s: unknown) => typeof s === "string") : [],
-      },
+    const dado = {
+      complementaridades: Array.isArray(obj.complementaridades) ? obj.complementaridades.filter((s: unknown) => typeof s === "string") : [],
+      redundancias: Array.isArray(obj.redundancias) ? obj.redundancias.filter((s: unknown) => typeof s === "string") : [],
+      mercadosCompradores: Array.isArray(obj.mercadosCompradores) ? obj.mercadosCompradores.filter((s: unknown) => typeof s === "string") : [],
     };
+    // Se as TRÊS listas vierem vazias, o JSON parseou mas não trouxe análise
+    // nenhuma (formato inesperado, chaves com outro nome). Devolver ok:true
+    // aqui fazia a tela salvar esse vazio por cima da análise boa anterior —
+    // o usuário via "analisado", um painel em branco, e perdia o que tinha.
+    if (dado.complementaridades.length === 0 && dado.redundancias.length === 0 && dado.mercadosCompradores.length === 0) {
+      return { ok: false, erro: "A IA não devolveu uma análise utilizável. A análise anterior foi mantida." };
+    }
+    return { ok: true, dado };
   } catch {
     return { ok: false, erro: "Não foi possível interpretar a resposta da IA." };
   }

@@ -77,6 +77,13 @@ export interface ResultadoVolta {
   scoreDepois: ScoreConformidade;
   introduziuBloqueio: boolean;
   resolveuAlgo: boolean;
+  /**
+   * Papéis que responderam algo ilegível nesta volta. Com o Crítico aqui,
+   * `problemasApontados: []` NÃO quer dizer "nada a corrigir" — quer dizer
+   * que a avaliação se perdeu. A UI precisa dizer isso em vez de mostrar
+   * uma lista vazia como se fosse aprovação.
+   */
+  papeisIlegiveis?: EtapaLapidacao[];
   /** Notas do Crítico para a versão que ENTROU nesta volta. */
   notas?: NotasCritico;
   /** Leitura jurídico-fundiária, sociológica e psicológica da viabilidade e das metas/passos do projeto. */
@@ -535,7 +542,7 @@ async function chamarPapel(prompt: string, configOverride?: ProviderConfig, proj
   const config = configOverride ?? carregarConfigLLM();
   const contexto = [montarBlocoDiretrizesGlobais(), montarBlocoBiblioteca(project)].filter(Boolean).join("\n\n");
   const conteudo = contexto ? `${prompt}\n\n${contexto}` : prompt;
-  const resposta = await enviarMensagemLLM(config, [{ role: "user", content: conteudo }]);
+  const resposta = await enviarMensagemLLM(config, [{ role: "user", content: conteudo }], { esperaJson: true });
   if (!resposta.ok) return { ok: false, erro: resposta.erro };
   return { ok: true, texto: resposta.conteudo ?? "" };
 }
@@ -577,12 +584,20 @@ export async function lapidarProjeto(original: Project, opcoes: OpcoesLapidacao)
     ];
 
     const saidas: Record<string, unknown> = {};
+    /** Papéis cuja resposta não pôde ser lida — ver o comentário abaixo. */
+    const papeisIlegiveis = new Set<EtapaLapidacao>();
     for (const { etapa, prompt } of etapas) {
       if (opcoes.cancelado?.()) return { ok: false, erro: "Cancelado pelo usuário.", voltas, convergiu: false };
       opcoes.onProgresso?.(volta, etapa);
       const resposta = await chamarPapel(prompt, undefined, atual);
       if (!resposta.ok) return { ok: false, erro: `${ETAPAS_ROTULO[etapa]}: ${resposta.erro}`, voltas, convergiu: false };
-      saidas[etapa] = parseJsonDeResposta<Record<string, unknown>>(resposta.texto ?? "") ?? {};
+      // `?? {}` transformava "não deu para ler a resposta" em "o papel não
+      // apontou nada" — sem erro, sem log, sem sinal na tela. O Crítico
+      // ilegível virava "nenhum problema encontrado", que num app de
+      // conformidade é a falha mais perigosa que existe.
+      const interpretado = parseJsonDeResposta<Record<string, unknown>>(resposta.texto ?? "");
+      if (interpretado === null) papeisIlegiveis.add(etapa);
+      saidas[etapa] = interpretado ?? {};
     }
 
     const problemas = listaDeStrings((saidas.critico as Record<string, unknown>)?.problemas) ?? [];
@@ -669,6 +684,7 @@ export async function lapidarProjeto(original: Project, opcoes: OpcoesLapidacao)
       scoreDepois,
       introduziuBloqueio: scoreDepois.bloqueios > scoreAntes.bloqueios,
       resolveuAlgo: totalScore(scoreDepois) < totalScore(scoreAntes),
+      papeisIlegiveis: papeisIlegiveis.size > 0 ? [...papeisIlegiveis] : undefined,
       notas,
       consideracoes,
       avaliacaoResumo: compilado.avaliacaoResumo,

@@ -54,6 +54,8 @@ export interface LLMRequest {
   apiKey?: string;
   model: string;
   messages: ChatMessage[];
+  /** Restringe a geração a JSON válido no provedor — ver `OpcoesEnvio`. */
+  esperaJson?: boolean;
 }
 
 export interface LLMResponse {
@@ -128,7 +130,21 @@ export async function listarModelosOllamaLocal(baseUrl: string): Promise<ListarM
   return window.sementeira.listarModelosOllama(baseUrl);
 }
 
-export async function enviarMensagemLLM(config: ProviderConfig, messages: ChatMessage[]): Promise<LLMResponse> {
+export interface OpcoesEnvio {
+  /**
+   * Pede ao provedor que restrinja a geração a JSON sintaticamente válido.
+   * Use APENAS onde a resposta é consumida por parser — nunca no chat, que
+   * precisa responder em português corrido.
+   *
+   * Ataca a raiz das malformações (JSON truncado, vírgula sobrando, quebra
+   * de linha crua dentro de string) em vez de remendá-las depois. Não
+   * substitui o parser tolerante nem o plano B: medido com gemma2:2b, some
+   * com o erro de sintaxe, mas o modelo ainda pode responder pouco.
+   */
+  esperaJson?: boolean;
+}
+
+export async function enviarMensagemLLM(config: ProviderConfig, messages: ChatMessage[], opcoes: OpcoesEnvio = {}): Promise<LLMResponse> {
   const def = PROVEDORES.find((p) => p.id === config.providerId);
   if (!def) return { ok: false, erro: "Provedor não configurado." };
   if (!window.sementeira?.llmChat) return { ok: false, erro: "IPC do Electron não disponível (rodando fora do app desktop?)." };
@@ -139,6 +155,7 @@ export async function enviarMensagemLLM(config: ProviderConfig, messages: ChatMe
     apiKey: config.apiKey,
     model: config.model || def.modeloDefault,
     messages,
+    esperaJson: opcoes.esperaJson === true,
   });
 }
 

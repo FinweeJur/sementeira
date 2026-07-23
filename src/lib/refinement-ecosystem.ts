@@ -37,7 +37,11 @@ const CONTEXTO = [
 
 async function chamar(prompt: string): Promise<{ ok: boolean; texto?: string; erro?: string }> {
   const diretrizes = montarBlocoDiretrizesGlobais();
-  const resposta = await enviarMensagemLLM(carregarConfigLLM(), [{ role: "user", content: diretrizes ? `${prompt}\n\n${diretrizes}` : prompt }]);
+  const resposta = await enviarMensagemLLM(
+    carregarConfigLLM(),
+    [{ role: "user", content: diretrizes ? `${prompt}\n\n${diretrizes}` : prompt }],
+    { esperaJson: true },
+  );
   if (!resposta.ok) return { ok: false, erro: resposta.erro };
   return { ok: true, texto: resposta.conteudo ?? "" };
 }
@@ -59,6 +63,12 @@ export interface SugestaoPorProjeto {
 export interface ResultadoLapidacaoEcossistema {
   ok: boolean;
   erro?: string;
+  /**
+   * O papel Crítico respondeu algo que não deu para ler. `problemas` vazio
+   * NÃO significa "está tudo bem" quando isto é true — a UI precisa dizer
+   * que a avaliação saiu incompleta em vez de mostrar lista vazia.
+   */
+  criticoIlegivel?: boolean;
   analise?: AnaliseEcossistema;
   sugestoesPorProjeto?: SugestaoPorProjeto[];
   problemas?: string[];
@@ -79,11 +89,20 @@ export async function lapidarEcossistema(
     [CONTEXTO, "Papel: CRÍTICO. Avalie o conjunto de projetos e a análise atual do ecossistema: conexões frágeis ou fictícias, redundâncias não tratadas, projetos isolados sem integração, dependências circulares perigosas.", "Projetos:", resumo, "Análise atual:", analiseTexto, 'Formato: ```json\n{"problemas": ["..."]}\n```'].join("\n\n"),
   );
   if (!critico.ok) return { ok: false, erro: critico.erro };
-  const problemas = listaStrings(parseJsonDeResposta<Record<string, unknown>>(critico.texto ?? "")?.problemas);
+  // null (não deu para ler a resposta) é DIFERENTE de [] (o crítico leu e não
+  // achou problema). Tratar os dois como [] afirmava "nenhuma crítica" quando
+  // na verdade a crítica se perdeu — e ainda ancorava os papéis seguintes
+  // nessa premissa falsa, mandando "Problemas: []" no prompt deles.
+  const respostaCritico = parseJsonDeResposta<Record<string, unknown>>(critico.texto ?? "");
+  const criticoIlegivel = respostaCritico === null;
+  const problemas = listaStrings(respostaCritico?.problemas);
+  const problemasParaPrompt = criticoIlegivel
+    ? "(o crítico não devolveu resultado legível — trabalhe sem essa lista e NÃO conclua que não há problemas)"
+    : JSON.stringify(problemas);
 
   onProgresso?.("sugestor");
   const sugestor = await chamar(
-    [CONTEXTO, "Papel: SUGESTOR. Proponha integrações concretas entre os projetos listados (quem fornece/compra de quem, capacitação compartilhada, comercialização conjunta). Use SÓ os projetos da lista — nunca invente um projeto.", "Projetos:", resumo, "Problemas apontados pelo crítico:", JSON.stringify(problemas), 'Formato: ```json\n{"sugestoesPorProjeto": [{"numeroProjeto": 1, "sugestao": "..."}]}\n```'].join("\n\n"),
+    [CONTEXTO, "Papel: SUGESTOR. Proponha integrações concretas entre os projetos listados (quem fornece/compra de quem, capacitação compartilhada, comercialização conjunta). Use SÓ os projetos da lista — nunca invente um projeto.", "Projetos:", resumo, "Problemas apontados pelo crítico:", problemasParaPrompt, 'Formato: ```json\n{"sugestoesPorProjeto": [{"numeroProjeto": 1, "sugestao": "..."}]}\n```'].join("\n\n"),
   );
   if (!sugestor.ok) return { ok: false, erro: sugestor.erro };
   const brutoSugestoes = parseJsonDeResposta<Record<string, unknown>>(sugestor.texto ?? "")?.sugestoesPorProjeto;
@@ -101,7 +120,7 @@ export async function lapidarEcossistema(
 
   onProgresso?.("compilador");
   const compilador = await chamar(
-    [CONTEXTO, "Papel: COMPILADOR. Produza a versão melhorada da análise do ecossistema, incorporando os problemas e sugestões. Use SÓ os projetos da lista.", "Projetos:", resumo, "Análise atual:", analiseTexto, "Problemas:", JSON.stringify(problemas), "Sugestões:", JSON.stringify(sugestoesPorProjeto.map((s) => `${s.titulo}: ${s.sugestao}`)), 'Formato: ```json\n{"complementaridades": ["..."], "redundancias": ["..."], "mercadosCompradores": ["..."], "changelog": ["o que mudou em relação à análise anterior — máx 10 itens"]}\n```'].join("\n\n"),
+    [CONTEXTO, "Papel: COMPILADOR. Produza a versão melhorada da análise do ecossistema, incorporando os problemas e sugestões. Use SÓ os projetos da lista.", "Projetos:", resumo, "Análise atual:", analiseTexto, "Problemas:", problemasParaPrompt, "Sugestões:", JSON.stringify(sugestoesPorProjeto.map((s) => `${s.titulo}: ${s.sugestao}`)), 'Formato: ```json\n{"complementaridades": ["..."], "redundancias": ["..."], "mercadosCompradores": ["..."], "changelog": ["o que mudou em relação à análise anterior — máx 10 itens"]}\n```'].join("\n\n"),
   );
   if (!compilador.ok) return { ok: false, erro: compilador.erro };
   const brutoAnalise = parseJsonDeResposta<Record<string, unknown>>(compilador.texto ?? "");
@@ -116,6 +135,7 @@ export async function lapidarEcossistema(
     },
     sugestoesPorProjeto,
     problemas,
+    criticoIlegivel,
     changelog: listaStrings(brutoAnalise.changelog).slice(0, 10),
   };
 }
@@ -149,11 +169,20 @@ export async function lapidarClube(
     [CONTEXTO, "Papel: CRÍTICO. Avalie o clube de benefícios contra os projetos reais: projetos sem oferta, regras de pontos impossíveis de cumprir, prêmios com custo em pontos incoerente com as regras (ninguém junta pontos suficientes ou junta fácil demais), ofertas insustentáveis para o projeto que as banca.", "Projetos:", resumo, "Clube atual:", clubeTexto, 'Formato: ```json\n{"problemas": ["..."]}\n```'].join("\n\n"),
   );
   if (!critico.ok) return { ok: false, erro: critico.erro };
-  const problemas = listaStrings(parseJsonDeResposta<Record<string, unknown>>(critico.texto ?? "")?.problemas);
+  // null (não deu para ler a resposta) é DIFERENTE de [] (o crítico leu e não
+  // achou problema). Tratar os dois como [] afirmava "nenhuma crítica" quando
+  // na verdade a crítica se perdeu — e ainda ancorava os papéis seguintes
+  // nessa premissa falsa, mandando "Problemas: []" no prompt deles.
+  const respostaCritico = parseJsonDeResposta<Record<string, unknown>>(critico.texto ?? "");
+  const criticoIlegivel = respostaCritico === null;
+  const problemas = listaStrings(respostaCritico?.problemas);
+  const problemasParaPrompt = criticoIlegivel
+    ? "(o crítico não devolveu resultado legível — trabalhe sem essa lista e NÃO conclua que não há problemas)"
+    : JSON.stringify(problemas);
 
   onProgresso?.("compilador");
   const compilador = await chamar(
-    [CONTEXTO, "Papel: COMPILADOR. Produza a versão melhorada do clube (ofertas/regras/prêmios), corrigindo os problemas. Referencie projetos APENAS pelo numeroProjeto da lista — nunca invente projeto. Mantenha o que já está bom.", "Projetos:", resumo, "Clube atual:", clubeTexto, "Problemas:", JSON.stringify(problemas), 'Formato: ```json\n{"ofertas": [{"numeroProjeto": 1, "titulo": "...", "descricao": "..."}], "regrasPontos": [{"descricao": "...", "pontosGanhos": 10}], "premios": [{"nome": "...", "custoPontos": 100}], "changelog": ["máx 10 itens"]}\n```'].join("\n\n"),
+    [CONTEXTO, "Papel: COMPILADOR. Produza a versão melhorada do clube (ofertas/regras/prêmios), corrigindo os problemas. Referencie projetos APENAS pelo numeroProjeto da lista — nunca invente projeto. Mantenha o que já está bom.", "Projetos:", resumo, "Clube atual:", clubeTexto, "Problemas:", problemasParaPrompt, 'Formato: ```json\n{"ofertas": [{"numeroProjeto": 1, "titulo": "...", "descricao": "..."}], "regrasPontos": [{"descricao": "...", "pontosGanhos": 10}], "premios": [{"nome": "...", "custoPontos": 100}], "changelog": ["máx 10 itens"]}\n```'].join("\n\n"),
   );
   if (!compilador.ok) return { ok: false, erro: compilador.erro };
   const bruto = parseJsonDeResposta<Record<string, unknown>>(compilador.texto ?? "");
