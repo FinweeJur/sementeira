@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  assinarLapidacao,
+  atualizarLapidacao,
+  limparLapidacao,
+  obterLapidacao,
+  reiniciarLapidacao,
+} from "../lib/lapidacao-em-andamento";
 import type { Project } from "../lib/types";
 import {
   lapidarProjeto,
@@ -6,7 +13,6 @@ import {
   commitarVersaoLapidada,
   ETAPAS_ROTULO,
   type EtapaLapidacao,
-  type ResultadoLapidacao,
 } from "../lib/refinement-loop";
 import { carregarConfigComparacao, nomeProvedor, configuracaoLLMPronta } from "../lib/providers";
 import { useTasks } from "../lib/task-context";
@@ -68,6 +74,10 @@ function BarraDeEstagio({ volta, totalVoltas, etapaAtual, segundos, onParar }: {
       <p className="text-xs text-[color:var(--sm-text-dim)]">
         Rodando há {segundos}s. Com Ollama local pode ser lento — a parada acontece assim que a chamada atual terminar.
       </p>
+      <p className="text-xs text-[color:var(--sm-accent)]">
+        Pode fechar esta janela e continuar usando o app: a lapidação segue rodando e o resultado fica guardado para quando você
+        voltar aqui. Ela só para se você clicar em <strong>Parar</strong>.
+      </p>
     </div>
   );
 }
@@ -82,15 +92,15 @@ export function LapidacaoPanel({
   onClose: () => void;
 }) {
   const [voltas, setVoltas] = useState(1);
-  const [rodando, setRodando] = useState(false);
-  const [volta, setVolta] = useState(1);
-  const [etapaAtual, setEtapaAtual] = useState<EtapaLapidacao | null>(null);
-  const [resultado, setResultado] = useState<ResultadoLapidacao | null>(null);
-  const [erro, setErro] = useState<string | null>(null);
-  const [inicioEm, setInicioEm] = useState<number | null>(null);
   const [segundosDecorridos, setSegundosDecorridos] = useState(0);
-  const [duracaoSeg, setDuracaoSeg] = useState<number | null>(null);
-  const canceladoRef = useRef(false);
+
+  // O andamento e o resultado moram fora do componente: fechar o painel
+  // desmonta este componente, e antes disso levava junto o resultado de uma
+  // lapidação que continuava rodando. Ver lapidacao-em-andamento.ts.
+  const [, forcarRender] = useState(0);
+  useEffect(() => assinarLapidacao(project.id, () => forcarRender((n) => n + 1)), [project.id]);
+  const emAndamento = obterLapidacao(project.id);
+  const { rodando, volta, etapaAtual, resultado, erro, inicioEm, duracaoSeg } = emAndamento;
   const [perguntandoMotivo, setPerguntandoMotivo] = useState(false);
   const [motivoDescarte, setMotivoDescarte] = useState("");
 
@@ -102,43 +112,45 @@ export function LapidacaoPanel({
   // Timer ao vivo enquanto roda — mesmo espírito do indicador de streaming do Hermes/Claude Code.
   useEffect(() => {
     if (!rodando || !inicioEm) return;
-    const id = window.setInterval(() => setSegundosDecorridos(Math.round((Date.now() - inicioEm) / 1000)), 1000);
+    // Calcula na hora também, e não só a cada tique: ao reabrir o painel no
+    // meio de uma lapidação, o contador mostraria 0s pelo primeiro segundo.
+    const medir = () => setSegundosDecorridos(Math.round((Date.now() - inicioEm) / 1000));
+    medir();
+    const id = window.setInterval(medir, 1000);
     return () => window.clearInterval(id);
   }, [rodando, inicioEm]);
 
   async function rodar() {
-    canceladoRef.current = false;
-    setRodando(true);
-    setErro(null);
-    setResultado(null);
-    setDuracaoSeg(null);
-    setEtapaAtual(null);
-    setVolta(1);
+    const projectId = project.id;
+    // Reabrir o painel no meio de uma lapidação não pode disparar uma segunda
+    // por cima da primeira — as duas escreveriam no mesmo estado.
+    if (obterLapidacao(projectId).rodando) return;
+    reiniciarLapidacao(projectId, voltas);
     setSegundosDecorridos(0);
     const inicio = Date.now();
-    setInicioEm(inicio);
 
     // Registra a tarefa no TaskContext — sobrevive se o usuário fechar o panel ou navegar.
-    const taskId = registrar("lapidacao-projeto", `Lapidando "${project.titulo || "projeto"}"...`, project.id);
+    const taskId = registrar("lapidacao-projeto", `Lapidando "${project.titulo || "projeto"}"...`, projectId);
 
     const r = await lapidarProjeto(project, {
       voltas,
       onProgresso: (v: number, etapa: EtapaLapidacao) => {
-        setVolta(v);
-        setEtapaAtual(etapa);
+        atualizarLapidacao(projectId, { volta: v, etapaAtual: etapa });
         atualizar(taskId, { progresso: { volta: v, totalVoltas: voltas, etapaAtual: ETAPAS_ROTULO[etapa] } });
       },
-      cancelado: () => canceladoRef.current || isCancelada(taskId),
+      cancelado: () => obterLapidacao(projectId).cancelado || isCancelada(taskId),
       compararConfig: comparar && comparacaoPronta && configComparacao ? configComparacao : undefined,
-      onProgressoComparacao: (v: number) => setVolta(v),
+      onProgressoComparacao: (v: number) => atualizarLapidacao(projectId, { volta: v }),
     });
 
-    setRodando(false);
-    setEtapaAtual(null);
-    setDuracaoSeg(Math.round((Date.now() - inicio) / 1000));
+    atualizarLapidacao(projectId, {
+      rodando: false,
+      etapaAtual: null,
+      duracaoSeg: Math.round((Date.now() - inicio) / 1000),
+    });
 
     if (!r.ok) {
-      setErro(r.erro ?? "Falha na lapidação.");
+      atualizarLapidacao(projectId, { erro: r.erro ?? "Falha na lapidação." });
       falhar(taskId, r.erro ?? "Falha na lapidação.");
       if (r.voltas.length === 0) return;
     } else {
@@ -151,11 +163,11 @@ export function LapidacaoPanel({
           : undefined;
       concluir(taskId, undefined, diff);
     }
-    setResultado(r);
+    atualizarLapidacao(projectId, { resultado: r });
   }
 
   function parar() {
-    canceladoRef.current = true;
+    atualizarLapidacao(project.id, { cancelado: true });
   }
 
   function aplicar() {
@@ -163,6 +175,7 @@ export function LapidacaoPanel({
     registrarLapidacao(true, resultado);
     const ultimaVolta = resultado.voltas[resultado.voltas.length - 1];
     onAplicar(commitarVersaoLapidada(project, resultado.projetoFinal, ultimaVolta?.changelog ?? []));
+    limparLapidacao(project.id);
     onClose();
   }
 
@@ -171,9 +184,11 @@ export function LapidacaoPanel({
     if (!comp || !resultado) return;
     registrarLapidacao(true, resultado);
     onAplicar(commitarVersaoLapidada(project, comp.projetoResultante, comp.changelog));
+    limparLapidacao(project.id);
     onClose();
   }
 
+  /** Fechar com o X: só guarda o resultado; nada é descartado nem aplicado. */
   function pedirMotivoOuFechar() {
     if (resultado) setPerguntandoMotivo(true);
     else onClose();
@@ -181,6 +196,7 @@ export function LapidacaoPanel({
 
   function confirmarDescarte(motivo?: string) {
     if (resultado) registrarLapidacao(false, resultado, motivo);
+    limparLapidacao(project.id);
     onClose();
   }
 
