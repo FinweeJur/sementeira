@@ -1,0 +1,19 @@
+{
+  "name": "Sementeira",
+  "short_name": "Sementeira",
+  "description": "Monte projetos comunitários de reparação do Anexo I.1, do jeito que o acordo permite.",
+  "lang": "pt-BR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f1410",
+  "theme_color": "#0f1410",
+  "icons": [
+    {
+      "src": "./icone.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
