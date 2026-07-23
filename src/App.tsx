@@ -8,6 +8,7 @@ import { ClubeBeneficios } from "./pages/ClubeBeneficios";
 import { Voluntarios } from "./pages/Voluntarios";
 import { Biblioteca } from "./pages/Biblioteca";
 import { CompareProjects } from "./pages/CompareProjects";
+import { PlanilhaPortfolio } from "./pages/PlanilhaPortfolio";
 import { Onboarding } from "./components/Onboarding";
 import { NavBar } from "./components/NavBar";
 import { TaskProvider } from "./lib/task-context";
@@ -52,6 +53,7 @@ type Tela =
   | { nome: "clube" }
   | { nome: "voluntarios" }
   | { nome: "biblioteca" }
+  | { nome: "planilha" }
   | { nome: "comparacao" };
 
 const PORTFOLIO: Tela = { nome: "portfolio" };
@@ -122,6 +124,19 @@ export function App() {
     abrirProjeto(p.id);
   }
 
+  /**
+   * Importação em lote: grava os N projetos numa passada só e fica no
+   * portfólio. Abrir um deles não faria sentido — a pessoa acabou de importar
+   * vários e precisa vê-los na lista.
+   */
+  function handleCreateMuitos(novos: Project[]) {
+    if (novos.length === 0) return;
+    let atualizados = projects;
+    for (const p of novos) atualizados = upsertProject(p);
+    setProjects(atualizados);
+    if (novos.length === 1) abrirProjeto(novos[0].id);
+  }
+
   function handleChange(p: Project) {
     const updated = upsertProject(p);
     setProjects(updated);
@@ -168,6 +183,7 @@ export function App() {
         onVerTutorial={() => setMostrarOnboarding(true)}
         onImportar={() => setImportarAberta(true)}
         onAbrirComparacao={() => setTela({ nome: "comparacao" })}
+        onAbrirPlanilha={() => setTela({ nome: "planilha" })}
         onAbrirEcossistema={() => setTela({ nome: "ecossistema" })}
         onAbrirCopiloto={() => setAgenteAberto(true)}
         onAbrirRevisaoGeral={() => setRevisaoGeralAberta(true)}
@@ -201,6 +217,8 @@ export function App() {
         return <Voluntarios projects={projects} onVoltar={voltarAoPortfolio} />;
       case "biblioteca":
         return <Biblioteca onVoltar={voltarAoPortfolio} />;
+      case "planilha":
+        return <PlanilhaPortfolio projects={projects} onVoltar={voltarAoPortfolio} onAbrirProjeto={abrirProjeto} />;
       case "comparacao":
         return <CompareProjects projects={projects} onFechar={voltarAoPortfolio} />;
       case "portfolio":
@@ -241,6 +259,7 @@ export function App() {
       {importarAberta && (
         <ImportarProjetoModal
           onCreate={handleCreate}
+          onCreateMuitos={handleCreateMuitos}
           onFechar={() => setImportarAberta(false)}
           onAbrirConfigModelo={() => {
             setFocarModelo(true);

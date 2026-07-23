@@ -5,13 +5,15 @@ import arquetipos from "../data/arquetipos.json";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { HistoricoVersoesModal } from "../components/HistoricoVersoesModal";
 import type { ProviderConfig } from "../lib/providers";
-import { PROVEDORES, configuracaoLLMPronta } from "../lib/providers";
+import { PROVEDORES, configuracaoLLMPronta, nomeProvedor } from "../lib/providers";
+import { ehWeb } from "../lib/ambiente";
 import { avaliarConformidade } from "../lib/compliance-engine";
 import { Tooltip } from "../components/Tooltip";
 import { CabecalhoSecao } from "../components/CabecalhoSecao";
-import { Settings, CheckCircle2, Square, Sprout, Pencil, Upload, Scale, Globe, Bot, RefreshCw, BookOpen, Ticket, HeartHandshake } from "lucide-react";
+import { Settings, CheckCircle2, Square, Sprout, Pencil, Upload, Scale, Table2, Globe, Bot, RefreshCw, BookOpen, Ticket, HeartHandshake } from "lucide-react";
 
 const CHECKLIST_DISPENSADO_KEY = "sementeira-checklist-primeiro-uso-dispensado-v1";
+const AVISO_WEB_DISPENSADO_KEY = "sementeira-aviso-web-dispensado-v1";
 
 export function ProjectList({
   projects,
@@ -23,6 +25,7 @@ export function ProjectList({
   onVerTutorial,
   onImportar,
   onAbrirComparacao,
+  onAbrirPlanilha,
   onAbrirEcossistema,
   onAbrirCopiloto,
   onAbrirRevisaoGeral,
@@ -41,6 +44,7 @@ export function ProjectList({
   onVerTutorial: () => void;
   onImportar: () => void;
   onAbrirComparacao: () => void;
+  onAbrirPlanilha: () => void;
   onAbrirEcossistema: () => void;
   onAbrirCopiloto: () => void;
   onAbrirRevisaoGeral: () => void;
@@ -56,6 +60,8 @@ export function ProjectList({
   const [tituloEmEdicao, setTituloEmEdicao] = useState("");
   const [historicoDeId, setHistoricoDeId] = useState<string | null>(null);
   const [checklistDispensado, setChecklistDispensado] = useState(() => localStorage.getItem(CHECKLIST_DISPENSADO_KEY) === "1");
+  const modoWeb = ehWeb();
+  const [avisoWebDispensado, setAvisoWebDispensado] = useState(() => localStorage.getItem(AVISO_WEB_DISPENSADO_KEY) === "1");
   const provedorAtual = PROVEDORES.find((p) => p.id === llmConfig.providerId);
 
   // Checklist de primeiro uso — espelha o funil de ativação usando só dados que o app já tem.
@@ -70,6 +76,11 @@ export function ProjectList({
   function dispensarChecklist() {
     localStorage.setItem(CHECKLIST_DISPENSADO_KEY, "1");
     setChecklistDispensado(true);
+  }
+
+  function dispensarAvisoWeb() {
+    localStorage.setItem(AVISO_WEB_DISPENSADO_KEY, "1");
+    setAvisoWebDispensado(true);
   }
 
   function iniciarEdicao(p: Project) {
@@ -101,6 +112,37 @@ export function ProjectList({
           </Tooltip>
         }
       />
+
+      {modoWeb && !avisoWebDispensado && (
+        <div className="space-y-1 rounded border border-[color:var(--sm-accent)]/40 bg-[color:var(--sm-accent)]/5 p-3">
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-sm font-medium">Você está usando a Sementeira pelo navegador</p>
+            <button onClick={dispensarAvisoWeb} className="shrink-0 text-xs text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]">
+              entendi
+            </button>
+          </div>
+          <ul className="space-y-1 text-xs text-[color:var(--sm-text-dim)]">
+            <li>
+              <strong className="text-[color:var(--sm-text)]">Seus projetos ficam só neste navegador, neste computador.</strong> Não existe conta, login
+              nem banco de dados nosso.
+            </li>
+            <li>Por isso mesmo: limpar os dados do navegador apaga tudo. Guarde uma cópia dos projetos que importam para você.</li>
+            {/* O texto do projeto só sai daqui quando a pessoa usa IA — e aí é
+                honesto dizer para onde vai, com o nome do provedor escolhido. */}
+            <li>
+              {iaConfigurada ? (
+                <>
+                  Ao usar a IA, o texto do projeto é enviado para <strong className="text-[color:var(--sm-text)]">{nomeProvedor(llmConfig)}</strong>. Fora
+                  isso, nada sai daqui.
+                </>
+              ) : (
+                <>Nenhuma IA está configurada, então nada do que você escreve sai deste computador.</>
+              )}
+            </li>
+            <li>O mapa da região baixa as imagens do OpenStreetMap, que fica sabendo qual área você está olhando.</li>
+          </ul>
+        </div>
+      )}
 
       {!checklistDispensado && !checklistCompleto && (
         <div className="space-y-1 rounded border border-[color:var(--sm-border)] bg-[color:var(--sm-panel)] p-3">
@@ -177,6 +219,15 @@ export function ProjectList({
                   </button>
                 </Tooltip>
               )}
+              <Tooltip texto="Todos os projetos em tabela: onde, quanto, categoria, público, produção, itens e riscos — e dá para baixar em Excel" posicao="bottom">
+                <button
+                  onClick={onAbrirPlanilha}
+                  className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-border)] px-3 py-2 text-xs hover:border-[color:var(--sm-accent)]"
+                >
+                  <Table2 size={14} strokeWidth={2} />
+                  Planilha
+                </button>
+              </Tooltip>
               <Tooltip texto="Mapa da região e como os projetos podem se ajudar — um projeto compra do outro" posicao="bottom">
                 <button
                   onClick={onAbrirEcossistema}

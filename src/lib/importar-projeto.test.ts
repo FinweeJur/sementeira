@@ -136,9 +136,20 @@ describe("importarProjetoDeArquivo — invariante do plano B", () => {
 
   // Erros REAIS de insumo continuam sendo erro — não há documento para salvar.
   it("extensão inválida continua erro", async () => {
-    const r = await importarProjetoDeArquivo(arquivo("planilha.xlsx"), novoProjetoVazio());
+    const r = await importarProjetoDeArquivo(arquivo("apresentacao.pptx"), novoProjetoVazio());
     expect(r.ok).toBe(false);
     expect(r.erro).toContain("não é suportado");
+  });
+
+  // Planilha ENTRA por aqui de propósito: quando o cabeçalho não é reconhecido
+  // (quem decide isso é `importar-planilha.ts`), ela vira texto e ganha o mesmo
+  // tratamento de um documento — IA por cima, heurística por baixo. Antes o
+  // .xlsx era recusado pela extensão e o arquivo era descartado.
+  it("planilha de formato livre é lida como documento, não recusada", async () => {
+    mocks.enviarLLM.mockResolvedValue({ ok: true, conteudo: '```json\n{"objetivo":"veio da planilha"}\n```' });
+    const r = await importarProjetoDeArquivo(arquivo("planilha-estranha.xlsx"), novoProjetoVazio());
+    expect(r.ok).toBe(true);
+    expect(r.projeto?.objetivo).toBe("veio da planilha");
   });
 
   it("falha de leitura do arquivo continua erro", async () => {

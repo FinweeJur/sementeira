@@ -1,4 +1,14 @@
-export type ProviderKind = "openai-compatible" | "ollama";
+import { ehWeb } from "./ambiente";
+
+export type ProviderKind = "openai-compatible" | "ollama" | "gateway";
+
+/**
+ * Se o provedor aceita ser chamado direto do navegador. Medido por preflight
+ * CORS real em 2026-07-23, com origem `https://app.sementeiraprojetos.com.br`:
+ * a DeepSeek ecoa a origem; a Maritaca devolve `400 Disallowed CORS origin`.
+ * Provedor bloqueado só funciona na web através do gateway.
+ */
+export type CorsNavegador = "ok" | "bloqueado";
 
 export interface ProviderDef {
   id: string;
@@ -8,6 +18,7 @@ export interface ProviderDef {
   modeloDefault: string;
   modelosSugeridos: string[];
   precisaApiKey: boolean;
+  corsNavegador: CorsNavegador;
   docsUrl?: string;
 }
 
@@ -20,6 +31,7 @@ export const PROVEDORES: ProviderDef[] = [
     modeloDefault: "deepseek-chat",
     modelosSugeridos: ["deepseek-chat", "deepseek-reasoner"],
     precisaApiKey: true,
+    corsNavegador: "ok",
     docsUrl: "https://platform.deepseek.com/api_keys",
   },
   {
@@ -30,6 +42,7 @@ export const PROVEDORES: ProviderDef[] = [
     modeloDefault: "sabia-4",
     modelosSugeridos: ["sabia-4", "sabiazinho-4"],
     precisaApiKey: true,
+    corsNavegador: "bloqueado",
     docsUrl: "https://plataforma.maritaca.ai/",
   },
   {
@@ -40,6 +53,21 @@ export const PROVEDORES: ProviderDef[] = [
     modeloDefault: "",
     modelosSugeridos: [],
     precisaApiKey: false,
+    corsNavegador: "ok",
+  },
+  {
+    id: "gateway",
+    nome: "Servidor da Sementeira",
+    kind: "gateway",
+    // Vazio = mesma origem da página, que é o caso quando o próprio servidor
+    // entrega o app. Só precisa de endereço se o app for aberto de outro lugar.
+    baseUrlDefault: "",
+    modeloDefault: "",
+    modelosSugeridos: [],
+    // `apiKey` aqui é o token de acesso ao servidor, não a chave do provedor:
+    // as chaves ficam na máquina do servidor e nunca chegam ao navegador.
+    precisaApiKey: true,
+    corsNavegador: "ok",
   },
 ];
 
@@ -125,7 +153,9 @@ export interface AbrirDocumentoResposta {
 /** Detecta automaticamente os modelos já baixados no Ollama local (GET /api/tags) — evita depender de uma lista fixa de nomes/tags que o usuário pode não ter instalado. */
 export async function listarModelosOllamaLocal(baseUrl: string): Promise<ListarModelosResposta> {
   if (!window.sementeira?.listarModelosOllama) {
-    return { ok: false, erro: "IPC do Electron não disponível (rodando fora do app desktop?)." };
+    // Na web o próprio navegador fala com o Ollama da máquina de quem acessa.
+    const { listarModelosOllamaNoNavegador } = await import("./llm-web");
+    return listarModelosOllamaNoNavegador(baseUrl);
   }
   return window.sementeira.listarModelosOllama(baseUrl);
 }
@@ -147,7 +177,12 @@ export interface OpcoesEnvio {
 export async function enviarMensagemLLM(config: ProviderConfig, messages: ChatMessage[], opcoes: OpcoesEnvio = {}): Promise<LLMResponse> {
   const def = PROVEDORES.find((p) => p.id === config.providerId);
   if (!def) return { ok: false, erro: "Provedor não configurado." };
-  if (!window.sementeira?.llmChat) return { ok: false, erro: "IPC do Electron não disponível (rodando fora do app desktop?)." };
+
+  // Sem IPC = navegador: o transporte muda, o contrato de resposta é o mesmo.
+  if (!window.sementeira?.llmChat) {
+    const { enviarMensagemLLMNoNavegador } = await import("./llm-web");
+    return enviarMensagemLLMNoNavegador(def, config, messages, opcoes.esperaJson === true);
+  }
 
   return window.sementeira.llmChat({
     kind: def.kind,
@@ -164,19 +199,45 @@ export interface ProviderConfig {
   baseUrl?: string;
   apiKey?: string;
   model?: string;
+  /** Só para o provedor `gateway`: qual provedor o SERVIDOR deve usar (deepseek, maritaca, ollama). */
+  provedorNoServidor?: string;
 }
 
 /** Guarda amigável: verifica ANTES de qualquer ação de IA se a config atual tem chance de funcionar, para não deixar o leigo esperar por um erro técnico. */
 export function configuracaoLLMPronta(config: ProviderConfig): { pronta: boolean; motivo?: string } {
   const def = PROVEDORES.find((p) => p.id === config.providerId);
   if (!def) return { pronta: false, motivo: "Nenhum provedor de IA selecionado." };
+
+  if (def.id === "gateway") {
+    if (!config.apiKey?.trim()) {
+      return { pronta: false, motivo: "O Servidor da Sementeira precisa de um token de acesso." };
+    }
+    return { pronta: true };
+  }
+
+  // Na web, provedor que recusa chamada do navegador não tem como funcionar por
+  // mais bem configurado que esteja — dizer isso agora evita a pessoa preencher
+  // uma chave à toa e só descobrir no erro.
+  if (ehWeb() && def.corsNavegador === "bloqueado") {
+    return {
+      pronta: false,
+      motivo: `${def.nome} não aceita ser chamado direto do navegador. Aqui, escolha "Servidor da Sementeira"; no programa instalado, ${def.nome} funciona normalmente.`,
+    };
+  }
+
   if (def.precisaApiKey && !config.apiKey?.trim()) {
-    return { pronta: false, motivo: `O provedor ${def.nome} precisa de uma chave de API.` };
+    return { pronta: false, motivo: `O provedor ${def.nome} precisa de uma chave de acesso.` };
   }
   if (def.kind === "ollama" && !config.model?.trim()) {
     return { pronta: false, motivo: "Nenhum modelo do Ollama selecionado — clique em 'atualizar lista' para detectar os instalados." };
   }
   return { pronta: true };
+}
+
+/** Provedores que fazem sentido oferecer no ambiente atual — a web esconde o que não tem como funcionar. */
+export function provedoresDisponiveis(): ProviderDef[] {
+  if (!ehWeb()) return PROVEDORES.filter((p) => p.id !== "gateway");
+  return PROVEDORES;
 }
 
 const CONFIG_KEY = "sementeira-llm-config-v1";

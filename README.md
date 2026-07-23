@@ -67,7 +67,7 @@ npm run build      # Compila TypeScript e Vite
 npm run dist       # Gera instalador .exe (Windows)
 ```
 
-O instalador está em `release/Sementeira Setup 0.1.0.exe`.
+O instalador está em `release/Sementeira Setup 0.3.0.exe`.
 
 ## 🔧 Configuração
 
@@ -136,5 +136,5 @@ Todos os direitos reservados © 2026 Artur Colito
 
 ---
 
-**Versão**: 0.1.0  
+**Versão**: 0.3.0  
 **Última atualização**: 2026-07-08

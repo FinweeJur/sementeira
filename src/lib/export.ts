@@ -6,19 +6,10 @@ import { simularTodos, exigenciaPOS, calcularDepreciacaoMensal } from "./simulat
 import { montarChecklistFinal } from "./checklist";
 import { calcularSaldosRealistas, calcularCotaEquidade, type AnaliseEcossistema, type FundoRotativoResultado } from "./ecosystem";
 import type { ClubeBeneficios } from "./clube-beneficios";
-import arquetipos from "../data/arquetipos.json";
-import danos from "../data/danos.json";
-import setores from "../data/setores.json";
-
-function nomeArquetipo(id: string) {
-  return arquetipos.find((a) => a.id === id)?.nome ?? id;
-}
-function nomeDano(id: string) {
-  return danos.find((d) => d.id === id)?.nome ?? id;
-}
-function nomeSetor(id: string) {
-  return setores.find((s) => s.id === id)?.nome ?? id;
-}
+import { montarAbasPortfolio, type AbaTabela, type FormatoCelula } from "./portfolio-tabela";
+// Os nomes legíveis vêm de um módulo só: a exportação e a planilha exibida na
+// tela precisam do mesmo texto, e cópias por arquivo já haviam divergido antes.
+import { nomeArquetipo, nomeDano, nomeSetor } from "./nomes";
 
 function baixarArquivo(blob: Blob, nomeArquivo: string) {
   const url = URL.createObjectURL(blob);
@@ -383,4 +374,73 @@ export async function exportarClubeBeneficiosDocx(clube: ClubeBeneficios, projec
 
   const blob = await Packer.toBlob(doc);
   baixarArquivo(blob, "clube-beneficios.docx");
+}
+
+// ---------------------------------------------------------------------------
+// Planilha consolidada do portfólio
+// ---------------------------------------------------------------------------
+
+const FORMATO_MOEDA = 'R$ #,##0.00';
+const FORMATO_PERCENTUAL = "0.0%";
+const FORMATO_INTEIRO = "0";
+
+function numFmtDe(formato: FormatoCelula): string | undefined {
+  if (formato === "moeda") return FORMATO_MOEDA;
+  if (formato === "percentual") return FORMATO_PERCENTUAL;
+  if (formato === "inteiro") return FORMATO_INTEIRO;
+  return undefined;
+}
+
+/** Escreve uma aba do modelo numa planilha do exceljs, preservando formato e destaques. */
+function escreverAba(wb: ExcelJS.Workbook, tabela: AbaTabela): void {
+  // Nome de aba no Excel: no máximo 31 caracteres, sem os caracteres proibidos.
+  const ws = wb.addWorksheet(tabela.nome.replace(/[\/*?:[\]]/g, "-").slice(0, 31));
+  ws.addRow(tabela.colunas.map((c) => c.titulo));
+
+  for (const linha of tabela.linhas) {
+    // Célula nula vira string vazia: no Excel, `null` aparece como 0 em coluna numérica.
+    const row = ws.addRow(linha.celulas.map((c) => (c === null ? "" : c)));
+    if (linha.tipo === "total" || linha.tipo === "secao") row.font = { bold: true };
+    // Formato por célula só existe onde a coluna sozinha não define (aba Resumo).
+    linha.formatos?.forEach((formato, i) => {
+      const fmt = formato ? numFmtDe(formato) : undefined;
+      if (fmt) row.getCell(i + 1).numFmt = fmt;
+    });
+  }
+
+  ws.getRow(1).font = { bold: true };
+  ws.views = [{ state: "frozen", ySplit: 1 }];
+  tabela.colunas.forEach((c, i) => {
+    ws.getColumn(i + 1).width = c.largura;
+  });
+
+  if (tabela.id === "resumo") {
+    // No Resumo a mesma coluna mistura contagem, dinheiro e percentual, então o
+    // formato é por célula. Só a 3ª coluna é sempre dinheiro (distribuições).
+    ws.getColumn(3).numFmt = FORMATO_MOEDA;
+    return;
+  }
+  tabela.colunas.forEach((c, i) => {
+    const fmt = numFmtDe(c.formato);
+    if (fmt && c.formato !== "inteiro") ws.getColumn(i + 1).numFmt = fmt;
+  });
+}
+
+/**
+ * Planilha do portfólio inteiro: uma linha por projeto na aba "Projetos" mais
+ * abas de detalhe (orçamento, metas, público e produção, itens, riscos,
+ * conformidade) e um resumo agregado.
+ *
+ * Os dados vêm de `montarAbasPortfolio` — a MESMA função que alimenta a
+ * planilha exibida na tela, para que arquivo e tela nunca divirjam.
+ */
+export async function exportarPortfolioXlsx(projects: Project[]): Promise<void> {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "Sementeira";
+  wb.created = new Date();
+
+  for (const tabela of montarAbasPortfolio(projects)) escreverAba(wb, tabela);
+
+  const buffer = await wb.xlsx.writeBuffer();
+  baixarArquivo(new Blob([buffer]), `portfolio-sementeira-${new Date().toISOString().slice(0, 10)}.xlsx`);
 }

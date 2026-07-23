@@ -6,6 +6,11 @@ dist-ts/
 build/*
 !build/icon.png
 release/
+# Chaves de API — do servidor da versão web (servidor/.env) e do dev local
+# (.env.local, citado no ONBOARDING). `.env.example` é versionado de propósito.
+.env
+.env.*
+!.env.example
 *.log
 .DS_Store
 .zcode/

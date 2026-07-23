@@ -43,7 +43,10 @@ export async function buscarWeb(query: string): Promise<BuscaResposta> {
     };
   }
   if (!window.sementeira?.webSearch) {
-    return { ok: false, erro: "IPC do Electron não disponível (rodando fora do app desktop?)." };
+    // Na web a chamada sai do próprio navegador — a Tavily libera CORS
+    // (verificado por preflight), então não precisa passar por servidor.
+    const { buscarWebNoNavegador } = await import("./llm-web");
+    return buscarWebNoNavegador(config.apiKey, query);
   }
   return window.sementeira.webSearch({ apiKey: config.apiKey, query });
 }
