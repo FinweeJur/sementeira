@@ -39,6 +39,7 @@ export function avaliarConformidade(project: Project): ComplianceFinding[] {
   if (!project.danoId) {
     findings.push({
       severidade: "bloqueio",
+      passoId: "dano-arquetipo",
       regra: "Meta #1 (Proposta Definitiva)",
       mensagem: "Todo projeto deve estar vinculado a um dano coletivo priorizado. Selecione o dano antes de prosseguir.",
     });
@@ -50,6 +51,7 @@ export function avaliarConformidade(project: Project): ComplianceFinding[] {
     if (semAnuencia) {
       findings.push({
         severidade: "bloqueio",
+        passoId: "orcamento",
         regra: "Ofício 46, item 4.4, §1º",
         mensagem: "Projetos de política pública/equipamento público exigem anuência formal prévia do ente público quanto a manutenção e custeio futuros. Sem isso, o Anexo I.1 não pode financiar a operação.",
       });
@@ -60,6 +62,7 @@ export function avaliarConformidade(project: Project): ComplianceFinding[] {
   if (project.cenarios.every((c) => c.receitaMensalEstimada === 0 && c.custoOperacionalMensal === 0)) {
     findings.push({
       severidade: "atencao",
+      passoId: "simulador",
       regra: "Ofício 46, item 1 (Plano Obrigatório de Sustentabilidade)",
       mensagem: "Nenhum cenário de sustentabilidade foi simulado ainda. Preencha o simulador 'o dia seguinte' — é condição para iniciar a execução do projeto.",
     });
@@ -75,6 +78,7 @@ export function avaliarConformidade(project: Project): ComplianceFinding[] {
     if (faltando.length > 0) {
       findings.push({
         severidade: "bloqueio",
+        passoId: "simulador",
         regra: "Ofício 46, item 1, incisos II-VI (POS completo)",
         mensagem: `Projetos de porte médio/grande exigem um Plano Obrigatório de Sustentabilidade completo. Falta preencher: ${faltando.join(", ")}.`,
       });
@@ -89,6 +93,7 @@ export function avaliarConformidade(project: Project): ComplianceFinding[] {
     const severidade = categoria === "consumo-vedado" ? "bloqueio" : "atencao";
     findings.push({
       severidade,
+      passoId: "arrecadacao",
       regra: severidade === "bloqueio" ? "Ofício 46, item 4.2, §1º" : "Ofício 46, item 1 (Plano Obrigatório de Sustentabilidade)",
       mensagem: `"${custo.nome}" (R$ ${custo.valorMensalEstimado.toFixed(2)}/mês) está marcado como não coberto pelo Anexo, mas ainda não tem fonte de custeio futuro indicada — sem isso, o projeto não se sustenta sozinho depois do repasse.`,
     });
@@ -100,6 +105,7 @@ export function avaliarConformidade(project: Project): ComplianceFinding[] {
   if (project.orcamento.length > 0 && totalOrcamento < 100_000) {
     findings.push({
       severidade: "atencao",
+      passoId: "orcamento",
       regra: "Diretriz de porte mínimo (configuração local)",
       mensagem: `O orçamento total soma R$ ${totalOrcamento.toFixed(2)} — abaixo do porte mínimo de R$ 100.000,00 definido como diretriz. Detalhe mais o projeto (equipamentos, implantação, capacitação, integração com outros projetos da rede) até o orçamento corresponder ao porte.`,
     });
@@ -110,6 +116,7 @@ export function avaliarConformidade(project: Project): ComplianceFinding[] {
   if (project.equipe.filter((m) => m?.nome?.trim()).length < 2) {
     findings.push({
       severidade: "atencao",
+      passoId: "equipe",
       regra: "Diretriz de equipe mínima (configuração local)",
       mensagem: "Todo projeto deve prever a liberação de pelo menos 2 pessoas por 6 meses. Liste no mínimo 2 pessoas na equipe, com a dedicação/período de cada uma.",
     });
@@ -121,6 +128,7 @@ export function avaliarConformidade(project: Project): ComplianceFinding[] {
   if (depreciacaoMensal > 0 && !project.fonteReposicaoEquipamentos) {
     findings.push({
       severidade: "atencao",
+      passoId: "simulador",
       regra: "Ofício 46, item 1 (Plano Obrigatório de Sustentabilidade)",
       mensagem: `Os equipamentos do orçamento se desgastam e custam ~R$ ${depreciacaoMensal.toFixed(2)}/mês em depreciação — sem uma fonte futura de reposição, o projeto vai parar quando o equipamento quebrar. Indique a fonte de reposição.`,
     });
@@ -134,6 +142,7 @@ export function avaliarConformidade(project: Project): ComplianceFinding[] {
     if (mesesMencionados > onda.tetoMeses) {
       findings.push({
         severidade: "atencao",
+        passoId: "equipe",
         regra: "Proposta Definitiva pág. 25 (Ondas de projetos)",
         mensagem: `Este projeto está na 1ª onda (${project.abrangencia}), com teto de ${onda.tetoMeses} meses até a contratação. O cronograma menciona ${mesesMencionados} meses — confirme se isso é compatível ou revise o prazo.`,
       });
@@ -159,6 +168,7 @@ function avaliarLinha(linha: BudgetLine): ComplianceFinding[] {
     out.push({
       severidade: "bloqueio",
       linhaId: linha.id,
+      passoId: "orcamento",
       regra: "Ofício 46, Vedação Geral III",
       mensagem: `"${linha.descricao}": pagamento permanente de folha é vedado sem fonte autônoma, coletiva ou pública formalmente assumida de custeio futuro. Indique a fonte futura.`,
     });
@@ -170,6 +180,7 @@ function avaliarLinha(linha: BudgetLine): ComplianceFinding[] {
     out.push({
       severidade: "atencao",
       linhaId: linha.id,
+      passoId: "orcamento",
       regra: "Ofício 46, item 4.1 §1º/§3º",
       mensagem: `"${linha.descricao}": prazo de ${linha.prazoMeses} meses excede os 6 meses preferenciais. Só é admitido com justificativa técnica ligada ao ciclo produtivo — preencha essa justificativa.`,
     });
@@ -180,6 +191,7 @@ function avaliarLinha(linha: BudgetLine): ComplianceFinding[] {
     out.push({
       severidade: "bloqueio",
       linhaId: linha.id,
+      passoId: "orcamento",
       regra: "Ofício 46, item 4.2, §1º/§3º",
       mensagem: `"${linha.descricao}": financiamento permanente de contas individuais de consumo ou insumo alimentar diário é vedado, salvo arranjo institucional formal e sustentável de continuidade. Indique o arranjo.`,
     });

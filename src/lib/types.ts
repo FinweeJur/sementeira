@@ -161,11 +161,36 @@ export type CoordenacaoFeminina = boolean | undefined;
 
 export type Severidade = "ok" | "atencao" | "bloqueio";
 
+/** Passos do wizard usados como destino de navegação por um achado. */
+export type PassoWizard =
+  | "ideia"
+  | "dano-arquetipo"
+  | "identificacao"
+  | "objetivo"
+  | "publico"
+  | "orcamento"
+  | "equipe"
+  | "espaco-logistica"
+  | "arrecadacao"
+  | "simulador"
+  | "riscos"
+  | "contato"
+  | "revisao";
+
 export interface ComplianceFinding {
   severidade: Severidade;
   linhaId?: string;
   regra: string;
   mensagem: string;
+  /**
+   * Passo do wizard onde este achado se resolve — casa com `info.id` das
+   * seções do ProjectWizard. Serve para o selo de bloqueio/atenção virar
+   * botão que leva ao ponto exato, em vez de só informar que existe.
+   *
+   * Puramente de navegação: NÃO entra em nenhuma decisão de conformidade.
+   * O motor continua sendo a palavra final sobre o que bloqueia.
+   */
+  passoId?: PassoWizard;
 }
 
 export interface CustoNaoCobertoItem {

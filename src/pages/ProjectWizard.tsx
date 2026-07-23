@@ -101,6 +101,8 @@ export function ProjectWizard({
   const teto = project.tetoPorte[porte];
 
   const bloqueios = conformidade.filter((f) => f.severidade === "bloqueio").length;
+  /** Onde parou o rodízio de cada selo — ref, para não re-renderizar a cada clique. */
+  const indiceAchadoRef = useRef<{ bloqueio: number; atencao: number }>({ bloqueio: 0, atencao: 0 });
   // Celebração do momento aha: quando os bloqueios zeram (vindo de >0), o broto "floresce" uma vez.
   const bloqueiosAnteriores = useRef(bloqueios);
   const [florescendo, setFlorescendo] = useState(false);
@@ -1336,6 +1338,20 @@ export function ProjectWizard({
     setVerDocumento(false);
   }
 
+  /**
+   * Leva ao passo do próximo achado da severidade pedida, percorrendo em
+   * rodízio. Achado sem `passoId` (regra nova que ainda não declarou destino)
+   * é pulado em vez de travar o rodízio numa parada morta.
+   */
+  function irParaProximoAchado(severidade: "bloqueio" | "atencao") {
+    const comDestino = conformidade.filter((f) => f.severidade === severidade && f.passoId);
+    if (comDestino.length === 0) return;
+    const proximo = indiceAchadoRef.current[severidade] % comDestino.length;
+    indiceAchadoRef.current[severidade] = proximo + 1;
+    const alvo = comDestino[proximo];
+    if (alvo.passoId) irParaPassoPorId(alvo.passoId);
+  }
+
   /** Observa qual seção está mais visível pra manter o indicador de progresso (Stepper) e o "Passo X de Y" sincronizados durante o scroll — não move foco nem interfere na leitura. */
   useEffect(() => {
     const elementos = secaoRefs.current.filter((el): el is HTMLDivElement => el !== null);
@@ -1451,10 +1467,23 @@ export function ProjectWizard({
             {project.documentoOrigem.nomeArquivo}
           </button>
         )}
-        {bloqueios > 0 && <Badge severidade="bloqueio" />}
-        {bloqueios > 0 && <span>{bloqueios} bloqueio{bloqueios > 1 ? "s" : ""}</span>}
-        {atencoes > 0 && <Badge severidade="atencao" />}
-        {atencoes > 0 && <span>{atencoes} atenção</span>}
+        {/* Clicar leva ao passo onde o achado se resolve. Clicar de novo passa
+            ao próximo do mesmo tipo — com vários bloqueios, o selo vira a
+            forma de percorrer todos sem caçar na página. */}
+        {bloqueios > 0 && (
+          <button onClick={() => irParaProximoAchado("bloqueio")} className="inline-flex items-center gap-1.5 rounded hover:underline" title="Ir para o ponto do bloqueio">
+            <Badge severidade="bloqueio" />
+            <span>
+              {bloqueios} bloqueio{bloqueios > 1 ? "s" : ""}
+            </span>
+          </button>
+        )}
+        {atencoes > 0 && (
+          <button onClick={() => irParaProximoAchado("atencao")} className="inline-flex items-center gap-1.5 rounded hover:underline" title="Ir para o ponto de atenção">
+            <Badge severidade="atencao" />
+            <span>{atencoes} atenção</span>
+          </button>
+        )}
         {bloqueios === 0 && atencoes === 0 && (
           <>
             <Badge severidade="ok" />
