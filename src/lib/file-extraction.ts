@@ -10,8 +10,33 @@ export interface ExtracaoResultado {
   erro?: string;
 }
 
+// Rede de segurança: qualquer trava na leitura vira erro legível em vez de
+// spinner infinito. O modal de importação não tem como cancelar, então sem
+// isso uma promise pendurada deixa a UI presa para sempre.
+const TIMEOUT_EXTRACAO_MS = 45_000;
+
+function comTimeout<T>(promessa: Promise<T>, ms: number, mensagem: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(mensagem)), ms);
+    promessa.then(
+      (v) => {
+        clearTimeout(timer);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(timer);
+        reject(e);
+      },
+    );
+  });
+}
+
 async function extrairPdf(arrayBuffer: ArrayBuffer): Promise<string> {
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const pdf = await comTimeout(
+    pdfjsLib.getDocument({ data: arrayBuffer }).promise,
+    TIMEOUT_EXTRACAO_MS,
+    "Tempo esgotado ao abrir o PDF (mais de 45s). O arquivo pode estar corrompido ou ser muito grande.",
+  );
   const paginas: string[] = [];
   for (let i = 1; i <= pdf.numPages; i++) {
     const pagina = await pdf.getPage(i);
@@ -23,11 +48,20 @@ async function extrairPdf(arrayBuffer: ArrayBuffer): Promise<string> {
 }
 
 async function extrairDocx(arrayBuffer: ArrayBuffer): Promise<string> {
-  // mammoth aceita tanto `buffer` (Node) quanto `arrayBuffer` (browser).
-  // No renderer do Electron, `arrayBuffer` falha com "Could not find file in
-  // options" em algumas versões — passamos `buffer` (Uint8Array) que sempre funciona.
+  // O mammoth tem DUAS implementações de `openZip`, e cada uma aceita um
+  // conjunto DIFERENTE de opções — quem escolhe é o campo `browser` do
+  // package.json do mammoth:
+  //   - `browser/unzip.js` (o que o Vite usa no renderer): só `arrayBuffer`
+  //   - `lib/unzip.js` (Node, usado em testes/scripts): só `path`/`buffer`/`file`
+  // Passar só uma das duas quebra no outro ambiente com a mensagem enganosa
+  // "Could not find file in options". Como `openZip` recebe este objeto sem
+  // validar chaves desconhecidas, mandamos as DUAS: cada build pega a sua.
   const uint8 = new Uint8Array(arrayBuffer);
-  const resultado = await mammoth.extractRawText({ buffer: uint8 as unknown as Buffer });
+  const resultado = await comTimeout(
+    mammoth.extractRawText({ arrayBuffer, buffer: uint8 as unknown as Buffer }),
+    TIMEOUT_EXTRACAO_MS,
+    "Tempo esgotado ao ler o DOCX (mais de 45s). O arquivo pode estar corrompido ou ser muito grande.",
+  );
   return resultado.value;
 }
 
