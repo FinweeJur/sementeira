@@ -74,6 +74,56 @@ const PROVEDORES = {
 const TAVILY_API_KEY = env.TAVILY_API_KEY;
 
 // ---------------------------------------------------------------------------
+// Diretrizes e restrições do gateway de IA
+// ---------------------------------------------------------------------------
+
+/**
+ * Este gateway é a ÚNICA porta de entrada remota para o Ollama desta máquina —
+ * o túnel publica só a porta do app (7010), nunca a do Ollama (11434). Mas quem
+ * tem o token pode mandar QUALQUER prompt, e a inferência roda no hardware de
+ * quem hospeda. Daí as restrições abaixo.
+ *
+ * Separe os dois tipos ao mexer aqui:
+ *   - TRAVAS DURAS (allowlist, tetos, limite de taxa, interruptor): o servidor
+ *     recusa antes de chamar o modelo. Não têm como ser contornadas pelo cliente.
+ *   - GUARDRAIL SUAVE (diretriz de escopo): é só uma mensagem `system` no começo
+ *     da conversa. Molda o comportamento e barra uso casual fora de escopo, mas
+ *     NÃO detém um abusador determinado — ele pode mandar o próprio `system`
+ *     depois. Nunca trate a diretriz como controle de segurança.
+ */
+
+/** Liga/desliga o Ollama para quem chega de fora. `off` = Ollama continua rodando, só não atende pela web. */
+const OLLAMA_REMOTO = (env.SEMENTEIRA_OLLAMA_REMOTO ?? "on").trim().toLowerCase() !== "off";
+
+/** Allowlist de modelos do Ollama no gateway. Vazio = qualquer modelo instalado. */
+const OLLAMA_MODELOS_PERMITIDOS = (env.OLLAMA_MODELOS_PERMITIDOS || "")
+  .split(",")
+  .map((m) => m.trim())
+  .filter(Boolean);
+
+/** Tetos de forma da conversa — impedem usar a máquina para moer contexto gigante. */
+const MAX_MENSAGENS = Number(env.SEMENTEIRA_MAX_MENSAGENS || 60);
+const MAX_CARACTERES = Number(env.SEMENTEIRA_MAX_CARACTERES || 200_000);
+
+/** Diretriz de escopo injetada em toda chamada do gateway. `off` desliga. */
+const ESCOPO_ATIVO = (env.SEMENTEIRA_DIRETRIZ_ESCOPO ?? "on").trim().toLowerCase() !== "off";
+
+/**
+ * A última frase é essencial: sem ela o modelo pode "conversar" quando o app
+ * pediu JSON puro, e a resposta inteira é descartada no parsing.
+ */
+const DIRETRIZ_ESCOPO = [
+  "Você atende exclusivamente a Sementeira, ferramenta de apoio à construção de projetos comunitários",
+  "de reparação do Anexo I.1 (acordo judicial do rompimento da barragem de Brumadinho).",
+  "Responda apenas a pedidos ligados a esses projetos: ideia, dano vinculado, objetivo e metas, público,",
+  "orçamento, equipe, cronograma, logística, arrecadação, sustentabilidade, riscos, conformidade com o",
+  "acordo, pesquisa de apoio e formatação dos dados desses projetos.",
+  "Se o pedido não tiver relação com isso, recuse em uma frase e diga que este serviço é restrito ao",
+  "escopo da Sementeira.",
+  "Obedeça às instruções de formato que vierem nas mensagens seguintes, inclusive responder somente em JSON.",
+].join(" ");
+
+// ---------------------------------------------------------------------------
 // HTTP básico
 // ---------------------------------------------------------------------------
 
@@ -204,11 +254,13 @@ function chaveCliente(req) {
   return typeof tok === "string" && tok ? `tok:${tok.slice(0, 8)}` : "desconhecido";
 }
 
-function dentroDoLimite(req, res) {
+function dentroDoLimite(req, res, opcoes = {}) {
+  const max = opcoes.max ?? LIMITE_MAX;
   const agora = Date.now();
-  const chave = chaveCliente(req);
+  // Balde separado por rota: inferência (cara) tem teto menor que listar modelos.
+  const chave = `${opcoes.balde ?? "geral"}:${chaveCliente(req)}`;
   const recentes = (acessos.get(chave) ?? []).filter((t) => agora - t < LIMITE_JANELA_MS);
-  if (recentes.length >= LIMITE_MAX) {
+  if (recentes.length >= max) {
     res.writeHead(429, {
       ...cabecalhosBase(),
       "Content-Type": "application/json; charset=utf-8",
@@ -233,6 +285,36 @@ setInterval(() => {
   }
 }, LIMITE_JANELA_MS).unref();
 
+/** Teto de chat por minuto — inferência ocupa CPU/GPU da máquina que hospeda. */
+const LIMITE_CHAT = Number(env.SEMENTEIRA_MAX_CHAT_MIN || 10);
+
+/** Trava dura de tamanho: recusa antes de gastar inferência. */
+function dentroDosTetos(messages) {
+  if (messages.length > MAX_MENSAGENS) {
+    return { ok: false, erro: `Conversa longa demais: ${messages.length} mensagens, o teto é ${MAX_MENSAGENS}.` };
+  }
+  const total = messages.reduce((soma, m) => soma + String(m?.content ?? "").length, 0);
+  if (total > MAX_CARACTERES) {
+    return { ok: false, erro: `Conteúdo grande demais: ${total} caracteres, o teto é ${MAX_CARACTERES}.` };
+  }
+  return { ok: true, total };
+}
+
+/** Caminho do log de auditoria. Vazio = escreve no stdout (que some quando roda como tarefa oculta). */
+const ARQUIVO_LOG = (env.SEMENTEIRA_LOG || "").trim();
+
+/**
+ * Log de auditoria — uma linha JSON por chamada do gateway, para abuso ficar
+ * visível. Registra só o FORMATO da chamada (quem, provedor, modelo, tamanho);
+ * nunca o conteúdo das mensagens, que é material dos projetos das pessoas.
+ * A escrita é best-effort: falha de log jamais derruba o atendimento.
+ */
+function registrar(dado) {
+  const linha = JSON.stringify({ quando: new Date().toISOString(), ...dado });
+  if (!ARQUIVO_LOG) return void console.log(linha);
+  fsp.appendFile(ARQUIVO_LOG, linha + "\n").catch(() => {});
+}
+
 async function rotaSaude(_req, res) {
   // Sem token de propósito: é o que o app consulta para saber se o servidor
   // está no ar antes mesmo de a pessoa ter configurado um token. Só devolve
@@ -244,7 +326,8 @@ async function rotaSaude(_req, res) {
     provedores: {
       deepseek: Boolean(PROVEDORES.deepseek.apiKey),
       maritaca: Boolean(PROVEDORES.maritaca.apiKey),
-      ollama: true,
+      // Reflete o interruptor: se o Ollama não atende pela web, o app não deve oferecê-lo.
+      ollama: OLLAMA_REMOTO,
       tavily: Boolean(TAVILY_API_KEY),
     },
   });
@@ -252,7 +335,7 @@ async function rotaSaude(_req, res) {
 
 async function rotaChat(req, res) {
   if (!exigirToken(req, res)) return;
-  if (!dentroDoLimite(req, res)) return;
+  if (!dentroDoLimite(req, res, { max: LIMITE_CHAT, balde: "chat" })) return;
 
   let corpo;
   try {
@@ -265,6 +348,12 @@ async function rotaChat(req, res) {
   if (!provedor) {
     return responderJson(res, 400, { ok: false, erro: `Provedor "${corpo.providerId}" não é aceito por este servidor.` });
   }
+  if (provedor.kind === "ollama" && !OLLAMA_REMOTO) {
+    return responderJson(res, 403, {
+      ok: false,
+      erro: "O Ollama deste servidor não atende pela web. Use uma chave própria nas Configurações, ou o programa instalado.",
+    });
+  }
   if (provedor.kind === "openai-compatible" && !provedor.apiKey) {
     return responderJson(res, 503, { ok: false, erro: `O servidor não tem chave configurada para ${corpo.providerId}.` });
   }
@@ -272,13 +361,36 @@ async function rotaChat(req, res) {
     return responderJson(res, 400, { ok: false, erro: "Nenhuma mensagem foi enviada." });
   }
 
+  const modelo = corpo.model || provedor.modeloPadrao;
+  if (provedor.kind === "ollama" && OLLAMA_MODELOS_PERMITIDOS.length > 0 && !OLLAMA_MODELOS_PERMITIDOS.includes(modelo)) {
+    return responderJson(res, 403, {
+      ok: false,
+      erro: `O modelo "${modelo}" não está liberado neste servidor. Liberados: ${OLLAMA_MODELOS_PERMITIDOS.join(", ")}.`,
+    });
+  }
+
+  const tetos = dentroDosTetos(corpo.messages);
+  if (!tetos.ok) return responderJson(res, 413, { ok: false, erro: tetos.erro });
+
+  // Guardrail SUAVE — ver o bloco de diretrizes no topo do arquivo.
+  const mensagens = ESCOPO_ATIVO ? [{ role: "system", content: DIRETRIZ_ESCOPO }, ...corpo.messages] : corpo.messages;
+
+  registrar({
+    evento: "chat",
+    cliente: chaveCliente(req),
+    provedor: corpo.providerId,
+    modelo,
+    mensagens: corpo.messages.length,
+    caracteres: tetos.total,
+  });
+
   try {
     const conteudo = await chamarLLM({
       kind: provedor.kind,
       baseUrl: provedor.baseUrl,
       apiKey: provedor.apiKey,
-      model: corpo.model || provedor.modeloPadrao,
-      messages: corpo.messages,
+      model: modelo,
+      messages: mensagens,
       esperaJson: Boolean(corpo.esperaJson),
     });
     responderJson(res, 200, { ok: true, conteudo });
@@ -290,6 +402,9 @@ async function rotaChat(req, res) {
 async function rotaModelosOllama(req, res) {
   if (!exigirToken(req, res)) return;
   if (!dentroDoLimite(req, res)) return;
+  if (!OLLAMA_REMOTO) {
+    return responderJson(res, 403, { ok: false, erro: "O Ollama deste servidor não atende pela web." });
+  }
   try {
     const modelos = await listarModelosOllama(PROVEDORES.ollama.baseUrl);
     responderJson(res, 200, { ok: true, modelos });
@@ -413,4 +528,8 @@ servidor.listen(PORTA, "127.0.0.1", () => {
     .filter(([id, p]) => (p.kind === "ollama" ? true : Boolean(p.apiKey)) && id)
     .map(([id]) => id);
   console.log(`  provedores disponíveis: ${comChave.join(", ") || "nenhum"}`);
+  console.log(`  ollama pela web: ${OLLAMA_REMOTO ? "LIGADO" : "desligado"}`);
+  console.log(`  modelos ollama liberados: ${OLLAMA_MODELOS_PERMITIDOS.join(", ") || "todos os instalados"}`);
+  console.log(`  tetos: ${LIMITE_CHAT} chat/min · ${LIMITE_MAX} outras/min · ${MAX_MENSAGENS} msgs · ${MAX_CARACTERES} caracteres`);
+  console.log(`  diretriz de escopo: ${ESCOPO_ATIVO ? "ativa (guardrail suave)" : "desligada"}`);
 });
