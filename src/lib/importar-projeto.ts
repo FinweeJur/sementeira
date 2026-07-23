@@ -7,6 +7,9 @@ import { extrairRascunhoHeuristico } from "./extracao-heuristica";
 import danos from "../data/danos.json";
 import arquetipos from "../data/arquetipos.json";
 
+/** Extensões que o app sabe transformar em texto — ver `extrairTextoDeArquivo`. */
+export const EXTENSOES_IMPORTAVEIS = ["pdf", "docx", "xlsx", "xlsm", "csv"];
+
 /** Ação que a UI oferece como botão junto do aviso. */
 export type AcaoSugerida = "configurar-modelo" | "tentar-ia-novamente";
 
@@ -64,7 +67,7 @@ function montarPromptImportacao(textoDocumento: string): string {
   const listaArquetipos = arquetipos.map((a) => `- ${a.id}: ${a.nome} (tipo ${a.tipo})`).join("\n");
 
   return [
-    "Você está recebendo o texto extraído de um documento (PDF ou DOCX) que descreve um projeto comunitário.",
+    "Você está recebendo o conteúdo de um documento (PDF, Word ou planilha) que descreve um projeto comunitário.",
     "Sua tarefa: extrair deste documento um RASCUNHO estruturado de projeto para o Anexo I.1, preenchendo os campos a partir do que está escrito — sem inventar dados que não estejam no documento.",
     "",
     "Se o documento não tiver informações suficientes para pelo menos objetivo, justificativa e metas, responda com perguntas no formato abaixo para que o usuário complete o que falta:",
@@ -99,9 +102,12 @@ function montarPromptImportacao(textoDocumento: string): string {
 export async function importarProjetoDeArquivo(arquivo: File, projetoBase: Project): Promise<ImportarResultado> {
   const ext = arquivo.name.toLowerCase().split(".").pop() ?? "";
 
-  // 1. Valida a extensão antes de tudo — mensagem clara.
-  if (ext !== "pdf" && ext !== "docx") {
-    return { ok: false, erro: `Formato ".${ext}" não é suportado para importação. Use PDF (.pdf) ou Word (.docx).` };
+  // 1. Valida a extensão antes de tudo — mensagem clara. Planilha entra aqui
+  // só quando o cabeçalho NÃO foi reconhecido (ver importar-planilha.ts): ela
+  // vira tabela Markdown e segue por este mesmo pipeline, ganhando a IA e o
+  // plano B heurístico em vez de ser descartada por formato.
+  if (!EXTENSOES_IMPORTAVEIS.includes(ext)) {
+    return { ok: false, erro: `Formato ".${ext}" não é suportado para importação. Use PDF (.pdf), Word (.docx), Excel (.xlsx) ou CSV (.csv).` };
   }
 
   // 2. Extrai o texto do documento. Vem ANTES de exigir IA de propósito: a
@@ -211,7 +217,7 @@ export async function importarProjetoDeArquivo(arquivo: File, projetoBase: Proje
 async function finalizarProjeto(projetoBruto: Project, arquivo: File, textoExtraido: string): Promise<Project> {
   let projeto = projetoBruto;
   if (!projeto.tituloEditadoManualmente && !projeto.titulo) {
-    projeto = { ...projeto, titulo: arquivo.name.replace(/\.(pdf|docx)$/i, "") };
+    projeto = { ...projeto, titulo: arquivo.name.replace(/\.(pdf|docx|xlsx|xlsm|csv)$/i, "") };
   }
 
   let caminhoArquivo: string | undefined;

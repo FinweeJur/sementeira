@@ -124,6 +124,19 @@ export function App() {
     abrirProjeto(p.id);
   }
 
+  /**
+   * Importação em lote: grava os N projetos numa passada só e fica no
+   * portfólio. Abrir um deles não faria sentido — a pessoa acabou de importar
+   * vários e precisa vê-los na lista.
+   */
+  function handleCreateMuitos(novos: Project[]) {
+    if (novos.length === 0) return;
+    let atualizados = projects;
+    for (const p of novos) atualizados = upsertProject(p);
+    setProjects(atualizados);
+    if (novos.length === 1) abrirProjeto(novos[0].id);
+  }
+
   function handleChange(p: Project) {
     const updated = upsertProject(p);
     setProjects(updated);
@@ -246,6 +259,7 @@ export function App() {
       {importarAberta && (
         <ImportarProjetoModal
           onCreate={handleCreate}
+          onCreateMuitos={handleCreateMuitos}
           onFechar={() => setImportarAberta(false)}
           onAbrirConfigModelo={() => {
             setFocarModelo(true);
