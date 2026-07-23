@@ -3,7 +3,6 @@ import type { Project } from "../lib/types";
 import { novoProjetoVazio } from "../lib/types";
 import arquetipos from "../data/arquetipos.json";
 import { ConfirmDialog } from "../components/ConfirmDialog";
-import { SettingsModal } from "../components/SettingsModal";
 import { HistoricoVersoesModal } from "../components/HistoricoVersoesModal";
 import type { ProviderConfig } from "../lib/providers";
 import { PROVEDORES, configuracaoLLMPronta } from "../lib/providers";
@@ -30,8 +29,8 @@ export function ProjectList({
   onAbrirBiblioteca,
   onAbrirClube,
   onAbrirVoluntarios,
+  onAbrirConfig,
   llmConfig,
-  onLlmConfigChange,
 }: {
   projects: Project[];
   onOpen: (id: string) => void;
@@ -48,11 +47,11 @@ export function ProjectList({
   onAbrirBiblioteca: () => void;
   onAbrirClube: () => void;
   onAbrirVoluntarios: () => void;
+  /** As Configurações vivem no App — ver comentário lá sobre o modal de importação. */
+  onAbrirConfig: () => void;
   llmConfig: ProviderConfig;
-  onLlmConfigChange: (c: ProviderConfig) => void;
 }) {
   const [paraExcluir, setParaExcluir] = useState<Project | null>(null);
-  const [configAberta, setConfigAberta] = useState(false);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [tituloEmEdicao, setTituloEmEdicao] = useState("");
   const [historicoDeId, setHistoricoDeId] = useState<string | null>(null);
@@ -93,7 +92,7 @@ export function ProjectList({
         acoes={
           <Tooltip texto="Escolha e configure o provedor de IA (DeepSeek, Maritaca ou Ollama local)" posicao="bottom">
             <button
-              onClick={() => setConfigAberta(true)}
+              onClick={onAbrirConfig}
               className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-border)] px-2 py-1 text-xs hover:border-[color:var(--sm-accent)]"
             >
               <Settings size={14} strokeWidth={2} />
@@ -336,7 +335,6 @@ export function ProjectList({
         />
       )}
 
-      {configAberta && <SettingsModal config={llmConfig} onChange={onLlmConfigChange} onFechar={() => setConfigAberta(false)} />}
 
     </div>
 

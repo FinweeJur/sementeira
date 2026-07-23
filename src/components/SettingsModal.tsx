@@ -8,7 +8,18 @@ import { exportarConfiguracoes, importarConfiguracoes } from "../lib/settings-ex
 import { carregarConfigLLM } from "../lib/providers";
 import { Download, Upload } from "lucide-react";
 
-export function SettingsModal({ config, onChange, onFechar }: { config: ProviderConfig; onChange: (c: ProviderConfig) => void; onFechar: () => void }) {
+export function SettingsModal({
+  config,
+  onChange,
+  onFechar,
+  focarModelo = false,
+}: {
+  config: ProviderConfig;
+  onChange: (c: ProviderConfig) => void;
+  onFechar: () => void;
+  /** Chegou aqui por um atalho de "configure o modelo" — destaca a seção. */
+  focarModelo?: boolean;
+}) {
   const [erroImportacao, setErroImportacao] = useState<string | null>(null);
   const [importado, setImportado] = useState(false);
   const [versaoImportacao, setVersaoImportacao] = useState(0);
@@ -46,7 +57,11 @@ export function SettingsModal({ config, onChange, onFechar }: { config: Provider
         <p className="text-xs text-[color:var(--sm-text-dim)]">
           Escolha aqui qual provedor de inteligência artificial o Copiloto vai usar dentro dos projetos.
         </p>
-        <ProviderSettings key={`provider-${versaoImportacao}`} config={config} onChange={onChange} />
+        {/* ProviderSettings já é o primeiro bloco do modal, então "focar o
+            modelo" é só destacar — não precisa de rolagem nem de abas. */}
+        <div className={focarModelo ? "rounded ring-2 ring-[color:var(--sm-accent)] ring-offset-2 ring-offset-[color:var(--sm-panel)]" : undefined}>
+          <ProviderSettings key={`provider-${versaoImportacao}`} config={config} onChange={onChange} />
+        </div>
         <ComparacaoModeloSettings key={`comparacao-${versaoImportacao}`} />
         <TavilySettings key={`tavily-${versaoImportacao}`} />
         <DiretrizesGlobais key={`diretrizes-${versaoImportacao}`} />
