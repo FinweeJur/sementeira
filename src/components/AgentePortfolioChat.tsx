@@ -96,9 +96,13 @@ export function AgentePortfolioChat({
     salvarChat(CHAT_ID, comResposta);
   }
 
+  // Painel lateral fixo, como o TaskSidebar. Antes era `flex w-80 shrink-0` com
+  // altura calculada — desenho de filho de um flex horizontal. Mas ele é
+  // renderizado no App como irmão do conteúdo, fora de qualquer flex row, e por
+  // isso empilhava ABAIXO da página em vez de encostar na lateral.
   return (
     <div
-      className="flex h-[calc(100vh-37px)] w-80 shrink-0 flex-col border-l border-[color:var(--sm-border)] bg-[color:var(--sm-panel)] p-4"
+      className="fixed inset-y-0 right-0 z-40 flex w-80 flex-col border-l border-[color:var(--sm-border)] bg-[color:var(--sm-panel)] p-4"
       onKeyDown={(e) => {
         if (e.key === "Escape") onClose();
       }}

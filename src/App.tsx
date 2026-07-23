@@ -35,14 +35,30 @@ import { gerarClubeSeed } from "./data/seed-clube";
 import { salvarClube } from "./lib/clube-beneficios";
 import { iniciarHolofote } from "./lib/holofote";
 
+/**
+ * A tela que está no ar. Era um conjunto de seis booleanos mutuamente
+ * exclusivos mais o `openId`, resolvido por uma cadeia `if/else if` — e como
+ * o projeto aberto vinha primeiro nessa cadeia, clicar em Biblioteca, Clube
+ * ou Cadastro com um projeto aberto ligava a bandeira e não mudava nada na
+ * tela. Com um estado só, dois destinos ao mesmo tempo deixam de existir.
+ *
+ * Só telas entram aqui. Sobreposições (Copiloto, importação, Configurações,
+ * tarefas) continuam separadas de propósito: elas convivem com qualquer tela.
+ */
+type Tela =
+  | { nome: "portfolio" }
+  | { nome: "projeto"; id: string }
+  | { nome: "ecossistema" }
+  | { nome: "clube" }
+  | { nome: "voluntarios" }
+  | { nome: "biblioteca" }
+  | { nome: "comparacao" };
+
+const PORTFOLIO: Tela = { nome: "portfolio" };
+
 export function App() {
   const [projects, setProjects] = useState<Project[]>([]);
-  const [openId, setOpenId] = useState<string | null>(null);
-  const [mostrarEcossistema, setMostrarEcossistema] = useState(false);
-  const [mostrarClube, setMostrarClube] = useState(false);
-  const [mostrarVoluntarios, setMostrarVoluntarios] = useState(false);
-  const [mostrarBiblioteca, setMostrarBiblioteca] = useState(false);
-  const [mostrarComparacao, setMostrarComparacao] = useState(false);
+  const [tela, setTela] = useState<Tela>(PORTFOLIO);
   const [mostrarOnboarding, setMostrarOnboarding] = useState(false);
   const [sidebarTarefasAberta, setSidebarTarefasAberta] = useState(false);
   const [agenteAberto, setAgenteAberto] = useState(false);
@@ -90,12 +106,20 @@ export function App() {
     salvarConfigLLM(c);
   }
 
-  const current = projects.find((p) => p.id === openId) ?? null;
+  const current = tela.nome === "projeto" ? (projects.find((p) => p.id === tela.id) ?? null) : null;
+
+  function abrirProjeto(id: string) {
+    setTela({ nome: "projeto", id });
+  }
+
+  function voltarAoPortfolio() {
+    setTela(PORTFOLIO);
+  }
 
   function handleCreate(p: Project) {
     const updated = upsertProject(p);
     setProjects(updated);
-    setOpenId(p.id);
+    abrirProjeto(p.id);
   }
 
   function handleChange(p: Project) {
@@ -106,7 +130,7 @@ export function App() {
   function handleDelete(id: string) {
     const updated = deleteProject(id);
     setProjects(updated);
-    if (openId === id) setOpenId(null);
+    if (tela.nome === "projeto" && tela.id === id) voltarAoPortfolio();
   }
 
   function handleRename(id: string, novoTitulo: string) {
@@ -132,58 +156,56 @@ export function App() {
     return <Onboarding onConcluir={concluirOnboarding} />;
   }
 
-  let conteudo: React.ReactNode;
-  if (current) {
-    conteudo = (
-      <ProjectWizard project={current} outrosProjetos={projects.filter((p) => p.id !== current.id)} onChange={handleChange} onVoltar={() => setOpenId(null)} />
-    );
-  } else if (mostrarEcossistema) {
-    conteudo = (
-      <Ecossistema
-        projects={projects}
-        onVoltar={() => setMostrarEcossistema(false)}
-        onAtualizarProjeto={handleChange}
-        onAbrirProjeto={(id) => {
-          setMostrarEcossistema(false);
-          setOpenId(id);
-        }}
-      />
-    );
-  } else if (mostrarClube) {
-    conteudo = <ClubeBeneficios projects={projects} onVoltar={() => setMostrarClube(false)} />;
-  } else if (mostrarVoluntarios) {
-    conteudo = <Voluntarios projects={projects} onVoltar={() => setMostrarVoluntarios(false)} />;
-  } else if (mostrarBiblioteca) {
-    conteudo = <Biblioteca onVoltar={() => setMostrarBiblioteca(false)} />;
-  } else if (mostrarComparacao) {
-    conteudo = (
-      <CompareProjects
-        projects={projects}
-        onFechar={() => setMostrarComparacao(false)}
-      />
-    );
-  } else {
-    conteudo = (
+  function renderizarPortfolio(): React.ReactNode {
+    return (
       <ProjectList
         projects={projects}
-        onOpen={setOpenId}
+        onOpen={abrirProjeto}
         onCreate={handleCreate}
         onDelete={handleDelete}
         onRename={handleRename}
         onAtualizarProjeto={handleChange}
         onVerTutorial={() => setMostrarOnboarding(true)}
         onImportar={() => setImportarAberta(true)}
-        onAbrirComparacao={() => setMostrarComparacao(true)}
-        onAbrirEcossistema={() => setMostrarEcossistema(true)}
+        onAbrirComparacao={() => setTela({ nome: "comparacao" })}
+        onAbrirEcossistema={() => setTela({ nome: "ecossistema" })}
         onAbrirCopiloto={() => setAgenteAberto(true)}
         onAbrirRevisaoGeral={() => setRevisaoGeralAberta(true)}
-        onAbrirBiblioteca={() => setMostrarBiblioteca(true)}
-        onAbrirClube={() => setMostrarClube(true)}
-        onAbrirVoluntarios={() => setMostrarVoluntarios(true)}
+        onAbrirBiblioteca={() => setTela({ nome: "biblioteca" })}
+        onAbrirClube={() => setTela({ nome: "clube" })}
+        onAbrirVoluntarios={() => setTela({ nome: "voluntarios" })}
         onAbrirConfig={() => setConfigAberta(true)}
         llmConfig={llmConfig}
       />
     );
+  }
+
+  function renderizarTela(): React.ReactNode {
+    switch (tela.nome) {
+      case "projeto":
+        // Projeto excluído por outra via: cai no portfólio em vez de tela vazia.
+        if (!current) return renderizarPortfolio();
+        return (
+          <ProjectWizard
+            project={current}
+            outrosProjetos={projects.filter((p) => p.id !== current.id)}
+            onChange={handleChange}
+            onVoltar={voltarAoPortfolio}
+          />
+        );
+      case "ecossistema":
+        return <Ecossistema projects={projects} onVoltar={voltarAoPortfolio} onAtualizarProjeto={handleChange} onAbrirProjeto={abrirProjeto} />;
+      case "clube":
+        return <ClubeBeneficios projects={projects} onVoltar={voltarAoPortfolio} />;
+      case "voluntarios":
+        return <Voluntarios projects={projects} onVoltar={voltarAoPortfolio} />;
+      case "biblioteca":
+        return <Biblioteca onVoltar={voltarAoPortfolio} />;
+      case "comparacao":
+        return <CompareProjects projects={projects} onFechar={voltarAoPortfolio} />;
+      case "portfolio":
+        return renderizarPortfolio();
+    }
   }
 
   return (
@@ -197,22 +219,22 @@ export function App() {
         temMultiplosProjetos={projects.length > 1}
         onNovoProjeto={() => handleCreate(novoProjetoVazio())}
         onImportar={() => setImportarAberta(true)}
-        onComparar={() => setMostrarComparacao(true)}
-        onEcossistema={() => setMostrarEcossistema(true)}
+        onComparar={() => setTela({ nome: "comparacao" })}
+        onEcossistema={() => setTela({ nome: "ecossistema" })}
         onCopiloto={() => setAgenteAberto(true)}
         onRevisaoGeral={() => setRevisaoGeralAberta(true)}
-        onBiblioteca={() => setMostrarBiblioteca(true)}
-        onClube={() => setMostrarClube(true)}
-        onVoluntarios={() => setMostrarVoluntarios(true)}
+        onBiblioteca={() => setTela({ nome: "biblioteca" })}
+        onClube={() => setTela({ nome: "clube" })}
+        onVoluntarios={() => setTela({ nome: "voluntarios" })}
       />
-      {conteudo}
+      {renderizarTela()}
       <TaskIndicator onAbrir={() => setSidebarTarefasAberta(true)} />
       {sidebarTarefasAberta && (
         <TaskSidebar
           onFechar={() => setSidebarTarefasAberta(false)}
           onAbrirProjeto={(id) => {
             setSidebarTarefasAberta(false);
-            setOpenId(id);
+            abrirProjeto(id);
           }}
         />
       )}
@@ -227,15 +249,15 @@ export function App() {
         />
       )}
       {agenteAberto && (
-        <AgentePortfolioChat projects={projects} onAtualizarProjeto={handleChange} onAbrirProjeto={setOpenId} onClose={() => setAgenteAberto(false)} />
+        <AgentePortfolioChat projects={projects} onAtualizarProjeto={handleChange} onAbrirProjeto={abrirProjeto} onClose={() => setAgenteAberto(false)} />
       )}
       {revisaoGeralAberta && (
         <RevisaoGeralModal
           projects={projects}
           onAtualizarProjeto={handleChange}
           onClose={() => setRevisaoGeralAberta(false)}
-          onAbrirEcossistema={() => setMostrarEcossistema(true)}
-          onAbrirClube={() => setMostrarClube(true)}
+          onAbrirEcossistema={() => setTela({ nome: "ecossistema" })}
+          onAbrirClube={() => setTela({ nome: "clube" })}
         />
       )}
       {/* Por último de propósito: precisa ficar acima do modal de importação,
