@@ -3,13 +3,24 @@ import { extrairTextoDeArquivo } from "./file-extraction";
 import { carregarConfigLLM, enviarMensagemLLM, configuracaoLLMPronta } from "./providers";
 import { interpretarRespostaRascunho, aplicarRascunhoAoProjeto, type RascunhoDados } from "./draft-generation";
 import { montarBlocoDiretrizesGlobais } from "./diretrizes-globais";
+import { extrairRascunhoHeuristico } from "./extracao-heuristica";
 import danos from "../data/danos.json";
 import arquetipos from "../data/arquetipos.json";
+
+/** Ação que a UI pode oferecer como botão junto da mensagem de erro. */
+export type AcaoSugerida = "configurar-modelo";
 
 export interface ImportarResultado {
   ok: boolean;
   projeto?: Project;
   erro?: string;
+  /** Quando preenchido, a UI mostra um botão que leva direto ao ponto do problema. */
+  acao?: AcaoSugerida;
+  /**
+   * Presente quando o projeto foi montado SEM IA (plano B): diz quais campos a
+   * heurística conseguiu preencher, para a UI ser honesta sobre o que falta.
+   */
+  semIa?: { camposPreenchidos: string[]; motivo: string };
 }
 
 /**
@@ -68,14 +79,9 @@ export async function importarProjetoDeArquivo(arquivo: File, projetoBase: Proje
     return { ok: false, erro: `Formato ".${ext}" não é suportado para importação. Use PDF (.pdf) ou Word (.docx).` };
   }
 
-  // 2. Valida a config de IA — sem IA configurada, não dá pra preencher.
-  const config = carregarConfigLLM();
-  const configPronta = configuracaoLLMPronta(config);
-  if (!configPronta.pronta) {
-    return { ok: false, erro: `Para importar e preencher automaticamente, configure a IA primeiro. ${configPronta.motivo ?? ""}` };
-  }
-
-  // 3. Extrai o texto do documento.
+  // 2. Extrai o texto do documento. Vem ANTES de exigir IA de propósito: a
+  // leitura não depende de modelo nenhum, e jogar fora um documento já lido
+  // só porque não há IA configurada é desperdício — ver o plano B no passo 3.
   let textoExtraido: string;
   try {
     const extracao = await extrairTextoDeArquivo(arquivo);
@@ -91,6 +97,21 @@ export async function importarProjetoDeArquivo(arquivo: File, projetoBase: Proje
     return { ok: false, erro: "O documento parece estar vazio ou não tem texto suficiente para extrair (pode ser um PDF de imagens sem OCR, ou um DOCX em branco)." };
   }
 
+  // 3. PLANO B — sem IA configurada, ainda assim abre o projeto: a heurística
+  // por palavras-chave preenche o que reconhecer e o documento fica anexado
+  // para a pessoa completar à mão.
+  const config = carregarConfigLLM();
+  const configPronta = configuracaoLLMPronta(config);
+  if (!configPronta.pronta) {
+    const heuristica = extrairRascunhoHeuristico(textoExtraido);
+    const projeto = await finalizarProjeto(aplicarRascunhoAoProjeto(projetoBase, heuristica.dados), arquivo, textoExtraido);
+    return {
+      ok: true,
+      projeto,
+      semIa: { camposPreenchidos: heuristica.camposPreenchidos, motivo: configPronta.motivo ?? "" },
+    };
+  }
+
   // 4. Pede ao LLM um rascunho estruturado a partir do texto extraído.
   let resposta;
   try {
@@ -104,7 +125,11 @@ export async function importarProjetoDeArquivo(arquivo: File, projetoBase: Proje
   }
 
   if (!resposta.ok) {
-    return { ok: false, erro: `A IA não conseguiu analisar o documento.\n\nDetalhe: ${resposta.erro ?? "erro desconhecido"}\n\nVerifique se o provedor de IA está configurado corretamente.` };
+    return {
+      ok: false,
+      erro: `A IA não conseguiu analisar o documento.\n\nDetalhe: ${resposta.erro ?? "erro desconhecido"}`,
+      acao: "configurar-modelo",
+    };
   }
 
   // 5. Interpreta a resposta da IA — tolerante a JSON malformado.
@@ -121,13 +146,21 @@ export async function importarProjetoDeArquivo(arquivo: File, projetoBase: Proje
 
   // 6. Aplica o rascunho ao projeto base.
   const dados: RascunhoDados = interpretado.dados;
-  let projeto = aplicarRascunhoAoProjeto(projetoBase, dados);
-  // Se o título não foi definido, usa o nome do arquivo.
+  const projeto = await finalizarProjeto(aplicarRascunhoAoProjeto(projetoBase, dados), arquivo, textoExtraido);
+  return { ok: true, projeto };
+}
+
+/**
+ * Fecha o projeto importado, venha ele da IA ou do plano B: garante título,
+ * guarda o binário original no disco via IPC e anexa o texto extraído.
+ * Falha ao salvar o binário não aborta nada — o texto já basta para trabalhar.
+ */
+async function finalizarProjeto(projetoBruto: Project, arquivo: File, textoExtraido: string): Promise<Project> {
+  let projeto = projetoBruto;
   if (!projeto.tituloEditadoManualmente && !projeto.titulo) {
     projeto = { ...projeto, titulo: arquivo.name.replace(/\.(pdf|docx)$/i, "") };
   }
 
-  // 7. Salva o binário original no disco via IPC — falha aqui não aborta o projeto.
   let caminhoArquivo: string | undefined;
   try {
     if (window.sementeira?.salvarDocumento) {
@@ -144,9 +177,8 @@ export async function importarProjetoDeArquivo(arquivo: File, projetoBase: Proje
   } catch {
     // Se falhar ao salvar o binário, o projeto ainda é válido com o texto extraído.
   }
-  // documentoOrigem sempre fica com o texto extraído, mesmo se o binário não salvou.
 
-  projeto = {
+  return {
     ...projeto,
     ideiaTexto: projeto.ideiaTexto || `[Importado de "${arquivo.name}"] ${textoExtraido.slice(0, 200)}`,
     documentoOrigem: {
@@ -156,8 +188,6 @@ export async function importarProjetoDeArquivo(arquivo: File, projetoBase: Proje
       caminhoArquivo,
     },
   };
-
-  return { ok: true, projeto };
 }
 
 /**
