@@ -1,7 +1,10 @@
 node_modules/
 dist/
 dist-ts/
-build/
+# `build/` e a pasta de RECURSOS do electron-builder, nao de saida — o
+# icone do app mora aqui. Ignora o conteudo, menos os recursos versionados.
+build/*
+!build/icon.png
 release/
 *.log
 .DS_Store
