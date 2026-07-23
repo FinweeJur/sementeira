@@ -33,8 +33,22 @@ npm run dist            # build + electron-builder (NSIS installer)
 - Diretrizes gerais (documentos que valem pra todos os projetos) são sempre subordinadas ao Ofício
   46 — nunca podem sobrepor as vedações.
 
+## Versão web (`servidor/`)
+O mesmo renderer roda no navegador, servido por `servidor/sementeira-servidor.cjs` (node:http puro,
+sem dependência nova) em `app.sementeiraprojetos.com.br`, via Cloudflare Tunnel. O app fica em `/` e
+o gateway de IA em `/api/` — mesma origem, sem CORS entre os dois.
+- `electron/llm-core.cjs` é a fonte única das chamadas de IA: o processo main e o servidor web
+  importam o MESMO módulo, para as duas superfícies não divergirem.
+- `src/lib/ambiente.ts` diz onde o renderer está rodando; `src/lib/llm-web.ts` é o transporte por
+  `fetch` (direto, Ollama local, gateway).
+- `public/sw.js` mantém o app abrindo quando a máquina que hospeda está desligada.
+
 ## Não-objetivos
 - Não depende de gateway/backend compartilhado com outros projetos (decisão deliberada, diferente
-  do hermes-agent).
+  do hermes-agent). **O programa instalado continua sem backend**: chama o provedor direto do
+  processo main. O gateway de `servidor/` é opcional e existe só para a versão web, por uma
+  limitação medida — a Maritaca responde `400 Disallowed CORS origin` a chamada vinda de navegador,
+  enquanto DeepSeek e Tavily liberam (ver `servidor/README.md`). Quem usa DeepSeek no navegador não
+  precisa de gateway nenhum.
 - Transcrição de áudio local (Whisper.cpp) foi decidida mas adiada — empacotamento de binário nativo
   é trabalho à parte.
