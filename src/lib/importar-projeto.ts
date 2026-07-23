@@ -1,15 +1,44 @@
 import type { Project } from "./types";
 import { extrairTextoDeArquivo } from "./file-extraction";
 import { carregarConfigLLM, enviarMensagemLLM, configuracaoLLMPronta } from "./providers";
-import { interpretarRespostaRascunho, aplicarRascunhoAoProjeto, type RascunhoDados } from "./draft-generation";
+import { interpretarRespostaRascunho, aplicarRascunhoAoProjeto, contarCamposPreenchidos, type RascunhoDados } from "./draft-generation";
 import { montarBlocoDiretrizesGlobais } from "./diretrizes-globais";
+import { extrairRascunhoHeuristico } from "./extracao-heuristica";
 import danos from "../data/danos.json";
 import arquetipos from "../data/arquetipos.json";
+
+/** Ação que a UI oferece como botão junto do aviso. */
+export type AcaoSugerida = "configurar-modelo" | "tentar-ia-novamente";
+
+/** Por que o projeto não foi preenchido pela IA. */
+export type CausaSemIa =
+  | "ia-nao-configurada"
+  | "ia-indisponivel"
+  | "resposta-ininteligivel"
+  | "resposta-vazia"
+  | "ia-pediu-informacoes";
 
 export interface ImportarResultado {
   ok: boolean;
   projeto?: Project;
+  /** Só nos erros REAIS de insumo: extensão inválida, falha de leitura, texto curto demais. */
   erro?: string;
+  acao?: AcaoSugerida;
+  /**
+   * Presente sempre que o projeto NÃO foi preenchido pela IA. Ausente
+   * significa que a IA preencheu. Um objeto só, com discriminante — em vez de
+   * espalhar bandeiras soltas pelo resultado.
+   */
+  semIa?: {
+    causa: CausaSemIa;
+    /** Frase pronta para a tela, no vocabulário de quem usa. */
+    motivo: string;
+    /** Detalhe do provedor, mostrado discretamente (ex.: "model not found"). */
+    detalheTecnico?: string;
+    camposPreenchidos: (keyof RascunhoDados)[];
+    /** Só em "ia-pediu-informacoes": vira lista de pendências na tela. */
+    perguntas?: string[];
+  };
 }
 
 /**
@@ -59,6 +88,13 @@ function montarPromptImportacao(textoDocumento: string): string {
  * Importa um projeto a partir de um PDF/DOCX: extrai o texto, pede ao LLM um
  * rascunho estruturado, e guarda o documento original no disco (via IPC) para
  * consulta posterior. O texto extraído também fica no projeto para preview/IA.
+ *
+ * INVARIANTE: passada a extração do texto (passo 2), esta função NUNCA mais
+ * devolve `ok: false`. Toda falha da IA — não configurada, fora do ar,
+ * resposta ilegível, resposta vazia ou pedido de informação — vira plano B
+ * pela heurística determinística, com `semIa.causa` dizendo o que houve.
+ * Um documento já lido nunca é jogado fora: preencher metade é melhor que
+ * mandar a pessoa começar do zero.
  */
 export async function importarProjetoDeArquivo(arquivo: File, projetoBase: Project): Promise<ImportarResultado> {
   const ext = arquivo.name.toLowerCase().split(".").pop() ?? "";
@@ -68,14 +104,9 @@ export async function importarProjetoDeArquivo(arquivo: File, projetoBase: Proje
     return { ok: false, erro: `Formato ".${ext}" não é suportado para importação. Use PDF (.pdf) ou Word (.docx).` };
   }
 
-  // 2. Valida a config de IA — sem IA configurada, não dá pra preencher.
-  const config = carregarConfigLLM();
-  const configPronta = configuracaoLLMPronta(config);
-  if (!configPronta.pronta) {
-    return { ok: false, erro: `Para importar e preencher automaticamente, configure a IA primeiro. ${configPronta.motivo ?? ""}` };
-  }
-
-  // 3. Extrai o texto do documento.
+  // 2. Extrai o texto do documento. Vem ANTES de exigir IA de propósito: a
+  // leitura não depende de modelo nenhum, e jogar fora um documento já lido
+  // só porque não há IA configurada é desperdício — ver o plano B no passo 3.
   let textoExtraido: string;
   try {
     const extracao = await extrairTextoDeArquivo(arquivo);
@@ -91,6 +122,37 @@ export async function importarProjetoDeArquivo(arquivo: File, projetoBase: Proje
     return { ok: false, erro: "O documento parece estar vazio ou não tem texto suficiente para extrair (pode ser um PDF de imagens sem OCR, ou um DOCX em branco)." };
   }
 
+  // A partir daqui o documento já está lido: todo caminho termina em projeto.
+  const heuristica = extrairRascunhoHeuristico(textoExtraido);
+
+  /** Monta o resultado do plano B — os 5 pontos de queda passam por aqui. */
+  async function planoB(
+    causa: CausaSemIa,
+    motivo: string,
+    extras?: { acao?: AcaoSugerida; detalheTecnico?: string; perguntas?: string[] },
+  ): Promise<ImportarResultado> {
+    const projeto = await finalizarProjeto(aplicarRascunhoAoProjeto(projetoBase, heuristica.dados), arquivo, textoExtraido);
+    return {
+      ok: true,
+      projeto,
+      acao: extras?.acao,
+      semIa: {
+        causa,
+        motivo,
+        detalheTecnico: extras?.detalheTecnico,
+        camposPreenchidos: heuristica.camposPreenchidos,
+        perguntas: extras?.perguntas,
+      },
+    };
+  }
+
+  // 3. Sem IA configurada.
+  const config = carregarConfigLLM();
+  const configPronta = configuracaoLLMPronta(config);
+  if (!configPronta.pronta) {
+    return planoB("ia-nao-configurada", configPronta.motivo ?? "A IA ainda não está configurada.", { acao: "configurar-modelo" });
+  }
+
   // 4. Pede ao LLM um rascunho estruturado a partir do texto extraído.
   let resposta;
   try {
@@ -100,34 +162,58 @@ export async function importarProjetoDeArquivo(arquivo: File, projetoBase: Proje
       { role: "user", content: diretrizes ? `${prompt}\n\n${diretrizes}` : prompt },
     ]);
   } catch (e) {
-    return { ok: false, erro: `Erro ao contatar a IA.\n\nDetalhe: ${e instanceof Error ? e.message : String(e)}` };
+    return planoB("ia-indisponivel", "Não foi possível falar com a IA agora.", {
+      acao: "configurar-modelo",
+      detalheTecnico: e instanceof Error ? e.message : String(e),
+    });
   }
 
   if (!resposta.ok) {
-    return { ok: false, erro: `A IA não conseguiu analisar o documento.\n\nDetalhe: ${resposta.erro ?? "erro desconhecido"}\n\nVerifique se o provedor de IA está configurado corretamente.` };
+    return planoB("ia-indisponivel", "Não foi possível falar com a IA agora.", {
+      acao: "configurar-modelo",
+      detalheTecnico: resposta.erro ?? "erro desconhecido",
+    });
   }
 
   // 5. Interpreta a resposta da IA — tolerante a JSON malformado.
   const interpretado = interpretarRespostaRascunho(resposta.conteudo ?? "");
   if (!interpretado) {
-    return {
-      ok: false,
-      erro: "A IA respondeu, mas não foi possível interpretar o resultado como um projeto estruturado.\n\nIsso pode acontecer se o documento estiver mal formatado ou se a IA estiver instável. Tente novamente, ou preencha o projeto manualmente usando o texto extraído.",
-    };
+    return planoB("resposta-ininteligivel", "A IA respondeu, mas o texto não veio no formato estruturado que o app consegue ler.", {
+      acao: "tentar-ia-novamente",
+    });
   }
   if (interpretado.tipo === "perguntas") {
-    return { ok: false, erro: `A IA precisou de mais informações para preencher o projeto:\n\n${interpretado.perguntas.map((p, i) => `${i + 1}. ${p}`).join("\n")}` };
+    return planoB("ia-pediu-informacoes", "A IA leu o documento mas achou que faltava informação para preencher sozinha.", {
+      acao: "tentar-ia-novamente",
+      perguntas: interpretado.perguntas,
+    });
+  }
+  if (contarCamposPreenchidos(interpretado.dados) === 0) {
+    return planoB("resposta-vazia", "A IA respondeu no formato certo, mas sem nenhum campo preenchido.", {
+      acao: "tentar-ia-novamente",
+    });
   }
 
-  // 6. Aplica o rascunho ao projeto base.
+  // 6. Aplica o rascunho. A heurística entra como CAMADA DE BAIXO e a IA
+  // sobrepõe: as duas leem o mesmo documento, não competem. Assim um campo
+  // que a IA deixou de fora, mas que estava sob um título óbvio, não se perde.
   const dados: RascunhoDados = interpretado.dados;
-  let projeto = aplicarRascunhoAoProjeto(projetoBase, dados);
-  // Se o título não foi definido, usa o nome do arquivo.
+  const comHeuristica = aplicarRascunhoAoProjeto(projetoBase, heuristica.dados);
+  const projeto = await finalizarProjeto(aplicarRascunhoAoProjeto(comHeuristica, dados), arquivo, textoExtraido);
+  return { ok: true, projeto };
+}
+
+/**
+ * Fecha o projeto importado, venha ele da IA ou do plano B: garante título,
+ * guarda o binário original no disco via IPC e anexa o texto extraído.
+ * Falha ao salvar o binário não aborta nada — o texto já basta para trabalhar.
+ */
+async function finalizarProjeto(projetoBruto: Project, arquivo: File, textoExtraido: string): Promise<Project> {
+  let projeto = projetoBruto;
   if (!projeto.tituloEditadoManualmente && !projeto.titulo) {
     projeto = { ...projeto, titulo: arquivo.name.replace(/\.(pdf|docx)$/i, "") };
   }
 
-  // 7. Salva o binário original no disco via IPC — falha aqui não aborta o projeto.
   let caminhoArquivo: string | undefined;
   try {
     if (window.sementeira?.salvarDocumento) {
@@ -144,9 +230,8 @@ export async function importarProjetoDeArquivo(arquivo: File, projetoBase: Proje
   } catch {
     // Se falhar ao salvar o binário, o projeto ainda é válido com o texto extraído.
   }
-  // documentoOrigem sempre fica com o texto extraído, mesmo se o binário não salvou.
 
-  projeto = {
+  return {
     ...projeto,
     ideiaTexto: projeto.ideiaTexto || `[Importado de "${arquivo.name}"] ${textoExtraido.slice(0, 200)}`,
     documentoOrigem: {
@@ -156,8 +241,6 @@ export async function importarProjetoDeArquivo(arquivo: File, projetoBase: Proje
       caminhoArquivo,
     },
   };
-
-  return { ok: true, projeto };
 }
 
 /**

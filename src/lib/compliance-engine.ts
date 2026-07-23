@@ -4,6 +4,25 @@ import arquetipos from "../data/arquetipos.json";
 import custosCatalogo from "../data/custos-nao-cobertos.json";
 
 /**
+ * Descrições que caem na vedação de consumo individual (item 4.2 §1º/§3º).
+ * Mora aqui, e não no wizard, porque é o motor que decide.
+ */
+const CONSUMO_INDIVIDUAL_PATTERN = /(conta.*(água|agua|energia|telefon|internet))|(insumo alimentar.*permanente)/i;
+
+/**
+ * A linha precisa declarar de onde vem o dinheiro depois?
+ *
+ * É exatamente a condição das duas regras que bloqueiam por falta de
+ * `fonteCusteioFuturo` (Vedação Geral III e item 4.2 §1º/§3º). O wizard
+ * importa esta função para decidir se mostra o campo — se ele repetisse a
+ * condição por conta própria, as duas versões divergiriam e voltaria a
+ * existir bloqueio sem campo na tela para resolver.
+ */
+export function exigeFonteCusteioFuturo(linha: BudgetLine): boolean {
+  return linha.categoria === "folha-permanente" || CONSUMO_INDIVIDUAL_PATTERN.test(linha.descricao ?? "");
+}
+
+/**
  * Motor de conformidade: aplica as vedações e regras de elegibilidade do
  * Ofício Conjunto n° 46/2026 sobre cada linha de orçamento.
  * Regras não são exaustivas — cobrem os pontos que mais derrubam projetos.
@@ -157,8 +176,7 @@ function avaliarLinha(linha: BudgetLine): ComplianceFinding[] {
   }
 
   // 4.2 §1º: contas individuais de consumo (água/energia/telefonia/internet) — vedação permanente.
-  const consumoIndividualPattern = /(conta.*(água|agua|energia|telefon|internet))|(insumo alimentar.*permanente)/i;
-  if (consumoIndividualPattern.test(linha.descricao) && !linha.fonteCusteioFuturo) {
+  if (CONSUMO_INDIVIDUAL_PATTERN.test(linha.descricao) && !linha.fonteCusteioFuturo) {
     out.push({
       severidade: "bloqueio",
       linhaId: linha.id,

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { BudgetLine, CategoriaLinha, Cenario, CustoNaoCobertoItem, EquipeMembro, EspacoLogistica, Indicador, PropostaFornecedor, Project, RiskItem } from "../lib/types";
 import { PORTE_POR_ABRANGENCIA, CONSELHO_POR_ABRANGENCIA } from "../lib/types";
-import { avaliarConformidade } from "../lib/compliance-engine";
+import { avaliarConformidade, exigeFonteCusteioFuturo } from "../lib/compliance-engine";
 import { simularTodos, exigenciaPOS, calcularDepreciacaoMensal } from "../lib/simulator";
 import { exportarProjetoDocx, exportarProjetoXlsx } from "../lib/export";
 import { exportarSolicitacaoCotacaoDocx, sugerirFornecedoresRede } from "../lib/cotacao";
@@ -750,7 +750,7 @@ export function ProjectWizard({
                 </div>
 
                   {(l.categoria === "equipamento" ||
-                    l.categoria === "folha-permanente" ||
+                    exigeFonteCusteioFuturo(l) ||
                     CATEGORIAS_COM_PRAZO_6M.includes(l.categoria) ||
                     arquetipo?.tipo === "4.4") && (
                     <div className="grid grid-cols-12 gap-3 border-t border-[color:var(--sm-border)] p-3">
@@ -763,7 +763,9 @@ export function ProjectWizard({
                           onChange={(e) => updateLinha(l.id, { vidaUtilAnos: e.target.value ? Number(e.target.value) : undefined })}
                         />
                       )}
-                      {(l.categoria === "folha-permanente" || CATEGORIAS_COM_PRAZO_6M.includes(l.categoria)) && (
+                      {/* Condição vem do motor: qualquer linha que ele possa bloquear
+                          por falta de fonte futura TEM de mostrar o campo aqui. */}
+                      {(exigeFonteCusteioFuturo(l) || CATEGORIAS_COM_PRAZO_6M.includes(l.categoria)) && (
                         <input
                           className={`${inputClass} col-span-12 sm:col-span-6`}
                           placeholder="De onde vem o dinheiro depois (evita bloqueio)"

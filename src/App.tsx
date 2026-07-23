@@ -16,6 +16,7 @@ import { TaskSidebar } from "./components/TaskSidebar";
 import { AgentePortfolioChat } from "./components/AgentePortfolioChat";
 import { RevisaoGeralModal } from "./components/RevisaoGeralModal";
 import { ImportarProjetoModal } from "./components/ImportarProjetoModal";
+import { SettingsModal } from "./components/SettingsModal";
 import {
   onboardingVisto,
   marcarOnboardingVisto,
@@ -47,6 +48,11 @@ export function App() {
   const [agenteAberto, setAgenteAberto] = useState(false);
   const [revisaoGeralAberta, setRevisaoGeralAberta] = useState(false);
   const [importarAberta, setImportarAberta] = useState(false);
+  // Configurações moram aqui, e não no ProjectList, porque o modal de
+  // importação é irmão dele na árvore e precisa conseguir abrir as
+  // Configurações quando avisa que falta configurar a IA.
+  const [configAberta, setConfigAberta] = useState(false);
+  const [focarModelo, setFocarModelo] = useState(false);
   const [fontScale, setFontScale] = useState<FontScale>("normal");
   const [tema, setTema] = useState<Tema>("escuro");
   const [llmConfig, setLlmConfig] = useState<ProviderConfig>(carregarConfigLLM());
@@ -174,8 +180,8 @@ export function App() {
         onAbrirBiblioteca={() => setMostrarBiblioteca(true)}
         onAbrirClube={() => setMostrarClube(true)}
         onAbrirVoluntarios={() => setMostrarVoluntarios(true)}
+        onAbrirConfig={() => setConfigAberta(true)}
         llmConfig={llmConfig}
-        onLlmConfigChange={handleLlmConfigChange}
       />
     );
   }
@@ -210,7 +216,16 @@ export function App() {
           }}
         />
       )}
-      {importarAberta && <ImportarProjetoModal onCreate={handleCreate} onFechar={() => setImportarAberta(false)} />}
+      {importarAberta && (
+        <ImportarProjetoModal
+          onCreate={handleCreate}
+          onFechar={() => setImportarAberta(false)}
+          onAbrirConfigModelo={() => {
+            setFocarModelo(true);
+            setConfigAberta(true);
+          }}
+        />
+      )}
       {agenteAberto && (
         <AgentePortfolioChat projects={projects} onAtualizarProjeto={handleChange} onAbrirProjeto={setOpenId} onClose={() => setAgenteAberto(false)} />
       )}
@@ -221,6 +236,19 @@ export function App() {
           onClose={() => setRevisaoGeralAberta(false)}
           onAbrirEcossistema={() => setMostrarEcossistema(true)}
           onAbrirClube={() => setMostrarClube(true)}
+        />
+      )}
+      {/* Por último de propósito: precisa ficar acima do modal de importação,
+          que continua aberto atrás enquanto a pessoa configura o modelo. */}
+      {configAberta && (
+        <SettingsModal
+          config={llmConfig}
+          onChange={handleLlmConfigChange}
+          focarModelo={focarModelo}
+          onFechar={() => {
+            setConfigAberta(false);
+            setFocarModelo(false);
+          }}
         />
       )}
     </TaskProvider>
