@@ -10,7 +10,7 @@ import { ehWeb } from "../lib/ambiente";
 import { avaliarConformidade } from "../lib/compliance-engine";
 import { Tooltip } from "../components/Tooltip";
 import { CabecalhoSecao } from "../components/CabecalhoSecao";
-import { Settings, CheckCircle2, Square, Sprout, Pencil, Upload, Scale, Globe, Bot, RefreshCw, BookOpen, Ticket, HeartHandshake } from "lucide-react";
+import { Settings, CheckCircle2, Square, Sprout, Pencil, Upload, Scale, Table2, Globe, Bot, RefreshCw, BookOpen, Ticket, HeartHandshake } from "lucide-react";
 
 const CHECKLIST_DISPENSADO_KEY = "sementeira-checklist-primeiro-uso-dispensado-v1";
 const AVISO_WEB_DISPENSADO_KEY = "sementeira-aviso-web-dispensado-v1";
@@ -25,6 +25,7 @@ export function ProjectList({
   onVerTutorial,
   onImportar,
   onAbrirComparacao,
+  onAbrirPlanilha,
   onAbrirEcossistema,
   onAbrirCopiloto,
   onAbrirRevisaoGeral,
@@ -43,6 +44,7 @@ export function ProjectList({
   onVerTutorial: () => void;
   onImportar: () => void;
   onAbrirComparacao: () => void;
+  onAbrirPlanilha: () => void;
   onAbrirEcossistema: () => void;
   onAbrirCopiloto: () => void;
   onAbrirRevisaoGeral: () => void;
@@ -217,6 +219,15 @@ export function ProjectList({
                   </button>
                 </Tooltip>
               )}
+              <Tooltip texto="Todos os projetos em tabela: onde, quanto, categoria, público, produção, itens e riscos — e dá para baixar em Excel" posicao="bottom">
+                <button
+                  onClick={onAbrirPlanilha}
+                  className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-border)] px-3 py-2 text-xs hover:border-[color:var(--sm-accent)]"
+                >
+                  <Table2 size={14} strokeWidth={2} />
+                  Planilha
+                </button>
+              </Tooltip>
               <Tooltip texto="Mapa da região e como os projetos podem se ajudar — um projeto compra do outro" posicao="bottom">
                 <button
                   onClick={onAbrirEcossistema}

@@ -8,6 +8,7 @@ import { ClubeBeneficios } from "./pages/ClubeBeneficios";
 import { Voluntarios } from "./pages/Voluntarios";
 import { Biblioteca } from "./pages/Biblioteca";
 import { CompareProjects } from "./pages/CompareProjects";
+import { PlanilhaPortfolio } from "./pages/PlanilhaPortfolio";
 import { Onboarding } from "./components/Onboarding";
 import { NavBar } from "./components/NavBar";
 import { TaskProvider } from "./lib/task-context";
@@ -52,6 +53,7 @@ type Tela =
   | { nome: "clube" }
   | { nome: "voluntarios" }
   | { nome: "biblioteca" }
+  | { nome: "planilha" }
   | { nome: "comparacao" };
 
 const PORTFOLIO: Tela = { nome: "portfolio" };
@@ -168,6 +170,7 @@ export function App() {
         onVerTutorial={() => setMostrarOnboarding(true)}
         onImportar={() => setImportarAberta(true)}
         onAbrirComparacao={() => setTela({ nome: "comparacao" })}
+        onAbrirPlanilha={() => setTela({ nome: "planilha" })}
         onAbrirEcossistema={() => setTela({ nome: "ecossistema" })}
         onAbrirCopiloto={() => setAgenteAberto(true)}
         onAbrirRevisaoGeral={() => setRevisaoGeralAberta(true)}
@@ -201,6 +204,8 @@ export function App() {
         return <Voluntarios projects={projects} onVoltar={voltarAoPortfolio} />;
       case "biblioteca":
         return <Biblioteca onVoltar={voltarAoPortfolio} />;
+      case "planilha":
+        return <PlanilhaPortfolio projects={projects} onVoltar={voltarAoPortfolio} onAbrirProjeto={abrirProjeto} />;
       case "comparacao":
         return <CompareProjects projects={projects} onFechar={voltarAoPortfolio} />;
       case "portfolio":

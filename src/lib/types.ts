@@ -137,6 +137,37 @@ export interface Indicador {
   frequencia?: string;
 }
 
+/**
+ * Expectativa de produção — o que o projeto entrega e em que ritmo (ex.: 300
+ * pães por semana). É o que dá lastro à receita estimada na simulação de
+ * sustentabilidade: sem isso, os cenários são chute.
+ */
+export interface ProducaoItem {
+  id: string;
+  item: string;
+  quantidade?: number;
+  unidade?: string;
+  /** Texto livre: "por mês", "por semana", "por safra"... */
+  periodicidade?: string;
+  observacoes?: string;
+}
+
+/**
+ * Item físico necessário para o projeto rodar. Diferente de `BudgetLine`: aqui
+ * cabe o que virá de doação ou mutirão e o que a comunidade JÁ tem
+ * (`jaPossui`) — coisas que não entram no orçamento, mas sem as quais o projeto
+ * não sai do papel.
+ */
+export interface ItemNecessario {
+  id: string;
+  descricao: string;
+  quantidade?: number;
+  unidade?: string;
+  /** true = a comunidade já dispõe do item; não precisa ser comprado. */
+  jaPossui?: boolean;
+  observacoes?: string;
+}
+
 export type AcessoLogistico = "asfalto" | "estrada-terra" | "transporte-publico-proximo" | "dificil";
 
 /** Previsão de espaço físico e logística — usada no plano de implementação e para estimar custo/risco de deslocamento entre projetos da rede (economia circular). */
@@ -242,12 +273,22 @@ export interface Project {
   /** Boas práticas adotadas (governança, ambientais, financeiras, segurança) — seção dedicada esperada em proposta formal. */
   boasPraticas?: string[];
   setorId: string;
+  /** Quem é atendido, em texto — complementa `setorId`, que é uma categoria fechada. */
+  publicoAlvo?: string;
+  /** Quantas pessoas o projeto atende diretamente (participam ou recebem). */
+  pessoasAtendidasDiretas?: number;
+  /** Quantas pessoas são alcançadas indiretamente (famílias, entorno). */
+  pessoasAtendidasIndiretas?: number;
   local: string;
   /** Município da bacia do Paraopeba, para geocodificação offline (mapa regional + cálculo de distância/rota entre projetos da rede). */
   municipioId?: string;
   abrangencia: Abrangencia;
   tetoPorte: TetoPorPorte;
   orcamento: BudgetLine[];
+  /** O que o projeto produz/entrega e em que ritmo. */
+  producaoEstimada?: ProducaoItem[];
+  /** Itens físicos necessários, inclusive doações e o que a comunidade já tem. */
+  itensNecessarios?: ItemNecessario[];
   equipe: EquipeMembro[];
   cronograma: string;
   /** Cronograma mês a mês gerado pela lapidação — complementa o resumo livre acima; ausente até a primeira lapidação. */
