@@ -91,7 +91,7 @@ export function PlanilhaPortfolio({
   const temTextosLongos = aba.colunas.some((c) => c.textoLongo);
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-3rem)] w-full max-w-[1600px] flex-col gap-4 p-6">
+    <div className="mx-auto flex h-[calc(100dvh-3rem)] w-full max-w-[1600px] flex-col gap-4 p-3 sm:p-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <button onClick={onVoltar} className="text-sm text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]">

@@ -76,7 +76,7 @@ export function ProjectDocumento({
   const atividadesDoMes = mesAtual != null ? orientacaoDoMes(project, mesAtual) : [];
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 p-6">
+    <div className="mx-auto max-w-3xl space-y-6 p-4 sm:p-6">
       <div className="no-print flex items-center justify-between">
         <button onClick={onFechar} className="text-sm text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]">
           ← Voltar ao wizard

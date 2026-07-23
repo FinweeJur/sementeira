@@ -127,10 +127,11 @@ function NavIconButton({
     <Tooltip texto={dica} posicao="bottom">
       <button
         onClick={onClick}
+        aria-label={rotulo}
         className="inline-flex items-center gap-1.5 whitespace-nowrap rounded border border-[color:var(--sm-border)] px-2 py-1 text-xs hover:border-[color:var(--sm-accent)]"
       >
         <Icone size={14} strokeWidth={2} />
-        {rotulo}
+        <span className="hidden sm:inline">{rotulo}</span>
       </button>
     </Tooltip>
   );

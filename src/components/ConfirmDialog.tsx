@@ -11,7 +11,7 @@ export function ConfirmDialog({
 }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 sm-fade"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 sm-fade"
       onKeyDown={(e) => {
         if (e.key === "Escape") onCancelar();
       }}

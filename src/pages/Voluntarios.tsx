@@ -56,7 +56,7 @@ export function Voluntarios({ projects, onVoltar }: { projects: Project[]; onVol
     : voluntarios;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4 p-6">
+    <div className="mx-auto max-w-4xl space-y-4 p-4 sm:p-6">
       <button onClick={onVoltar} className="text-sm text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]">
         ← Meus projetos
       </button>
@@ -68,7 +68,7 @@ export function Voluntarios({ projects, onVoltar }: { projects: Project[]; onVol
       />
 
       <Section title="Cadastrar voluntário(a)">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <Field label="Nome">
             <input className={inputClass} value={novo.nome} onChange={(e) => setNovo({ ...novo, nome: e.target.value })} />
           </Field>

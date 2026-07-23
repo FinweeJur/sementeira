@@ -14,7 +14,7 @@ export function HistoricoVersoesModal({ project, onReverter, onClose }: { projec
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div className="max-h-[80vh] w-full max-w-md space-y-3 overflow-y-auto rounded-lg border border-[color:var(--sm-border)] bg-[color:var(--sm-panel)] p-4">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">Histórico de versões — v{versaoAtual} atual</h2>
