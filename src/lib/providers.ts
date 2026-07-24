@@ -71,6 +71,19 @@ export const PROVEDORES: ProviderDef[] = [
   },
 ];
 
+/**
+ * Modelos GRÁTIS liberados no OpenRouter, oferecidos pelo gateway na versão web.
+ * O primeiro é o padrão da web. A AUTORIDADE é o servidor
+ * (`servidor/sementeira-servidor.cjs`, campo `modelosPermitidos`): esta lista
+ * existe só para o seletor de modelo da UI. Um modelo fora da allowlist do
+ * servidor é recusado lá, não aqui — mantenha as duas listas em sincronia.
+ */
+export const MODELOS_OPENROUTER_GRATIS = [
+  "nvidia/nemotron-3-super-120b-a12b:free",
+  "google/gemma-4-31b-it:free",
+  "nvidia/nemotron-nano-9b-v2:free",
+];
+
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
   content: string;
@@ -209,7 +222,11 @@ export function configuracaoLLMPronta(config: ProviderConfig): { pronta: boolean
   if (!def) return { pronta: false, motivo: "Nenhum provedor de IA selecionado." };
 
   if (def.id === "gateway") {
-    if (!config.apiKey?.trim()) {
+    // "auto" (DeepSeek com reserva grátis) e "openrouter" são a IA pública da
+    // web: o servidor os libera sem token. Os outros provedores do gateway
+    // (DeepSeek/Maritaca diretos) continuam exigindo o token de acesso.
+    const publico = ehWeb() && (config.provedorNoServidor === "auto" || config.provedorNoServidor === "openrouter");
+    if (!publico && !config.apiKey?.trim()) {
       return { pronta: false, motivo: "O Servidor da Sementeira precisa de um token de acesso." };
     }
     return { pronta: true };
@@ -248,6 +265,12 @@ export function carregarConfigLLM(): ProviderConfig {
     if (raw) return JSON.parse(raw) as ProviderConfig;
   } catch {
     /* ignora config corrompida */
+  }
+  // Sem config salva: na web, o padrão é o modo "auto" do gateway — DeepSeek
+  // (com teto por IP) e, na falta, a reserva grátis. Funciona sem o visitante
+  // configurar nada. No app instalado, o padrão é o Ollama local.
+  if (ehWeb()) {
+    return { providerId: "gateway", provedorNoServidor: "auto" };
   }
   return { providerId: "ollama" };
 }
