@@ -105,6 +105,15 @@ a:hover { color: var(--accent); }
   50%      { opacity: 1; transform: translateY(6px); }
 }
 
+/* Cena 3D do hero: giro do núcleo (sprout) e rotação das órbitas */
+@keyframes spinY {
+  to { transform: rotateY(360deg); }
+}
+
+@keyframes orbit {
+  to { transform: rotate(360deg); }
+}
+
 .rise { opacity: 0; animation: rise .7s ease-out both; }
 .rise.d1 { animation-delay: .05s; }
 .rise.d2 { animation-delay: .18s; }
