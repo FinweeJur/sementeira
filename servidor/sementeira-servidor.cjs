@@ -58,6 +58,14 @@ const PORTA = Number(env.SEMENTEIRA_PORTA || 7010);
 const TOKEN = (env.SEMENTEIRA_TOKEN || "").trim();
 
 /**
+ * Modo público. Com 1, os provedores `auto` (DeepSeek + reserva grátis) e
+ * `openrouter` podem ser chamados SEM token, para a versão web dar IA a qualquer
+ * visitante sem configuração. Os demais (DeepSeek/Maritaca diretos, Ollama)
+ * seguem atrás do token. É opt-in explícito: sem esta flag, nada abre.
+ */
+const WEB_PUBLICA = /^(1|true|sim|on)$/i.test((env.SEMENTEIRA_WEB_PUBLICA || "").trim());
+
+/**
  * Provedores que o gateway aceita, com a chave lida do .env.
  *
  * O navegador manda só um `providerId` — NUNCA baseUrl ou chave. Se o cliente
@@ -69,6 +77,22 @@ const PROVEDORES = {
   deepseek: { kind: "openai-compatible", baseUrl: "https://api.deepseek.com", modeloPadrao: "deepseek-chat", apiKey: env.DEEPSEEK_API_KEY },
   maritaca: { kind: "openai-compatible", baseUrl: "https://chat.maritaca.ai/api", modeloPadrao: "sabia-4", apiKey: env.MARITACA_API_KEY },
   ollama: { kind: "ollama", baseUrl: env.OLLAMA_BASE_URL || "http://127.0.0.1:11434", modeloPadrao: "", apiKey: undefined },
+  // OpenRouter: reserva GRÁTIS do modo "auto" e provedor grátis avulso. A chave
+  // deve ter LIMITE DE GASTO US$0 na conta OpenRouter, para que só modelos `:free`
+  // sejam acessíveis. `modelosPermitidos` é a segunda trava — modelo fora da lista
+  // (pago, OpenAI/Anthropic) é recusado antes de tocar a chave. Reduza a uma linha
+  // para deixar só um modelo; o primeiro é o padrão.
+  openrouter: {
+    kind: "openai-compatible",
+    baseUrl: "https://openrouter.ai/api/v1",
+    modeloPadrao: "nvidia/nemotron-3-super-120b-a12b:free",
+    apiKey: env.OPENROUTER_API_KEY,
+    modelosPermitidos: [
+      "nvidia/nemotron-3-super-120b-a12b:free",
+      "google/gemma-4-31b-it:free",
+      "nvidia/nemotron-nano-9b-v2:free",
+    ],
+  },
 };
 
 const TAVILY_API_KEY = env.TAVILY_API_KEY;
@@ -283,10 +307,40 @@ setInterval(() => {
     if (vivos.length === 0) acessos.delete(chave);
     else acessos.set(chave, vivos);
   }
+  // Mesma faxina para o teto diário de DeepSeek por IP (janela bem maior).
+  for (const [chave, reg] of usoDeepseekDia) {
+    if (agora - reg.janelaInicio > JANELA_IP_MS) usoDeepseekDia.delete(chave);
+  }
 }, LIMITE_JANELA_MS).unref();
 
 /** Teto de chat por minuto — inferência ocupa CPU/GPU da máquina que hospeda. */
 const LIMITE_CHAT = Number(env.SEMENTEIRA_MAX_CHAT_MIN || 10);
+
+/**
+ * Teto DIÁRIO de chamadas DeepSeek por IP, só no modo público "auto". A DeepSeek
+ * roda com a chave de quem hospeda (gasta dinheiro), então este teto protege o
+ * bolso — soma-se ao teto por minuto acima. Ao estourar, o "auto" cai para a
+ * reserva grátis. Só conta chamada BEM-SUCEDIDA (= o que de fato é cobrado).
+ * Usa a mesma `chaveCliente` (CF-Connecting-IP) do limite por minuto.
+ */
+const LIMITE_IP_DIA = Number(env.SEMENTEIRA_LIMITE_IP || 40);
+const JANELA_IP_MS = Number(env.SEMENTEIRA_LIMITE_JANELA_H || 24) * 3_600_000;
+const usoDeepseekDia = new Map();
+
+function temCotaDeepseekDia(cliente, agora) {
+  const reg = usoDeepseekDia.get(cliente);
+  if (!reg || agora - reg.janelaInicio > JANELA_IP_MS) return true;
+  return reg.contador < LIMITE_IP_DIA;
+}
+
+function registrarDeepseekDia(cliente, agora) {
+  const reg = usoDeepseekDia.get(cliente);
+  if (!reg || agora - reg.janelaInicio > JANELA_IP_MS) {
+    usoDeepseekDia.set(cliente, { contador: 1, janelaInicio: agora });
+  } else {
+    reg.contador += 1;
+  }
+}
 
 /** Trava dura de tamanho: recusa antes de gastar inferência. */
 function dentroDosTetos(messages) {
@@ -323,9 +377,14 @@ async function rotaSaude(_req, res) {
     ok: true,
     servidor: "sementeira",
     exigeToken: Boolean(TOKEN),
+    // Quando true, os provedores públicos (auto/openrouter) rodam sem token.
+    webPublica: WEB_PUBLICA,
+    // Teto de chamadas DeepSeek por IP no modo público "auto".
+    limitePorIp: LIMITE_IP_DIA,
     provedores: {
       deepseek: Boolean(PROVEDORES.deepseek.apiKey),
       maritaca: Boolean(PROVEDORES.maritaca.apiKey),
+      openrouter: Boolean(PROVEDORES.openrouter.apiKey),
       // Reflete o interruptor: se o Ollama não atende pela web, o app não deve oferecê-lo.
       ollama: OLLAMA_REMOTO,
       tavily: Boolean(TAVILY_API_KEY),
@@ -334,7 +393,8 @@ async function rotaSaude(_req, res) {
 }
 
 async function rotaChat(req, res) {
-  if (!exigirToken(req, res)) return;
+  // Limite por minuto (por IP) primeiro, antes de ler o corpo — vale para todos,
+  // inclusive as rotas públicas.
   if (!dentroDoLimite(req, res, { max: LIMITE_CHAT, balde: "chat" })) return;
 
   let corpo;
@@ -343,6 +403,24 @@ async function rotaChat(req, res) {
   } catch (erro) {
     return responderJson(res, 400, { ok: false, erro: erro.message });
   }
+
+  // Rotas públicas (auto/openrouter, no modo WEB_PUBLICA) dispensam token: são a
+  // IA que qualquer visitante da web usa sem configurar nada. Todo o resto —
+  // DeepSeek/Maritaca DIRETOS e o Ollama — continua atrás do token. A checagem
+  // vem DEPOIS de ler o corpo porque é ele que diz qual provedor foi pedido.
+  const ehPublico = WEB_PUBLICA && (corpo.providerId === "auto" || corpo.providerId === "openrouter");
+  if (!ehPublico && !exigirToken(req, res)) return;
+
+  if (!Array.isArray(corpo.messages) || corpo.messages.length === 0) {
+    return responderJson(res, 400, { ok: false, erro: "Nenhuma mensagem foi enviada." });
+  }
+  const tetos = dentroDosTetos(corpo.messages);
+  if (!tetos.ok) return responderJson(res, 413, { ok: false, erro: tetos.erro });
+
+  // Modo público "auto": DeepSeek (chave do host, teto diário por IP) com reserva
+  // OpenRouter grátis. É política, não provedor fixo — resolvido à parte, mas já
+  // passou pelo limite por minuto e pelos tetos acima.
+  if (corpo.providerId === "auto") return rotaChatAuto(req, res, corpo, tetos.total);
 
   const provedor = PROVEDORES[corpo.providerId];
   if (!provedor) {
@@ -357,9 +435,6 @@ async function rotaChat(req, res) {
   if (provedor.kind === "openai-compatible" && !provedor.apiKey) {
     return responderJson(res, 503, { ok: false, erro: `O servidor não tem chave configurada para ${corpo.providerId}.` });
   }
-  if (!Array.isArray(corpo.messages) || corpo.messages.length === 0) {
-    return responderJson(res, 400, { ok: false, erro: "Nenhuma mensagem foi enviada." });
-  }
 
   const modelo = corpo.model || provedor.modeloPadrao;
   if (provedor.kind === "ollama" && OLLAMA_MODELOS_PERMITIDOS.length > 0 && !OLLAMA_MODELOS_PERMITIDOS.includes(modelo)) {
@@ -368,9 +443,13 @@ async function rotaChat(req, res) {
       erro: `O modelo "${modelo}" não está liberado neste servidor. Liberados: ${OLLAMA_MODELOS_PERMITIDOS.join(", ")}.`,
     });
   }
-
-  const tetos = dentroDosTetos(corpo.messages);
-  if (!tetos.ok) return responderJson(res, 413, { ok: false, erro: tetos.erro });
+  // Allowlist própria do provedor (ex.: OpenRouter — só os `:free`).
+  if (provedor.modelosPermitidos && !provedor.modelosPermitidos.includes(modelo)) {
+    return responderJson(res, 403, {
+      ok: false,
+      erro: `O modelo "${modelo}" não está liberado neste servidor. Liberados: ${provedor.modelosPermitidos.join(", ")}.`,
+    });
+  }
 
   // Guardrail SUAVE — ver o bloco de diretrizes no topo do arquivo.
   const mensagens = ESCOPO_ATIVO ? [{ role: "system", content: DIRETRIZ_ESCOPO }, ...corpo.messages] : corpo.messages;
@@ -396,6 +475,63 @@ async function rotaChat(req, res) {
     responderJson(res, 200, { ok: true, conteudo });
   } catch (erro) {
     responderJson(res, 200, { ok: false, erro: erro instanceof Error ? erro.message : String(erro) });
+  }
+}
+
+/**
+ * Política do provedor público "auto": DeepSeek primeiro (chave do host, melhor
+ * resposta) com teto DIÁRIO por IP; ao estourar o teto OU se a DeepSeek falhar,
+ * cai para o OpenRouter grátis. O modelo é ditado pelo servidor — o cliente não
+ * escolhe, para um endpoint público não forçar um modelo mais caro. Reaproveita
+ * a diretriz de escopo e o log; os tetos e o limite por minuto já foram checados
+ * por quem chama (rotaChat).
+ */
+async function rotaChatAuto(req, res, corpo, totalCaracteres) {
+  const cliente = chaveCliente(req);
+  const agora = Date.now();
+  const deepseek = PROVEDORES.deepseek;
+  const openrouter = PROVEDORES.openrouter;
+  const mensagens = ESCOPO_ATIVO ? [{ role: "system", content: DIRETRIZ_ESCOPO }, ...corpo.messages] : corpo.messages;
+
+  // 1) DeepSeek, se houver chave e cota diária do IP.
+  if (deepseek.apiKey && temCotaDeepseekDia(cliente, agora)) {
+    try {
+      const conteudo = await chamarLLM({
+        kind: deepseek.kind,
+        baseUrl: deepseek.baseUrl,
+        apiKey: deepseek.apiKey,
+        model: deepseek.modeloPadrao,
+        messages: mensagens,
+        esperaJson: Boolean(corpo.esperaJson),
+      });
+      registrarDeepseekDia(cliente, agora); // só conta o que deu certo (= o que é cobrado)
+      registrar({ evento: "chat", cliente, provedor: "auto:deepseek", modelo: deepseek.modeloPadrao, mensagens: corpo.messages.length, caracteres: totalCaracteres });
+      return responderJson(res, 200, { ok: true, conteudo, provedor: "deepseek" });
+    } catch {
+      // DeepSeek fora do ar/erro: cai para a reserva grátis. Não consome cota.
+    }
+  }
+
+  // 2) Reserva: OpenRouter grátis.
+  if (!openrouter.apiKey) {
+    return responderJson(res, 503, {
+      ok: false,
+      erro: "IA indisponível: a cota da DeepSeek acabou (ou a DeepSeek falhou) e o OpenRouter não está configurado como reserva no servidor.",
+    });
+  }
+  registrar({ evento: "chat", cliente, provedor: "auto:openrouter", modelo: openrouter.modeloPadrao, mensagens: corpo.messages.length, caracteres: totalCaracteres });
+  try {
+    const conteudo = await chamarLLM({
+      kind: openrouter.kind,
+      baseUrl: openrouter.baseUrl,
+      apiKey: openrouter.apiKey,
+      model: openrouter.modeloPadrao,
+      messages: mensagens,
+      esperaJson: Boolean(corpo.esperaJson),
+    });
+    return responderJson(res, 200, { ok: true, conteudo, provedor: "openrouter" });
+  } catch (erro) {
+    return responderJson(res, 200, { ok: false, erro: erro instanceof Error ? erro.message : String(erro) });
   }
 }
 
@@ -532,4 +668,9 @@ servidor.listen(PORTA, "127.0.0.1", () => {
   console.log(`  modelos ollama liberados: ${OLLAMA_MODELOS_PERMITIDOS.join(", ") || "todos os instalados"}`);
   console.log(`  tetos: ${LIMITE_CHAT} chat/min · ${LIMITE_MAX} outras/min · ${MAX_MENSAGENS} msgs · ${MAX_CARACTERES} caracteres`);
   console.log(`  diretriz de escopo: ${ESCOPO_ATIVO ? "ativa (guardrail suave)" : "desligada"}`);
+  console.log(`  IA pública sem token (auto/openrouter): ${WEB_PUBLICA ? "LIGADA" : "desligada"}`);
+  if (WEB_PUBLICA) {
+    console.log(`    auto: DeepSeek ${PROVEDORES.deepseek.apiKey ? "✓" : "✗ (sem chave)"} → reserva OpenRouter ${PROVEDORES.openrouter.apiKey ? "✓" : "✗ (sem chave)"}`);
+    console.log(`    teto DeepSeek: ${LIMITE_IP_DIA} por IP a cada ${JANELA_IP_MS / 3_600_000}h`);
+  }
 });

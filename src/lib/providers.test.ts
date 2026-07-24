@@ -66,4 +66,26 @@ describe("configuracaoLLMPronta", () => {
     // Só o token basta: as chaves dos provedores ficam no servidor.
     expect(configuracaoLLMPronta(config({ providerId: "gateway", apiKey: "tok" })).pronta).toBe(true);
   });
+
+  // Modo público: "auto" (DeepSeek + reserva grátis) e "openrouter" dispensam token na web.
+  it("na web, o Servidor no modo automático fica pronto sem token", () => {
+    expect(configuracaoLLMPronta(config({ providerId: "gateway", provedorNoServidor: "auto" })).pronta).toBe(true);
+  });
+
+  it("na web, o Servidor com OpenRouter grátis fica pronto sem token", () => {
+    expect(configuracaoLLMPronta(config({ providerId: "gateway", provedorNoServidor: "openrouter" })).pronta).toBe(true);
+  });
+
+  it("na web, DeepSeek DIRETO pelo servidor ainda exige token — não é rota pública", () => {
+    const r = configuracaoLLMPronta(config({ providerId: "gateway", provedorNoServidor: "deepseek" }));
+    expect(r.pronta).toBe(false);
+    expect(r.motivo).toMatch(/token/i);
+  });
+
+  it("a dispensa de token vale só na web: no app instalado, gateway+auto ainda pediria token", () => {
+    simularAppInstalado();
+    const r = configuracaoLLMPronta(config({ providerId: "gateway", provedorNoServidor: "auto" }));
+    expect(r.pronta).toBe(false);
+    expect(r.motivo).toMatch(/token/i);
+  });
 });
