@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { PROVEDORES, configuracaoLLMPronta, provedoresDisponiveis, listarModelosOllamaLocal, type ProviderConfig } from "../lib/providers";
+import { PROVEDORES, MODELOS_OPENROUTER_GRATIS, configuracaoLLMPronta, provedoresDisponiveis, listarModelosOllamaLocal, type ProviderConfig } from "../lib/providers";
 import { temTokenEmbutido } from "../lib/gateway-token";
 import { consultarSaudeServidor, type SaudeServidor } from "../lib/llm-web";
 import { ehWeb } from "../lib/ambiente";
@@ -10,6 +10,8 @@ const OUTRO = "__outro__";
 
 /** Provedores que o SERVIDOR pode usar — o navegador manda só o id, nunca endereço nem chave. */
 const PROVEDORES_NO_SERVIDOR = [
+  { id: "auto", nome: "Automático (DeepSeek + reserva grátis)" },
+  { id: "openrouter", nome: "OpenRouter (grátis)" },
   { id: "deepseek", nome: "DeepSeek" },
   { id: "maritaca", nome: "Maritaca / Sabiá" },
   { id: "ollama", nome: "Ollama (no servidor)" },
@@ -19,6 +21,13 @@ export function ProviderSettings({ config, onChange }: { config: ProviderConfig;
   const def = PROVEDORES.find((p) => p.id === config.providerId);
   const ehOllama = def?.kind === "ollama";
   const ehGateway = def?.kind === "gateway";
+  const subServidor = config.provedorNoServidor ?? "auto";
+  // Sub-provedores públicos do gateway: dispensam token. "auto" (DeepSeek com
+  // reserva grátis) escolhe o modelo no servidor; "openrouter" mostra a lista de
+  // modelos grátis.
+  const ehGatewayAuto = ehGateway && subServidor === "auto";
+  const ehGatewayOpenrouter = ehGateway && subServidor === "openrouter";
+  const ehGatewayPublico = ehGatewayAuto || ehGatewayOpenrouter;
   const baseUrlEfetiva = config.baseUrl || def?.baseUrlDefault || "";
   const opcoes = provedoresDisponiveis();
   const situacao = configuracaoLLMPronta(config);
@@ -36,7 +45,11 @@ export function ProviderSettings({ config, onChange }: { config: ProviderConfig;
   const [detectando, setDetectando] = useState(false);
   const [erroDeteccao, setErroDeteccao] = useState<string | null>(null);
 
-  const modelosDisponiveis = ehOllama ? modelosOllama : def?.modelosSugeridos ?? [];
+  const modelosDisponiveis = ehOllama
+    ? modelosOllama
+    : ehGatewayOpenrouter
+      ? MODELOS_OPENROUTER_GRATIS
+      : def?.modelosSugeridos ?? [];
   const modeloAtual = config.model || def?.modeloDefault || "";
   const ehSugerido = modelosDisponiveis.includes(modeloAtual);
   const [modoLivre, setModoLivre] = useState(!ehSugerido);
@@ -71,7 +84,7 @@ export function ProviderSettings({ config, onChange }: { config: ProviderConfig;
         label="Provedor de IA"
         hint={
           ehWeb()
-            ? "Ollama roda no seu computador. DeepSeek precisa de chave e internet. O Servidor da Sementeira usa a chave de quem hospeda — só precisa do token."
+            ? "O Servidor da Sementeira já vem com IA pronta, sem configurar nada. Ollama roda no seu computador. DeepSeek precisa de chave e internet."
             : "Ollama roda no seu computador e funciona sem internet. DeepSeek e Maritaca exigem chave de acesso e internet."
         }
       >
@@ -79,7 +92,10 @@ export function ProviderSettings({ config, onChange }: { config: ProviderConfig;
           className={inputClass}
           value={config.providerId}
           onChange={(e) => {
-            onChange({ providerId: e.target.value });
+            const novo = e.target.value;
+            // Ao escolher o Servidor da Sementeira, já assume o modo "auto"
+            // (DeepSeek + reserva grátis) — o padrão da versão web, sem token.
+            onChange(novo === "gateway" ? { providerId: novo, provedorNoServidor: "auto" } : { providerId: novo });
             setModoLivre(false);
             setSaude(null);
           }}
@@ -105,7 +121,7 @@ export function ProviderSettings({ config, onChange }: { config: ProviderConfig;
         </p>
       )}
 
-      {def?.precisaApiKey && !(ehGateway && temTokenEmbutido()) && (
+      {def?.precisaApiKey && !(ehGateway && temTokenEmbutido()) && !ehGatewayPublico && (
         <Field
           label={ehGateway ? "Token de acesso ao servidor" : "Chave de acesso"}
           hint={ehGateway ? "Fornecido por quem hospeda o servidor. As chaves dos provedores ficam lá, nunca no seu navegador." : def.docsUrl ? `Obtenha em ${def.docsUrl}` : undefined}
@@ -124,7 +140,7 @@ export function ProviderSettings({ config, onChange }: { config: ProviderConfig;
           <Field label="Qual IA o servidor deve usar" hint="Escolha entre os provedores configurados por quem hospeda.">
             <select
               className={inputClass}
-              value={config.provedorNoServidor ?? "deepseek"}
+              value={subServidor}
               onChange={(e) => onChange({ ...config, provedorNoServidor: e.target.value })}
             >
               {PROVEDORES_NO_SERVIDOR.map((p) => (
@@ -135,6 +151,12 @@ export function ProviderSettings({ config, onChange }: { config: ProviderConfig;
               ))}
             </select>
           </Field>
+          {ehGatewayAuto && (
+            <p className="rounded border border-[color:var(--sm-border)] bg-[color:var(--sm-panel)] p-2 text-xs text-[color:var(--sm-text-dim)]">
+              Cada pessoa usa a DeepSeek do servidor até um limite por dia; passando disso — ou se a DeepSeek estiver fora —
+              a resposta vem de um modelo grátis de reserva. O modelo é escolhido pelo servidor, sem nada a configurar aqui.
+            </p>
+          )}
           <div className="flex items-center gap-3 text-xs">
             <button
               type="button"
@@ -190,14 +212,19 @@ export function ProviderSettings({ config, onChange }: { config: ProviderConfig;
         </div>
       )}
 
+      {/* No modo "auto" o modelo é escolhido pelo servidor (DeepSeek ou a
+          reserva grátis), então não há o que configurar aqui. */}
+      {!ehGatewayAuto && (
       <Field
         label="Modelo"
         hint={
-          ehGateway
-            ? "Deixe em branco para usar o modelo padrão do servidor."
-            : ehOllama
-              ? "Detectado a partir dos modelos que você já baixou no Ollama."
-              : `Padrão: ${def?.modeloDefault}`
+          ehGatewayOpenrouter
+            ? "Modelos grátis via OpenRouter. O padrão já vem selecionado."
+            : ehGateway
+              ? "Deixe em branco para usar o modelo padrão do servidor."
+              : ehOllama
+                ? "Detectado a partir dos modelos que você já baixou no Ollama."
+                : `Padrão: ${def?.modeloDefault}`
         }
       >
         {modoLivre || modelosDisponiveis.length === 0 ? (
@@ -230,6 +257,7 @@ export function ProviderSettings({ config, onChange }: { config: ProviderConfig;
           </select>
         )}
       </Field>
+      )}
       <Field
         label={ehGateway ? "Endereço do servidor" : "Endereço do servidor (avançado)"}
         hint={ehGateway ? "Deixe em branco se você abriu o app pelo endereço do próprio servidor — que é o caso normal." : `Padrão: ${def?.baseUrlDefault}`}
