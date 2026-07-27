@@ -1,4 +1,5 @@
 import { ehWeb } from "./ambiente";
+import { temTokenEmbutido } from "./gateway-token";
 
 export type ProviderKind = "openai-compatible" | "ollama" | "gateway";
 
@@ -28,8 +29,8 @@ export const PROVEDORES: ProviderDef[] = [
     nome: "DeepSeek",
     kind: "openai-compatible",
     baseUrlDefault: "https://api.deepseek.com",
-    modeloDefault: "deepseek-chat",
-    modelosSugeridos: ["deepseek-chat", "deepseek-reasoner"],
+    modeloDefault: "deepseek-v4-flash",
+    modelosSugeridos: ["deepseek-v4-flash", "deepseek-v4-pro"],
     precisaApiKey: true,
     corsNavegador: "ok",
     docsUrl: "https://platform.deepseek.com/api_keys",
@@ -209,7 +210,7 @@ export function configuracaoLLMPronta(config: ProviderConfig): { pronta: boolean
   if (!def) return { pronta: false, motivo: "Nenhum provedor de IA selecionado." };
 
   if (def.id === "gateway") {
-    if (!config.apiKey?.trim()) {
+    if (!config.apiKey?.trim() && !temTokenEmbutido()) {
       return { pronta: false, motivo: "O Servidor da Sementeira precisa de um token de acesso." };
     }
     return { pronta: true };

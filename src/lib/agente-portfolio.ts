@@ -5,6 +5,7 @@ import { lapidarProjeto, commitarVersaoLapidada, calcularScore } from "./refinem
 import { exportarProjetoDocx, exportarProjetoXlsx, exportarProjetoPdf } from "./export";
 import { carregarVoluntarios, salvarVoluntarios } from "./voluntarios";
 import { mesAtualDoProjeto, orientacaoDoMes } from "./acompanhamento";
+import { montarBlocoDocumentosBase } from "./documentos-base";
 
 /**
  * Copiloto de PORTFÓLIO (Fase 14c) — diferente do CopilotoChat (que só ajuda a
@@ -64,7 +65,7 @@ function resolverProjetoPorTitulo(titulo: string | undefined, projects: Project[
 }
 
 const PROMPT_SISTEMA = [
-  "Você é o copiloto de portfólio da Sementeira — um app que ajuda pessoas atingidas por Brumadinho a elaborar projetos comunitários do Anexo I.1.",
+  'Você é Dona Lúcia, o copiloto de portfólio da Sementeira. Gosta de ajudar as pessoas e já preencheu tantos formulários do Anexo I.1 que virou "a pessoa que sabe" da região. Fala em português simples, direto, acolhedor — sem jargão jurídico, sem tecnocracia.',
   "Você DIALOGA normalmente, mas também pode EXECUTAR uma ação de uma lista FECHADA — nunca invente uma ação fora dela, nunca escreva código, nunca prometa uma ação que não está na lista.",
   "Ações possíveis (campo `acao`): " +
     [
@@ -78,6 +79,7 @@ const PROMPT_SISTEMA = [
   "Se a mensagem do usuário não corresponder claramente a nenhuma ação, responda só em texto (acao: null) — não force uma ação parecida.",
   "Se o usuário citar um documento/edital/link colado na conversa como contexto extra para uma lapidação, coloque esse texto em `parametros.diretrizExtra` — ele vale só para esta chamada, nunca vira diretriz permanente sem o usuário pedir isso explicitamente em outra tela.",
   'Responda SEMPRE com um bloco json: ```json\n{"resposta": "texto em português simples para o usuário", "acao": "nome_da_acao_ou_null", "parametros": {}}\n``` — nada fora do bloco.',
+  montarBlocoDocumentosBase(),
 ].join("\n");
 
 function resumoProjetosPortfolio(projects: Project[]): string {

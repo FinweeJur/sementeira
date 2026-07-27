@@ -6,22 +6,33 @@ import { ProviderSettings } from "./ProviderSettings";
 import { montarPromptRascunho, interpretarRespostaRascunho, formatarPerguntas, type RascunhoDados } from "../lib/draft-generation";
 import { extrairTextoDeArquivo } from "../lib/file-extraction";
 import { montarBlocoDiretrizesGlobais } from "../lib/diretrizes-globais";
+import { montarBlocoDocumentosBase } from "../lib/documentos-base";
 import { ThinkingIndicator } from "./ThinkingIndicator";
 import { useTasks } from "../lib/task-context";
+import { ICONE_TIPO, ROTULO_TIPO } from "../lib/task-labels";
 import danos from "../data/danos.json";
 import arquetipos from "../data/arquetipos.json";
-import { Wand2 } from "lucide-react";
+import { Wand2, Zap, ChevronDown, ChevronRight, Check, X as XIcone } from "lucide-react";
+
+const SUGESTOES_PROMPT = [
+  "Que dano combina com essa ideia?",
+  "Esse orçamento tem algum problema?",
+  "Como esse projeto se sustenta depois que o dinheiro do Anexo acabar?",
+  "Sugira um objetivo para este projeto",
+];
 
 function montarPromptSistema(project: Project): string {
   const listaDanos = danos.map((d) => `- ${d.id}: ${d.nome} — ${d.descricao}`).join("\n");
   const listaArquetipos = arquetipos.map((a) => `- ${a.id}: ${a.nome} (tipo ${a.tipo})`).join("\n");
   const blocoDiretrizes = montarBlocoDiretrizesGlobais();
   return [
-    "Você é o copiloto da Sementeira, um app que ajuda pessoas atingidas pelo rompimento da barragem em Brumadinho a elaborar projetos para o Anexo I.1.",
-    "Responda em português simples, direto, sem jargão jurídico desnecessário. Ajude a pessoa a pensar no dano coletivo, no tipo de projeto, no orçamento e em como o projeto se sustenta depois que o dinheiro do Anexo acabar.",
+    'Você é Dona Lúcia, o copiloto da Sementeira. Gosta de ajudar as pessoas e já preencheu tantos formulários do Anexo I.1 que virou "a pessoa que sabe" da região. Fala em português simples, direto, acolhedor — sem jargão jurídico, sem tecnocracia, sem piegas. Trata quem conversa com você com paciência e respeito, do jeito que gostaria de ser tratada.',
+    "Você NUNCA decide sozinha: quem decide um projeto de verdade é a Governança Popular, as Comissões de Atingidos e a assembleia — você só ajuda a preparar o material antes disso. Ajude a pessoa a pensar no dano coletivo, no tipo de projeto, no orçamento e em como o projeto se sustenta depois que o dinheiro do Anexo acabar.",
     "Catálogo de danos coletivos disponíveis:\n" + listaDanos,
     "Catálogo de arquétipos de projeto disponíveis:\n" + listaArquetipos,
     `Estado atual do projeto sendo editado: título="${project.titulo}", ideia="${project.ideiaTexto}", dano selecionado="${project.danoId || "nenhum"}", arquétipo selecionado="${project.arquetipoId || "nenhum"}".`,
+    'O app tem um botão separado chamado "Lapidar" (no topo da tela, ao lado deste chat) que roda 6 agentes de IA em sequência (escritor, orçamentista, crítico, analista de riscos, sugestor, compilador) para revisar e melhorar o projeto inteiro automaticamente — a pessoa aprova o resultado antes de aplicar. Você (Dona Lúcia, no chat) NÃO consegue disparar essa lapidação nem editar o projeto sozinha: se alguém pedir para "lapidar", "revisar tudo", "melhorar o projeto inteiro" ou algo parecido, explique que é o botão "Lapidar" no topo da tela, não uma coisa que se faz por aqui. Você ajuda em pontos específicos da conversa e, quando pedido, gera um rascunho inicial (botão "Gerar rascunho").',
+    montarBlocoDocumentosBase(),
     blocoDiretrizes,
   ]
     .filter(Boolean)
@@ -56,8 +67,13 @@ export function CopilotoChat({
   const [ultimoRascunho, setUltimoRascunho] = useState<{ indice: number; dados: RascunhoDados } | null>(null);
   const [aguardandoRespostaPerguntas, setAguardandoRespostaPerguntas] = useState(false);
   const [copiadoIndice, setCopiadoIndice] = useState<number | null>(null);
+  const [mostrarTarefas, setMostrarTarefas] = useState(false);
   const fimRef = useRef<HTMLDivElement>(null);
-  const { registrar, concluir, falhar } = useTasks();
+  const { registrar, concluir, falhar, tarefas } = useTasks();
+
+  // Últimas tarefas de IA rodadas para ESTE projeto (chat, rascunho, lapidação,
+  // revisão...) — visão rápida sem precisar abrir o painel de tarefas geral.
+  const tarefasDoProjeto = tarefas.filter((t) => t.projectId === project.id).slice(0, 5);
 
   useEffect(() => {
     fimRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -181,7 +197,7 @@ export function CopilotoChat({
 
   return (
     <div
-      className="flex h-[calc(100vh-37px)] w-80 shrink-0 flex-col border-l border-[color:var(--sm-border)] bg-[color:var(--sm-panel)] p-4"
+      className="fixed inset-0 z-40 flex h-full w-full flex-col bg-[color:var(--sm-panel)] p-4 sm:static sm:z-auto sm:h-[calc(100vh-37px)] sm:w-80 sm:shrink-0 sm:border-l sm:border-[color:var(--sm-border)]"
       onKeyDown={(e) => {
         if (e.key === "Escape") onClose();
       }}
@@ -205,6 +221,50 @@ export function CopilotoChat({
       )}
       {mostrarConfig && <ProviderSettings config={config} onChange={handleConfigChange} />}
 
+      {tarefasDoProjeto.length > 0 && (
+        <div className="mt-2 rounded border border-[color:var(--sm-border)]">
+          <button
+            onClick={() => setMostrarTarefas((v) => !v)}
+            className="flex w-full items-center justify-between px-2 py-1.5 text-xs text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]"
+          >
+            <span className="inline-flex items-center gap-1.5">
+              <Zap size={12} strokeWidth={2} />
+              Últimas tarefas de IA neste projeto ({tarefasDoProjeto.length})
+            </span>
+            {mostrarTarefas ? <ChevronDown size={12} strokeWidth={2} /> : <ChevronRight size={12} strokeWidth={2} />}
+          </button>
+          {mostrarTarefas && (
+            <ul className="space-y-1 border-t border-[color:var(--sm-border)] p-2">
+              {tarefasDoProjeto.map((t) => {
+                const Icone = ICONE_TIPO[t.tipo];
+                return (
+                  <li key={t.id} className="flex items-start gap-1.5 text-xs">
+                    {Icone && <Icone size={12} strokeWidth={2} className="mt-0.5 shrink-0 text-[color:var(--sm-text-dim)]" />}
+                    <div className="min-w-0 flex-1">
+                      <p className="flex items-center gap-1">
+                        <span className="font-medium">{ROTULO_TIPO[t.tipo] ?? t.tipo}</span>
+                        {t.status === "rodando" && <span className="text-[color:var(--sm-accent)]">rodando…</span>}
+                        {t.status === "concluida" && <Check size={11} strokeWidth={2.5} className="text-[color:var(--sm-green)]" />}
+                        {t.status === "erro" && <XIcone size={11} strokeWidth={2.5} className="text-[color:var(--sm-red)]" />}
+                        {t.status === "cancelada" && <span className="text-[color:var(--sm-text-dim)]">cancelada</span>}
+                      </p>
+                      <p className="truncate text-[color:var(--sm-text-dim)]" title={t.titulo}>
+                        {t.titulo}
+                      </p>
+                      {t.status === "concluida" && t.diff && <p className="text-[color:var(--sm-green)]">{t.diff}</p>}
+                      {t.status === "erro" && t.erro && <p className="text-[color:var(--sm-red)]">{t.erro}</p>}
+                    </div>
+                    <span className="shrink-0 text-[color:var(--sm-text-dim)]">
+                      {new Date(t.criadaEm).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      )}
+
       <button
         onClick={gerarRascunho}
         disabled={gerandoRascunho}
@@ -218,10 +278,21 @@ export function CopilotoChat({
       </p>
 
       <div className="mt-2 flex-1 space-y-2 overflow-y-auto">
-        {mensagens.length === 0 && (
-          <p className="text-xs text-[color:var(--sm-text-dim)]">
-            Ou pergunte algo específico, ex.: "que dano combina com essa ideia?" ou "esse orçamento tem algum problema?".
-          </p>
+        {mensagens.length === 0 && !entrada.trim() && (
+          <div className="space-y-1.5">
+            <p className="text-xs text-[color:var(--sm-text-dim)]">Ou pergunte algo específico:</p>
+            <div className="flex flex-wrap gap-1.5">
+              {SUGESTOES_PROMPT.map((sugestao) => (
+                <button
+                  key={sugestao}
+                  onClick={() => setEntrada(sugestao)}
+                  className="rounded-full border border-[color:var(--sm-border)] px-2.5 py-1 text-xs hover:border-[color:var(--sm-accent)] hover:bg-[color:var(--sm-accent)]/10"
+                >
+                  {sugestao}
+                </button>
+              ))}
+            </div>
+          </div>
         )}
         {aguardandoRespostaPerguntas && (
           <p className="rounded border border-[color:var(--sm-accent)]/40 bg-[color:var(--sm-accent)]/10 p-2 text-xs">
@@ -252,7 +323,7 @@ export function CopilotoChat({
         ))}
         {carregando && (
           <div className="rounded p-2">
-            <ThinkingIndicator />
+            <ThinkingIndicator persona="dona-lucia" />
           </div>
         )}
         {erro && <p className="text-xs text-[color:var(--sm-red)]">{erro}</p>}

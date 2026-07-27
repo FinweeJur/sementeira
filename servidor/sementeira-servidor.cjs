@@ -66,7 +66,7 @@ const TOKEN = (env.SEMENTEIRA_TOKEN || "").trim();
  * hospeda. A tabela abaixo é a lista fechada do que pode ser chamado.
  */
 const PROVEDORES = {
-  deepseek: { kind: "openai-compatible", baseUrl: "https://api.deepseek.com", modeloPadrao: "deepseek-chat", apiKey: env.DEEPSEEK_API_KEY },
+  deepseek: { kind: "openai-compatible", baseUrl: "https://api.deepseek.com", modeloPadrao: "deepseek-v4-flash", apiKey: env.DEEPSEEK_API_KEY },
   maritaca: { kind: "openai-compatible", baseUrl: "https://chat.maritaca.ai/api", modeloPadrao: "sabia-4", apiKey: env.MARITACA_API_KEY },
   ollama: { kind: "ollama", baseUrl: env.OLLAMA_BASE_URL || "http://127.0.0.1:11434", modeloPadrao: "", apiKey: undefined },
 };
@@ -231,6 +231,31 @@ function exigirToken(req, res) {
   return true;
 }
 
+/** Hostname público do app — o único de onde o front-end de verdade chama esta API. */
+const HOSTS_PERMITIDOS = new Set(["app.sementeiraprojetos.com.br"]);
+
+/**
+ * Desde que o token do gateway virou fixo no bundle público (ver
+ * providers.ts), ele deixou de ser segredo — qualquer um pode ler no
+ * DevTools e chamar esta API fora do site, de um script próprio. Checar
+ * Origin/Referer não impede um atacante decidido (o header é livre para
+ * quem chama fora do navegador), mas barra a cópia-e-cola preguiçosa e todo
+ * script rodando dentro de um navegador de outro site. Soma-se ao rate
+ * limit por IP, não substitui.
+ */
+function origemPermitida(req, res) {
+  const origem = req.headers.origin || req.headers.referer || "";
+  let host;
+  try {
+    host = origem ? new URL(origem).host : "";
+  } catch {
+    host = "";
+  }
+  if (HOSTS_PERMITIDOS.has(host)) return true;
+  responderJson(res, 403, { ok: false, erro: "Esta rota só atende chamadas vindas do app da Sementeira." });
+  return false;
+}
+
 // ---------------------------------------------------------------------------
 // Rotas /api
 // ---------------------------------------------------------------------------
@@ -243,6 +268,15 @@ function exigirToken(req, res) {
  */
 const LIMITE_JANELA_MS = 60_000;
 const LIMITE_MAX = 20;
+const DIA_MS = 24 * 60 * 60 * 1000;
+/** Teto diário por IP nas rotas caras (chat) — desde o token do gateway virou
+ * fixo no bundle (ver providers.ts), este é quem de fato protege o crédito do
+ * DeepSeek de um visitante malicioso ou de um loop travado. */
+const LIMITE_DIA = Number(env.SEMENTEIRA_LIMITE_IP || 40);
+/** Teto diário somando TODOS os IPs — rede de segurança final contra abuso
+ * distribuído (várias origens, cada uma sob o teto por IP). Sem isto, um
+ * atacante com N endereços consegue N × LIMITE_DIA. */
+const LIMITE_DIA_GLOBAL = Number(env.SEMENTEIRA_LIMITE_GLOBAL_DIA || LIMITE_DIA * 10);
 const acessos = new Map();
 
 function chaveCliente(req) {
@@ -256,18 +290,31 @@ function chaveCliente(req) {
 
 function dentroDoLimite(req, res, opcoes = {}) {
   const max = opcoes.max ?? LIMITE_MAX;
+  const janelaMs = opcoes.janelaMs ?? LIMITE_JANELA_MS;
   const agora = Date.now();
   // Balde separado por rota: inferência (cara) tem teto menor que listar modelos.
-  const chave = `${opcoes.balde ?? "geral"}:${chaveCliente(req)}`;
-  const recentes = (acessos.get(chave) ?? []).filter((t) => agora - t < LIMITE_JANELA_MS);
+  // `chaveFixa` ignora o cliente (usado no teto GLOBAL, que soma todo mundo).
+  const chave = `${opcoes.balde ?? "geral"}:${opcoes.chaveFixa ?? chaveCliente(req)}`;
+  const recentes = (acessos.get(chave) ?? []).filter((t) => agora - t < janelaMs);
   if (recentes.length >= max) {
+    const retryAfter = Math.ceil(janelaMs / 1000);
     res.writeHead(429, {
       ...cabecalhosBase(),
       "Content-Type": "application/json; charset=utf-8",
       "Cache-Control": "no-store",
-      "Retry-After": "60",
+      "Retry-After": String(retryAfter),
     });
-    res.end(JSON.stringify({ ok: false, erro: "Muitas requisições em pouco tempo. Espere um minuto e tente de novo." }));
+    res.end(
+      JSON.stringify({
+        ok: false,
+        erro:
+          janelaMs < DIA_MS
+            ? "Muitas requisições em pouco tempo. Espere um minuto e tente de novo."
+            : opcoes.chaveFixa
+              ? `O servidor atingiu o limite diário de uso da IA (${max} pedidos, somando todos os visitantes). Volte amanhã.`
+              : `Limite diário de ${max} pedidos atingido para este IP. Volte amanhã.`,
+      }),
+    );
     return false;
   }
   recentes.push(agora);
@@ -275,11 +322,13 @@ function dentroDoLimite(req, res, opcoes = {}) {
   return true;
 }
 
-// Faxina periódica para o mapa não crescer sem limite. `unref` para não segurar o processo vivo sozinho.
+// Faxina periódica para o mapa não crescer sem limite. Usa a maior janela em
+// uso (o teto diário) para não descartar registros que o balde diário ainda
+// precisa. `unref` para não segurar o processo vivo sozinho.
 setInterval(() => {
   const agora = Date.now();
   for (const [chave, ts] of acessos) {
-    const vivos = ts.filter((t) => agora - t < LIMITE_JANELA_MS);
+    const vivos = ts.filter((t) => agora - t < DIA_MS);
     if (vivos.length === 0) acessos.delete(chave);
     else acessos.set(chave, vivos);
   }
@@ -333,9 +382,224 @@ async function rotaSaude(_req, res) {
   });
 }
 
+const MANIFESTO_BIBLIOTECA_PATH = path.join(__dirname, "biblioteca-compartilhada", "manifesto.json");
+
+/**
+ * Lista só-leitura dos documentos que o scraper-biblioteca.cjs baixou do site
+ * da Entidade Gestora — sem token de propósito, é conteúdo público (os
+ * próprios PDFs oficiais). O front-end mescla isto com a Biblioteca local do
+ * usuário, rotulado como "publicado pela Entidade Gestora".
+ */
+async function rotaBibliotecaCompartilhada(_req, res) {
+  try {
+    const bruto = await fsp.readFile(MANIFESTO_BIBLIOTECA_PATH, "utf8");
+    const manifesto = JSON.parse(bruto);
+    responderJson(res, 200, {
+      ok: true,
+      itens: manifesto.map((m) => ({
+        id: m.id,
+        titulo: m.titulo,
+        url: m.url,
+        baixadoEm: m.baixadoEm,
+        temTextoExtraido: Boolean(m.textoExtraido),
+        // Truncado: o texto completo pode ser grande demais pra listar tudo de
+        // uma vez; a IA no cliente pode buscar mais se precisar futuramente.
+        textoExtraido: m.textoExtraido ? m.textoExtraido.slice(0, 4000) : undefined,
+      })),
+    });
+  } catch {
+    responderJson(res, 200, { ok: true, itens: [] });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Base compartilhada da comunidade (projetos, voluntários, clube — sem login)
+//
+// Primeiro dado que sai do navegador de quem usa e vai pro servidor — o
+// resto do app é 100% local por decisão de projeto. Por isso duas camadas de
+// proteção: filtro de termos bloqueados na entrada (não é segurança de
+// verdade, só barra o óbvio) + rota administrativa pra remover o que passar.
+// Edição/exclusão da própria entrada usa um token devolvido só uma vez, na
+// criação — ninguém mais o vê depois (nem esta rota, que nunca lista tokens).
+// ---------------------------------------------------------------------------
+const TIPOS_COMUNIDADE = ["projetos", "voluntarios", "clube"];
+const DIR_DADOS_COMPARTILHADOS = path.join(__dirname, "dados-compartilhados");
+const COMUNIDADE_MAX_CARACTERES = 20_000;
+const COMUNIDADE_MAX_LINKS = Number(env.COMUNIDADE_MAX_LINKS || 2);
+const COMUNIDADE_TERMOS_BLOQUEADOS = (env.COMUNIDADE_TERMOS_BLOQUEADOS || "")
+  .split(",")
+  .map((t) => t.trim().toLowerCase())
+  .filter(Boolean);
+
+// Fila de escrita por arquivo — evita duas requisições concorrentes
+// corromperem o JSON ao escrever ao mesmo tempo (Node é single-thread pro seu
+// próprio código, mas I/O de arquivo é assíncrono).
+const filaEscrita = new Map();
+function comFilaDeEscrita(chave, tarefa) {
+  const anterior = filaEscrita.get(chave) ?? Promise.resolve();
+  const atual = anterior.then(tarefa, tarefa);
+  filaEscrita.set(
+    chave,
+    atual.catch(() => {}),
+  );
+  return atual;
+}
+
+function caminhoComunidade(tipo) {
+  return path.join(DIR_DADOS_COMPARTILHADOS, `${tipo}.json`);
+}
+
+async function listarComunidade(tipo) {
+  try {
+    const bruto = await fsp.readFile(caminhoComunidade(tipo), "utf8");
+    const lista = JSON.parse(bruto);
+    return Array.isArray(lista) ? lista : [];
+  } catch {
+    return [];
+  }
+}
+
+function salvarComunidade(tipo, lista) {
+  return comFilaDeEscrita(tipo, async () => {
+    await fsp.mkdir(DIR_DADOS_COMPARTILHADOS, { recursive: true });
+    await fsp.writeFile(caminhoComunidade(tipo), JSON.stringify(lista, null, 2), "utf8");
+  });
+}
+
+/** Prazo de guarda anunciado na Política de Privacidade (item 6) — projetos/voluntários/clube compartilhados publicamente. */
+const COMUNIDADE_RETENCAO_MS = 5 * 365.25 * 24 * 60 * 60 * 1000;
+
+/** Varredura diária: remove item compartilhado que passou do prazo de guarda. Roda 1x ao ligar e depois a cada 24h — `unref` pra não segurar o processo vivo sozinho. */
+async function limparComunidadeExpirada() {
+  const agora = Date.now();
+  for (const tipo of TIPOS_COMUNIDADE) {
+    const lista = await listarComunidade(tipo);
+    const validos = lista.filter((item) => agora - new Date(item.criadoEm).getTime() < COMUNIDADE_RETENCAO_MS);
+    if (validos.length !== lista.length) {
+      await salvarComunidade(tipo, validos);
+      console.log(`Retenção: removidos ${lista.length - validos.length} item(ns) expirado(s) de "${tipo}".`);
+    }
+  }
+}
+limparComunidadeExpirada().catch((erro) => console.warn("Falha na varredura de retenção da comunidade:", erro));
+setInterval(() => limparComunidadeExpirada().catch((erro) => console.warn("Falha na varredura de retenção da comunidade:", erro)), DIA_MS).unref();
+
+/** Concatena todo texto de um valor (recursivo) — usado pro filtro de termos e pra contar links, sem se importar com o formato exato de cada `dados`. */
+function todoTextoDe(valor) {
+  if (typeof valor === "string") return valor;
+  if (Array.isArray(valor)) return valor.map(todoTextoDe).join(" ");
+  if (valor && typeof valor === "object") return Object.values(valor).map(todoTextoDe).join(" ");
+  return "";
+}
+
+function contemTermoBloqueado(dados) {
+  if (COMUNIDADE_TERMOS_BLOQUEADOS.length === 0) return false;
+  const texto = todoTextoDe(dados).toLowerCase();
+  return COMUNIDADE_TERMOS_BLOQUEADOS.some((termo) => texto.includes(termo));
+}
+
+function contarLinks(dados) {
+  return (todoTextoDe(dados).match(/https?:\/\//gi) ?? []).length;
+}
+
+/** Mesmo raciocínio de `tokenConfere`, mas para o token de edição por item (não é o SEMENTEIRA_TOKEN global). */
+function tokenEdicaoConfere(recebido, esperado) {
+  if (!esperado || typeof recebido !== "string" || !recebido) return false;
+  const a = Buffer.from(recebido);
+  const b = Buffer.from(esperado);
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
+
+/** `GET /api/comunidade/:tipo` — público, nunca inclui `tokenEdicao` nem o IP de quem criou. */
+async function rotaListarComunidade(tipo, res) {
+  const lista = await listarComunidade(tipo);
+  responderJson(
+    res,
+    200,
+    { ok: true, itens: lista.map(({ tokenEdicao: _t, ip: _ip, ...resto }) => resto) },
+  );
+}
+
+/** `POST /api/comunidade/:tipo` — cria um item; devolve o token de edição UMA VEZ SÓ. */
+async function rotaCriarComunidade(tipo, req, res) {
+  if (!dentroDoLimite(req, res, { max: 10, balde: `comunidade-${tipo}`, janelaMs: DIA_MS })) return;
+
+  let corpo;
+  try {
+    corpo = await lerCorpo(req);
+  } catch (erro) {
+    return responderJson(res, 400, { ok: false, erro: erro instanceof Error ? erro.message : "Corpo inválido." });
+  }
+  const dados = corpo?.dados;
+  if (!dados || typeof dados !== "object") {
+    return responderJson(res, 400, { ok: false, erro: "Campo 'dados' é obrigatório." });
+  }
+  if (JSON.stringify(dados).length > COMUNIDADE_MAX_CARACTERES) {
+    return responderJson(res, 400, { ok: false, erro: `Envio grande demais — teto de ${COMUNIDADE_MAX_CARACTERES} caracteres.` });
+  }
+  if (contarLinks(dados) > COMUNIDADE_MAX_LINKS) {
+    return responderJson(res, 400, { ok: false, erro: `Muitos links no envio — teto de ${COMUNIDADE_MAX_LINKS}.` });
+  }
+  if (contemTermoBloqueado(dados)) {
+    return responderJson(res, 400, { ok: false, erro: "Este envio foi recusado pelo filtro automático de conteúdo." });
+  }
+  if (corpo?.confirmouAviso !== true) {
+    return responderJson(res, 400, { ok: false, erro: "Confirme o aviso de compartilhamento público antes de enviar." });
+  }
+
+  const id = crypto.randomUUID();
+  const tokenEdicao = crypto.randomBytes(24).toString("base64url");
+  const item = { id, dados, tokenEdicao, criadoEm: new Date().toISOString(), ip: chaveCliente(req) };
+  const lista = await listarComunidade(tipo);
+  lista.push(item);
+  await salvarComunidade(tipo, lista);
+  responderJson(res, 201, { ok: true, id, tokenEdicao });
+}
+
+/** `PUT`/`DELETE /api/comunidade/:tipo/:id` — exige o token de edição do item OU o SEMENTEIRA_TOKEN (administração). */
+async function rotaAlterarComunidade(tipo, id, req, res, { remover }) {
+  const lista = await listarComunidade(tipo);
+  const item = lista.find((i) => i.id === id);
+  if (!item) return responderJson(res, 404, { ok: false, erro: "Item não encontrado." });
+
+  const autorizadoPorAdmin = tokenConfere(req.headers["x-sementeira-token"]);
+  const autorizadoPeloDono = tokenEdicaoConfere(req.headers["x-token-edicao"], item.tokenEdicao);
+  if (!autorizadoPorAdmin && !autorizadoPeloDono) {
+    return responderJson(res, 401, { ok: false, erro: "Token de edição inválido — só quem criou o item (ou a administração) pode alterá-lo." });
+  }
+
+  if (remover) {
+    await salvarComunidade(tipo, lista.filter((i) => i.id !== id));
+    return responderJson(res, 200, { ok: true });
+  }
+
+  let corpo;
+  try {
+    corpo = await lerCorpo(req);
+  } catch (erro) {
+    return responderJson(res, 400, { ok: false, erro: erro instanceof Error ? erro.message : "Corpo inválido." });
+  }
+  const dados = corpo?.dados;
+  if (!dados || typeof dados !== "object") return responderJson(res, 400, { ok: false, erro: "Campo 'dados' é obrigatório." });
+  if (JSON.stringify(dados).length > COMUNIDADE_MAX_CARACTERES) {
+    return responderJson(res, 400, { ok: false, erro: `Envio grande demais — teto de ${COMUNIDADE_MAX_CARACTERES} caracteres.` });
+  }
+  if (contarLinks(dados) > COMUNIDADE_MAX_LINKS) return responderJson(res, 400, { ok: false, erro: `Muitos links no envio — teto de ${COMUNIDADE_MAX_LINKS}.` });
+  if (contemTermoBloqueado(dados)) return responderJson(res, 400, { ok: false, erro: "Este envio foi recusado pelo filtro automático de conteúdo." });
+
+  item.dados = dados;
+  item.atualizadoEm = new Date().toISOString();
+  await salvarComunidade(tipo, lista);
+  responderJson(res, 200, { ok: true });
+}
+
 async function rotaChat(req, res) {
   if (!exigirToken(req, res)) return;
+  if (!origemPermitida(req, res)) return;
   if (!dentroDoLimite(req, res, { max: LIMITE_CHAT, balde: "chat" })) return;
+  if (!dentroDoLimite(req, res, { max: LIMITE_DIA, balde: "chat-dia", janelaMs: DIA_MS })) return;
+  if (!dentroDoLimite(req, res, { max: LIMITE_DIA_GLOBAL, balde: "chat-dia-global", janelaMs: DIA_MS, chaveFixa: "global" })) return;
 
   let corpo;
   try {
@@ -502,11 +766,35 @@ const servidor = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host ?? "127.0.0.1"}`);
   const rota = url.pathname;
 
+  // O túnel Cloudflare aceita http e https na borda; sem isto, um acesso via
+  // http vira "contexto inseguro" no navegador e APIs como crypto.randomUUID
+  // somem, quebrando o app inteiro. Redireciona com base no header que o
+  // Cloudflare sempre injeta antes de chegar aqui.
+  if (req.headers["x-forwarded-proto"] === "http" && req.headers.host) {
+    res.writeHead(301, { Location: `https://${req.headers.host}${req.url}` });
+    return res.end();
+  }
+
   try {
     if (rota === "/api/saude" && req.method === "GET") return await rotaSaude(req, res);
+    if (rota === "/api/biblioteca/compartilhada" && req.method === "GET") return await rotaBibliotecaCompartilhada(req, res);
     if (rota === "/api/llm/chat" && req.method === "POST") return await rotaChat(req, res);
     if (rota === "/api/llm/ollama/modelos" && req.method === "GET") return await rotaModelosOllama(req, res);
     if (rota === "/api/websearch" && req.method === "POST") return await rotaBuscaWeb(req, res);
+
+    if (rota.startsWith("/api/comunidade/")) {
+      const partes = rota.slice("/api/comunidade/".length).split("/").filter(Boolean);
+      const [tipo, id] = partes;
+      if (!tipo || !TIPOS_COMUNIDADE.includes(tipo)) {
+        return responderJson(res, 404, { ok: false, erro: `Tipo de comunidade inválido — use um de: ${TIPOS_COMUNIDADE.join(", ")}.` });
+      }
+      if (!id && req.method === "GET") return await rotaListarComunidade(tipo, res);
+      if (!id && req.method === "POST") return await rotaCriarComunidade(tipo, req, res);
+      if (id && req.method === "PUT") return await rotaAlterarComunidade(tipo, id, req, res, { remover: false });
+      if (id && req.method === "DELETE") return await rotaAlterarComunidade(tipo, id, req, res, { remover: true });
+      return responderJson(res, 405, { ok: false, erro: "Método não permitido para esta rota." });
+    }
+
     if (rota.startsWith("/api/")) return responderJson(res, 404, { ok: false, erro: "Rota não encontrada." });
 
     if (req.method !== "GET" && req.method !== "HEAD") {
@@ -530,6 +818,8 @@ servidor.listen(PORTA, "127.0.0.1", () => {
   console.log(`  provedores disponíveis: ${comChave.join(", ") || "nenhum"}`);
   console.log(`  ollama pela web: ${OLLAMA_REMOTO ? "LIGADO" : "desligado"}`);
   console.log(`  modelos ollama liberados: ${OLLAMA_MODELOS_PERMITIDOS.join(", ") || "todos os instalados"}`);
-  console.log(`  tetos: ${LIMITE_CHAT} chat/min · ${LIMITE_MAX} outras/min · ${MAX_MENSAGENS} msgs · ${MAX_CARACTERES} caracteres`);
+  console.log(
+    `  tetos: ${LIMITE_CHAT} chat/min · ${LIMITE_DIA} chat/dia por IP · ${LIMITE_DIA_GLOBAL} chat/dia total · ${LIMITE_MAX} outras/min · ${MAX_MENSAGENS} msgs · ${MAX_CARACTERES} caracteres`,
+  );
   console.log(`  diretriz de escopo: ${ESCOPO_ATIVO ? "ativa (guardrail suave)" : "desligada"}`);
 });

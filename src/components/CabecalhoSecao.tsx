@@ -13,8 +13,8 @@ export function CabecalhoSecao({
   acoes?: React.ReactNode;
 }) {
   return (
-    <header className="sm-cabecalho-secao flex items-start justify-between gap-4">
-      <div>
+    <header className="sm-cabecalho-secao flex flex-wrap items-start justify-between gap-4">
+      <div className="min-w-0">
         {icone && (
           <span className="sm-selo-ico" aria-hidden="true">
             <span className="sm-ico">{icone}</span>
@@ -24,7 +24,7 @@ export function CabecalhoSecao({
         <h1 className="sm-titulo-secao">{titulo}</h1>
         {apoio && <p className="sm-linha-secao">{apoio}</p>}
       </div>
-      {acoes && <div className="flex shrink-0 items-center gap-2">{acoes}</div>}
+      {acoes && <div className="flex shrink-0 flex-wrap items-center gap-2">{acoes}</div>}
     </header>
   );
 }

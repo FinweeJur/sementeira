@@ -3,11 +3,16 @@ export function ConfirmDialog({
   mensagem,
   onConfirmar,
   onCancelar,
+  linkTexto,
+  onLink,
 }: {
   titulo: string;
   mensagem: string;
   onConfirmar: () => void;
   onCancelar: () => void;
+  /** Link opcional embaixo da mensagem — ex.: "Ver política de privacidade". Clicar cancela o diálogo e navega. */
+  linkTexto?: string;
+  onLink?: () => void;
 }) {
   return (
     <div
@@ -19,6 +24,17 @@ export function ConfirmDialog({
       <div className="w-full max-w-sm rounded-lg border border-[color:var(--sm-border)] bg-[color:var(--sm-panel)] p-4 space-y-3">
         <h2 className="text-base font-semibold">{titulo}</h2>
         <p className="text-sm text-[color:var(--sm-text-dim)]">{mensagem}</p>
+        {linkTexto && onLink && (
+          <button
+            onClick={() => {
+              onCancelar();
+              onLink();
+            }}
+            className="text-xs text-[color:var(--sm-accent)] hover:underline"
+          >
+            {linkTexto}
+          </button>
+        )}
         <div className="flex justify-end gap-2 pt-2">
           <button onClick={onCancelar} className="rounded border border-[color:var(--sm-border)] px-3 py-1.5 text-sm hover:border-[color:var(--sm-accent)]">
             Cancelar

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { PROVEDORES, configuracaoLLMPronta, provedoresDisponiveis, listarModelosOllamaLocal, type ProviderConfig } from "../lib/providers";
+import { temTokenEmbutido } from "../lib/gateway-token";
 import { consultarSaudeServidor, type SaudeServidor } from "../lib/llm-web";
 import { ehWeb } from "../lib/ambiente";
 import { Field, inputClass } from "./Field";
@@ -98,7 +99,13 @@ export function ProviderSettings({ config, onChange }: { config: ProviderConfig;
         <p className="rounded border border-[color:var(--sm-yellow)]/50 bg-[color:var(--sm-yellow)]/10 p-2 text-xs">{situacao.motivo}</p>
       )}
 
-      {def?.precisaApiKey && (
+      {def?.precisaApiKey && ehGateway && temTokenEmbutido() && (
+        <p className="rounded border border-[color:var(--sm-border)] p-2 text-xs text-[color:var(--sm-text-dim)]">
+          Acesso já liberado por quem hospeda — nada para configurar aqui.
+        </p>
+      )}
+
+      {def?.precisaApiKey && !(ehGateway && temTokenEmbutido()) && (
         <Field
           label={ehGateway ? "Token de acesso ao servidor" : "Chave de acesso"}
           hint={ehGateway ? "Fornecido por quem hospeda o servidor. As chaves dos provedores ficam lá, nunca no seu navegador." : def.docsUrl ? `Obtenha em ${def.docsUrl}` : undefined}

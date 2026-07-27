@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { BudgetLine, CategoriaLinha, Cenario, CustoNaoCobertoItem, EquipeMembro, EspacoLogistica, Indicador, PropostaFornecedor, Project, RiskItem } from "../lib/types";
+import type { BudgetLine, CategoriaLinha, Cenario, CustoNaoCobertoItem, EquipeMembro, EspacoLogistica, Indicador, PassoWizard, PropostaFornecedor, Project, RiskItem } from "../lib/types";
 import { PORTE_POR_ABRANGENCIA, CONSELHO_POR_ABRANGENCIA } from "../lib/types";
 import { avaliarConformidade, exigeFonteCusteioFuturo } from "../lib/compliance-engine";
 import { simularTodos, exigenciaPOS, calcularDepreciacaoMensal } from "../lib/simulator";
@@ -22,6 +22,7 @@ import { CapacidadeEquipe } from "../components/CapacidadeEquipe";
 import { Wand2, Search, FileText, Check, X, Truck, ShieldCheck, AlertTriangle, RefreshCw, Sparkles } from "lucide-react";
 import { CopilotoChat } from "../components/CopilotoChat";
 import { LapidacaoPanel } from "../components/LapidacaoPanel";
+import { DicaContextual } from "../components/DicaContextual";
 import { ProjectDocumento } from "./ProjectDocumento";
 import danos from "../data/danos.json";
 import setores from "../data/setores.json";
@@ -51,11 +52,16 @@ export function ProjectWizard({
   outrosProjetos = [],
   onChange,
   onVoltar,
+  onAbrirBiblioteca,
+  passoInicialId,
 }: {
   project: Project;
   outrosProjetos?: Project[];
   onChange: (p: Project) => void;
   onVoltar: () => void;
+  onAbrirBiblioteca?: () => void;
+  /** Rola até este passo assim que o wizard monta — usado pelo botão "praticar agora" da página Aprender. */
+  passoInicialId?: PassoWizard;
 }) {
   const [novaMeta, setNovaMeta] = useState("");
   const [novaForma, setNovaForma] = useState("");
@@ -1338,6 +1344,17 @@ export function ProjectWizard({
     setVerDocumento(false);
   }
 
+  useEffect(() => {
+    if (!passoInicialId) return;
+    // Atualiza o passo atual direto — o IntersectionObserver do scroll leva
+    // um instante pra alcançar o mesmo resultado, e a Dica Contextual/Stepper
+    // não podem esperar um scroll manual da pessoa pra mostrar o passo certo.
+    const indice = passos.findIndex((p) => p.info.id === passoInicialId);
+    if (indice >= 0) setPassoAtual(indice);
+    irParaPassoPorId(passoInicialId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   /**
    * Leva ao passo do próximo achado da severidade pedida, percorrendo em
    * rodízio. Achado sem `passoId` (regra nova que ainda não declarou destino)
@@ -1411,11 +1428,11 @@ export function ProjectWizard({
   return (
     <div className="flex w-full">
     <div className="mx-auto w-full max-w-4xl flex-1 space-y-4 p-4 sm:p-6 min-w-0">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-y-2">
         <button onClick={onVoltar} className="text-sm text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]">
           ← Meus projetos
         </button>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <span className={`text-xs text-[color:var(--sm-text-dim)] sm-fade ${salvoAgora ? "opacity-100" : "opacity-0"}`}>Salvo automaticamente</span>
           <button
             onClick={() => setVerDocumento(true)}
@@ -1438,7 +1455,7 @@ export function ProjectWizard({
           >
             {copilotoAberto ? "Fechar copiloto" : "Copiloto (IA)"}
           </button>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button onClick={() => exportarProjetoDocx(project)} className="rounded border border-[color:var(--sm-border)] px-3 py-1.5 text-sm hover:border-[color:var(--sm-accent)]" title="Ctrl+E">
               Exportar .docx
             </button>
@@ -1493,7 +1510,7 @@ export function ProjectWizard({
         )}
       </div>
 
-      <div className="sticky top-0 z-10 -mx-6 border-b border-[color:var(--sm-border)] bg-[color:var(--sm-bg)] px-6 py-2">
+      <div className="sticky top-0 z-10 -mx-4 border-b border-[color:var(--sm-border)] bg-[color:var(--sm-bg)] px-4 py-2 sm:-mx-6 sm:px-6">
         <Stepper passos={passos.map((p) => p.info)} atual={passoAtual} onIr={irParaPasso} />
       </div>
 
@@ -1518,6 +1535,7 @@ export function ProjectWizard({
       )}
 
       {lapidacaoAberta && <LapidacaoPanel project={project} onAplicar={(p) => onChange(p)} onClose={() => setLapidacaoAberta(false)} />}
+      {!copilotoAberto && <DicaContextual passoAtual={passos[passoAtual]?.info.id as PassoWizard | undefined} onAbrirBiblioteca={onAbrirBiblioteca} />}
     </div>
   );
 }

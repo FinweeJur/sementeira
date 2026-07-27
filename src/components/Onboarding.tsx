@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Wand2, RefreshCw, ShieldCheck, Globe, Scale, Ticket, HeartHandshake, Bot, Sprout, type LucideIcon } from "lucide-react";
+import { RefreshCw, ShieldCheck, Globe, Scale, Ticket, HeartHandshake, Bot, Sprout, Upload, BookOpen, type LucideIcon } from "lucide-react";
 
 interface LinhaTela {
   icone?: LucideIcon;
@@ -31,25 +31,31 @@ const TELAS: { titulo: string; linhas: LinhaTela[] }[] = [
   {
     titulo: "A IA trabalha pra você",
     linhas: [
-      { icone: Wand2, texto: "Copiloto — fica dentro do projeto, faz perguntas, sugere melhorias e gera rascunhos a partir da sua ideia." },
+      { icone: Bot, texto: "Copiloto — fica dentro do projeto, faz perguntas, sugere melhorias e gera rascunhos a partir da sua ideia." },
       {
         icone: RefreshCw,
-        texto: "Ciclo de Lapidação — seis ajudantes de IA revisam o projeto, um de cada vez, e você aprova cada mudança. Nada é aplicado sem você dizer sim, e tudo pode voltar atrás.",
+        texto:
+          "Lapidar — dentro de cada projeto (botão no topo da tela do projeto), seis ajudantes de IA revisam o projeto, um de cada vez, e você aprova cada mudança. Nada é aplicado sem você dizer sim, e tudo pode voltar atrás pelo histórico de versões.",
       },
-      { icone: ShieldCheck, texto: "Revisão independente — um segundo agente de IA confere se o projeto segue as regras do acordo e mostra onde os dois discordam." },
+      {
+        icone: RefreshCw,
+        texto: "Ciclo — na barra de cima, roda 1 volta de lapidação em TODOS os projetos de uma vez e já atualiza o mapa e o clube de benefícios.",
+      },
+      { icone: ShieldCheck, texto: "Revisão independente — dentro do projeto, um segundo agente de IA confere se ele segue as regras do acordo e mostra onde os dois discordam." },
     ],
   },
   {
-    titulo: "Visão geral dos projetos",
+    titulo: "Os ícones da barra de cima",
     linhas: [
-      {
-        icone: Globe,
-        texto: "Ecossistema de projetos — mapa da região com os ~26 municípios da bacia do Paraopeba, e como os projetos podem se ajudar (um compra do outro, por exemplo).",
-      },
-      { icone: Scale, texto: "Comparação lado a lado — compare até 3 projetos ao mesmo tempo pra ver o que se repete ou o que falta." },
-      { icone: Ticket, texto: "Clube de benefícios — liga o que cada projeto produz às famílias atingidas." },
-      { icone: HeartHandshake, texto: "Voluntários — cadastro de pessoas disponíveis pra mutirão, ligadas aos projetos de interesse." },
-      { icone: Bot, texto: "Copiloto de projetos — converse por texto pra lapidar, exportar ou saber a situação de qualquer projeto." },
+      { icone: Sprout, texto: "Novo projeto — começa um projeto do zero, a partir de uma ideia." },
+      { icone: Upload, texto: "Importar — lê um projeto já escrito em PDF ou DOCX e preenche os campos sozinha." },
+      { icone: Scale, texto: "Comparar — até 3 projetos lado a lado, pra ver o que se repete ou o que falta (aparece com 2+ projetos)." },
+      { icone: Globe, texto: "Mapa — o ecossistema: os ~26 municípios da bacia do Paraopeba e como os projetos podem se ajudar." },
+      { icone: Bot, texto: "Copiloto — converse por texto pra lapidar, exportar ou saber a situação de qualquer projeto." },
+      { icone: RefreshCw, texto: "Ciclo — revisão geral: lapida todos os projetos de uma vez." },
+      { icone: BookOpen, texto: "Biblioteca — documentos de referência do processo e leituras de apoio." },
+      { icone: Ticket, texto: "Clube — o Clube de Benefícios, que liga o que cada projeto produz às famílias atingidas." },
+      { icone: HeartHandshake, texto: "Cadastro — de voluntários: pessoas disponíveis pra mutirão, ligadas aos projetos de interesse." },
     ],
   },
   {
@@ -77,8 +83,8 @@ export function Onboarding({ onConcluir }: { onConcluir: (comecarProjeto: boolea
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div className="w-full max-w-md rounded-lg border border-[color:var(--sm-border)] bg-[color:var(--sm-panel)] p-6 space-y-4">
-        <div className="flex gap-1">
+      <div className="flex max-h-[90vh] w-full max-w-md flex-col space-y-4 rounded-lg border border-[color:var(--sm-border)] bg-[color:var(--sm-panel)] p-6">
+        <div className="flex shrink-0 gap-1">
           {TELAS.map((_, i) => (
             <div
               key={i}
@@ -87,11 +93,11 @@ export function Onboarding({ onConcluir }: { onConcluir: (comecarProjeto: boolea
             />
           ))}
         </div>
-        <span className="sm-selo-ico" aria-hidden="true">
+        <span className="sm-selo-ico shrink-0" aria-hidden="true">
           <span className="sm-ico">h</span>
         </span>
-        <h2 className="text-lg font-semibold">{tela.titulo}</h2>
-        <div className="space-y-2 text-sm text-[color:var(--sm-text-dim)]">
+        <h2 className="shrink-0 text-lg font-semibold">{tela.titulo}</h2>
+        <div className="min-h-0 space-y-2 overflow-y-auto text-sm text-[color:var(--sm-text-dim)]">
           {tela.linhas.map((linha, i) => (
             <p key={i} className={linha.icone ? "flex items-start gap-2" : undefined}>
               {linha.icone && <linha.icone size={16} strokeWidth={2} className="mt-0.5 shrink-0 text-[color:var(--sm-accent)]" />}
@@ -99,7 +105,7 @@ export function Onboarding({ onConcluir }: { onConcluir: (comecarProjeto: boolea
             </p>
           ))}
         </div>
-        <div className="flex items-center justify-between pt-2">
+        <div className="flex shrink-0 items-center justify-between pt-2">
           <button onClick={() => onConcluir(false)} className="text-xs text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]">
             Pular tutorial
           </button>

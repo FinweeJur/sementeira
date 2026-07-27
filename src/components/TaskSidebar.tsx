@@ -1,32 +1,7 @@
 import { useTasks, type Tarefa } from "../lib/task-context";
 import { ThinkingIndicator } from "./ThinkingIndicator";
-import { MessageCircle, Bot, RefreshCw, ShieldCheck, Search, Wand2, Upload, Square, X, Zap, type LucideIcon } from "lucide-react";
-
-const ICONE_TIPO: Record<string, LucideIcon> = {
-  "copiloto-chat": MessageCircle,
-  "agente-portfolio": Bot,
-  "lapidacao-projeto": RefreshCw,
-  "lapidacao-ecossistema": RefreshCw,
-  "revisao-geral": RefreshCw,
-  "revisao-ia": ShieldCheck,
-  "analise-ecossistema": Search,
-  "geracao-rascunho": Wand2,
-  "importar-projeto": Upload,
-  "pesquisa-web": Search,
-};
-
-const ROTULO_TIPO: Record<string, string> = {
-  "copiloto-chat": "Copiloto",
-  "agente-portfolio": "Copiloto de projetos",
-  "lapidacao-projeto": "Lapidação",
-  "lapidacao-ecossistema": "Lapidação do ecossistema",
-  "revisao-geral": "Revisão geral",
-  "revisao-ia": "Revisão por IA",
-  "analise-ecossistema": "Análise do ecossistema",
-  "geracao-rascunho": "Geração de rascunho",
-  "importar-projeto": "Importação de projeto",
-  "pesquisa-web": "Pesquisa web",
-};
+import { ICONE_TIPO, ROTULO_TIPO } from "../lib/task-labels";
+import { Square, X, Zap } from "lucide-react";
 
 function ItemTarefa({
   tarefa,

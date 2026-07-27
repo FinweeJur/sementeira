@@ -1,16 +1,68 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Project, Voluntario } from "../lib/types";
 import { carregarVoluntarios, salvarVoluntarios, sugerirVoluntariosParaProjeto } from "../lib/voluntarios";
+import { listarComunidade, criarNaComunidade, removerDaComunidade, souAutorDe, type ItemComunidade } from "../lib/comunidade";
 import { Section } from "../components/Section";
 import { Field, inputClass } from "../components/Field";
 import { CabecalhoSecao } from "../components/CabecalhoSecao";
-import { Check, Plus } from "lucide-react";
+import { ConfirmDialog } from "../components/ConfirmDialog";
+import { Check, Plus, Users } from "lucide-react";
+
+interface VoluntarioCompartilhado {
+  nome: string;
+  telefone?: string;
+  habilidades?: string[];
+  disponibilidadeHorasSemana?: number;
+  regiao?: string;
+}
 
 /** Cadastro de voluntários em nível de portfólio (Fase 14a) — trabalho pontual/mutirão, não substitui posto de folha permanente. */
-export function Voluntarios({ projects, onVoltar }: { projects: Project[]; onVoltar: () => void }) {
+export function Voluntarios({ projects, onVoltar, onAbrirPrivacidade }: { projects: Project[]; onVoltar: () => void; onAbrirPrivacidade?: () => void }) {
   const [voluntarios, setVoluntarios] = useState<Voluntario[]>(() => carregarVoluntarios());
   const [filtroHabilidade, setFiltroHabilidade] = useState("");
   const [novo, setNovo] = useState({ nome: "", telefone: "", email: "", habilidades: "", disponibilidadeHorasSemana: "", observacoes: "" });
+  const [compartilhados, setCompartilhados] = useState<ItemComunidade<VoluntarioCompartilhado>[]>([]);
+  const [erroComunidade, setErroComunidade] = useState<string | null>(null);
+  const [paraCompartilhar, setParaCompartilhar] = useState<Voluntario | null>(null);
+  const [publicando, setPublicando] = useState(false);
+
+  useEffect(() => {
+    let cancelado = false;
+    listarComunidade<VoluntarioCompartilhado>("voluntarios").then((r) => {
+      if (cancelado) return;
+      if (r.ok) setCompartilhados(r.itens ?? []);
+      else setErroComunidade(r.erro ?? null);
+    });
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  async function confirmarCompartilhar() {
+    if (!paraCompartilhar) return;
+    setPublicando(true);
+    const dados: VoluntarioCompartilhado = {
+      nome: paraCompartilhar.nome,
+      telefone: paraCompartilhar.telefone,
+      habilidades: paraCompartilhar.habilidades,
+      disponibilidadeHorasSemana: paraCompartilhar.disponibilidadeHorasSemana,
+    };
+    const resultado = await criarNaComunidade("voluntarios", dados);
+    setPublicando(false);
+    setParaCompartilhar(null);
+    if (!resultado.ok) {
+      setErroComunidade(resultado.erro ?? "Falha ao publicar.");
+      return;
+    }
+    const atualizado = await listarComunidade<VoluntarioCompartilhado>("voluntarios");
+    if (atualizado.ok) setCompartilhados(atualizado.itens ?? []);
+  }
+
+  async function removerCompartilhado(id: string) {
+    const resultado = await removerDaComunidade("voluntarios", id);
+    if (resultado.ok) setCompartilhados((atual) => atual.filter((i) => i.id !== id));
+    else setErroComunidade(resultado.erro ?? "Falha ao remover.");
+  }
 
   function persistir(lista: Voluntario[]) {
     setVoluntarios(lista);
@@ -111,9 +163,14 @@ export function Voluntarios({ projects, onVoltar }: { projects: Project[]; onVol
                   {(v.habilidades?.length ?? 0) > 0 && <p className="text-xs">Habilidades: {v.habilidades!.join(", ")}</p>}
                   {v.observacoes && <p className="text-xs text-[color:var(--sm-text-dim)]">{v.observacoes}</p>}
                 </div>
-                <button onClick={() => remover(v.id)} className="shrink-0 text-xs text-[color:var(--sm-red)]">
-                  remover
-                </button>
+                <div className="flex shrink-0 items-center gap-2">
+                  <button onClick={() => setParaCompartilhar(v)} className="text-xs text-[color:var(--sm-accent)] hover:underline">
+                    compartilhar
+                  </button>
+                  <button onClick={() => remover(v.id)} className="text-xs text-[color:var(--sm-red)]">
+                    remover
+                  </button>
+                </div>
               </div>
               <div className="mt-2 flex flex-wrap gap-1">
                 {projects.map((p) => {
@@ -151,6 +208,55 @@ export function Voluntarios({ projects, onVoltar }: { projects: Project[]; onVol
           </Section>
         );
       })}
+
+      <Section
+        title={
+          <>
+            <Users size={16} strokeWidth={2} />
+            Voluntários da comunidade (compartilhado publicamente)
+          </>
+        }
+      >
+        <p className="text-xs text-[color:var(--sm-text-dim)]">
+          Diferente da lista acima, isto fica no servidor e qualquer pessoa que abrir o app vê — sem login. Use o botão "compartilhar" num voluntário cadastrado
+          acima pra publicar aqui.
+        </p>
+        {erroComunidade && <p className="text-xs text-[color:var(--sm-red)]">{erroComunidade}</p>}
+        <ul className="space-y-2">
+          {compartilhados.map((item) => (
+            <li key={item.id} className="rounded border border-[color:var(--sm-border)] p-2 text-sm">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="font-medium">{item.dados.nome}</p>
+                  <p className="text-xs text-[color:var(--sm-text-dim)]">
+                    {item.dados.telefone && `${item.dados.telefone} · `}
+                    {item.dados.disponibilidadeHorasSemana ? `${item.dados.disponibilidadeHorasSemana}h/semana` : ""}
+                  </p>
+                  {(item.dados.habilidades?.length ?? 0) > 0 && <p className="text-xs">Habilidades: {item.dados.habilidades!.join(", ")}</p>}
+                </div>
+                {souAutorDe(item.id) && (
+                  <button onClick={() => removerCompartilhado(item.id)} className="shrink-0 text-xs text-[color:var(--sm-red)]">
+                    remover
+                  </button>
+                )}
+              </div>
+            </li>
+          ))}
+          {compartilhados.length === 0 && <li className="text-[color:var(--sm-text-dim)]">Ninguém compartilhou um voluntário ainda.</li>}
+        </ul>
+      </Section>
+
+      {paraCompartilhar && (
+        <ConfirmDialog
+          titulo="Compartilhar publicamente?"
+          mensagem={`"${paraCompartilhar.nome}" vai ficar visível pra qualquer pessoa que abrir o app — sem login, sem aprovação. Telefone e habilidades cadastrados também aparecem. Você poderá remover depois, só neste navegador.`}
+          onConfirmar={confirmarCompartilhar}
+          onCancelar={() => setParaCompartilhar(null)}
+          linkTexto={onAbrirPrivacidade ? "Ver política de privacidade" : undefined}
+          onLink={onAbrirPrivacidade}
+        />
+      )}
+      {publicando && <p className="text-xs text-[color:var(--sm-text-dim)]">Publicando...</p>}
     </div>
   );
 }

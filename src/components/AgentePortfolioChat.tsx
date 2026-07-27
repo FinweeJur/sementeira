@@ -102,7 +102,7 @@ export function AgentePortfolioChat({
   // isso empilhava ABAIXO da página em vez de encostar na lateral.
   return (
     <div
-      className="fixed inset-y-0 right-0 z-40 flex w-80 flex-col border-l border-[color:var(--sm-border)] bg-[color:var(--sm-panel)] p-4"
+      className="fixed inset-y-0 right-0 z-40 flex w-full flex-col bg-[color:var(--sm-panel)] p-4 sm:w-80 sm:border-l sm:border-[color:var(--sm-border)]"
       onKeyDown={(e) => {
         if (e.key === "Escape") onClose();
       }}
@@ -134,7 +134,7 @@ export function AgentePortfolioChat({
         ))}
         {carregando && (
           <div className="rounded p-2">
-            <ThinkingIndicator />
+            <ThinkingIndicator persona="dona-lucia" />
           </div>
         )}
         {erro && <p className="text-xs text-[color:var(--sm-red)]">{erro}</p>}

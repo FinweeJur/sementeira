@@ -41,7 +41,7 @@ export function CompareProjects({
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center overflow-auto">
       <div
-        className="rounded-lg shadow-xl max-w-7xl w-full mx-4 my-4 flex flex-col max-h-[90vh]"
+        className="rounded-lg shadow-xl max-w-7xl w-full min-w-0 mx-4 my-4 flex flex-col max-h-[90vh]"
         style={{ color: "var(--sm-text)", backgroundColor: "var(--sm-panel)" }}
       >
         <div className="flex justify-between items-center p-6 border-b" style={{ borderColor: "var(--sm-border)" }}>
@@ -55,7 +55,7 @@ export function CompareProjects({
           </button>
         </div>
 
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 min-w-0 overflow-auto p-6">
           {selecionados.length === 0 ? (
             <div className="text-center py-12">
               <p style={{ color: "var(--sm-text-dim)" }} className="mb-6">

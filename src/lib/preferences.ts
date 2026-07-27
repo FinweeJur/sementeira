@@ -1,6 +1,26 @@
 const ONBOARDING_KEY = "sementeira-onboarding-visto-v1";
 const FONT_SCALE_KEY = "sementeira-font-scale-v1";
 const SEED_AUTO_KEY = "sementeira-seed-auto-importado-v1";
+const DICAS_DISPENSADAS_KEY = "sementeira-dicas-dispensadas-v1";
+
+/** Dicas contextuais (canto da tela) que a pessoa já dispensou — não voltam a aparecer. */
+function carregarDicasDispensadas(): string[] {
+  try {
+    const bruto = localStorage.getItem(DICAS_DISPENSADAS_KEY);
+    const lista = bruto ? JSON.parse(bruto) : [];
+    return Array.isArray(lista) ? lista.filter((x) => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
+export function dicaDispensada(id: string): boolean {
+  return carregarDicasDispensadas().includes(id);
+}
+export function marcarDicaDispensada(id: string): void {
+  const atuais = carregarDicasDispensadas();
+  if (atuais.includes(id)) return;
+  localStorage.setItem(DICAS_DISPENSADAS_KEY, JSON.stringify([...atuais, id]));
+}
 
 /** Marca se os projetos de exemplo já foram colocados automaticamente na tela inicial — evita reimportar depois que o usuário os excluir de propósito. */
 export function seedAutoImportado(): boolean {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { novoProjetoVazio, type Project } from "./lib/types";
+import { novoProjetoVazio, type PassoWizard, type Project } from "./lib/types";
 import { loadProjects, upsertProject, deleteProject } from "./lib/storage";
 import { ProjectList } from "./pages/ProjectList";
 import { ProjectWizard } from "./pages/ProjectWizard";
@@ -7,10 +7,13 @@ import { Ecossistema } from "./pages/Ecossistema";
 import { ClubeBeneficios } from "./pages/ClubeBeneficios";
 import { Voluntarios } from "./pages/Voluntarios";
 import { Biblioteca } from "./pages/Biblioteca";
+import { Aprender } from "./pages/Aprender";
+import { PoliticaPrivacidade } from "./pages/PoliticaPrivacidade";
 import { CompareProjects } from "./pages/CompareProjects";
 import { PlanilhaPortfolio } from "./pages/PlanilhaPortfolio";
 import { Onboarding } from "./components/Onboarding";
 import { NavBar } from "./components/NavBar";
+import { SidebarNav } from "./components/SidebarNav";
 import { TaskProvider } from "./lib/task-context";
 import { TaskIndicator } from "./components/TaskIndicator";
 import { TaskSidebar } from "./components/TaskSidebar";
@@ -48,11 +51,13 @@ import { iniciarHolofote } from "./lib/holofote";
  */
 type Tela =
   | { nome: "portfolio" }
-  | { nome: "projeto"; id: string }
+  | { nome: "projeto"; id: string; passoInicialId?: PassoWizard }
   | { nome: "ecossistema" }
   | { nome: "clube" }
   | { nome: "voluntarios" }
   | { nome: "biblioteca" }
+  | { nome: "aprender" }
+  | { nome: "privacidade" }
   | { nome: "planilha" }
   | { nome: "comparacao" };
 
@@ -110,8 +115,8 @@ export function App() {
 
   const current = tela.nome === "projeto" ? (projects.find((p) => p.id === tela.id) ?? null) : null;
 
-  function abrirProjeto(id: string) {
-    setTela({ nome: "projeto", id });
+  function abrirProjeto(id: string, passoInicialId?: PassoWizard) {
+    setTela({ nome: "projeto", id, passoInicialId });
   }
 
   function voltarAoPortfolio() {
@@ -191,6 +196,7 @@ export function App() {
         onAbrirClube={() => setTela({ nome: "clube" })}
         onAbrirVoluntarios={() => setTela({ nome: "voluntarios" })}
         onAbrirConfig={() => setConfigAberta(true)}
+        onAbrirPrivacidade={() => setTela({ nome: "privacidade" })}
         llmConfig={llmConfig}
       />
     );
@@ -207,16 +213,29 @@ export function App() {
             outrosProjetos={projects.filter((p) => p.id !== current.id)}
             onChange={handleChange}
             onVoltar={voltarAoPortfolio}
+            onAbrirBiblioteca={() => setTela({ nome: "biblioteca" })}
+            passoInicialId={tela.passoInicialId}
           />
         );
       case "ecossistema":
         return <Ecossistema projects={projects} onVoltar={voltarAoPortfolio} onAtualizarProjeto={handleChange} onAbrirProjeto={abrirProjeto} />;
       case "clube":
-        return <ClubeBeneficios projects={projects} onVoltar={voltarAoPortfolio} />;
+        return <ClubeBeneficios projects={projects} onVoltar={voltarAoPortfolio} onAbrirPrivacidade={() => setTela({ nome: "privacidade" })} />;
       case "voluntarios":
-        return <Voluntarios projects={projects} onVoltar={voltarAoPortfolio} />;
+        return <Voluntarios projects={projects} onVoltar={voltarAoPortfolio} onAbrirPrivacidade={() => setTela({ nome: "privacidade" })} />;
       case "biblioteca":
         return <Biblioteca onVoltar={voltarAoPortfolio} />;
+      case "aprender":
+        return (
+          <Aprender
+            projects={projects}
+            onVoltar={voltarAoPortfolio}
+            onPraticar={(id, passoId) => abrirProjeto(id, passoId)}
+            onCriarProjeto={() => handleCreate(novoProjetoVazio())}
+          />
+        );
+      case "privacidade":
+        return <PoliticaPrivacidade onVoltar={voltarAoPortfolio} />;
       case "planilha":
         return <PlanilhaPortfolio projects={projects} onVoltar={voltarAoPortfolio} onAbrirProjeto={abrirProjeto} />;
       case "comparacao":
@@ -242,6 +261,23 @@ export function App() {
         onCopiloto={() => setAgenteAberto(true)}
         onRevisaoGeral={() => setRevisaoGeralAberta(true)}
         onBiblioteca={() => setTela({ nome: "biblioteca" })}
+        onAprender={() => setTela({ nome: "aprender" })}
+        onPrivacidade={() => setTela({ nome: "privacidade" })}
+        onClube={() => setTela({ nome: "clube" })}
+        onVoluntarios={() => setTela({ nome: "voluntarios" })}
+      />
+      <SidebarNav
+        temProjeto={projects.length > 0}
+        temMultiplosProjetos={projects.length > 1}
+        onNovoProjeto={() => handleCreate(novoProjetoVazio())}
+        onImportar={() => setImportarAberta(true)}
+        onComparar={() => setTela({ nome: "comparacao" })}
+        onEcossistema={() => setTela({ nome: "ecossistema" })}
+        onCopiloto={() => setAgenteAberto(true)}
+        onRevisaoGeral={() => setRevisaoGeralAberta(true)}
+        onBiblioteca={() => setTela({ nome: "biblioteca" })}
+        onAprender={() => setTela({ nome: "aprender" })}
+        onPrivacidade={() => setTela({ nome: "privacidade" })}
         onClube={() => setTela({ nome: "clube" })}
         onVoluntarios={() => setTela({ nome: "voluntarios" })}
       />

@@ -15,3 +15,6 @@ release/
 .DS_Store
 .zcode/
 desktop.ini
+# Dados baixados/gravados em runtime pelo servidor — nunca versionados.
+servidor/biblioteca-compartilhada/
+servidor/dados-compartilhados/

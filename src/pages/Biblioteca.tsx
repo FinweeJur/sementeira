@@ -4,7 +4,28 @@ import { carregarBiblioteca, salvarBiblioteca, anexarArquivoBiblioteca, abrirArq
 import { Section } from "../components/Section";
 import { Field, inputClass } from "../components/Field";
 import { CabecalhoSecao } from "../components/CabecalhoSecao";
-import { Paperclip, FolderOpen, RefreshCw, Trash2, PackageCheck, Loader2, Plus } from "lucide-react";
+import { Paperclip, FolderOpen, RefreshCw, Trash2, PackageCheck, Loader2, Plus, Landmark } from "lucide-react";
+
+/** Item publicado pela Entidade Gestora (baixado pelo servidor/scraper-biblioteca.cjs) — só-leitura, nunca editável nem removível pelo usuário. */
+interface ItemCompartilhado {
+  id: string;
+  titulo: string;
+  url: string;
+  baixadoEm: string;
+  temTextoExtraido: boolean;
+}
+
+async function buscarBibliotecaCompartilhada(): Promise<ItemCompartilhado[]> {
+  try {
+    const resp = await fetch("/api/biblioteca/compartilhada");
+    if (!resp.ok) return [];
+    const data = await resp.json();
+    return data?.ok && Array.isArray(data.itens) ? data.itens : [];
+  } catch {
+    // Sem servidor (app instalado, ou offline) — silencioso, não é erro pro usuário.
+    return [];
+  }
+}
 
 export function Biblioteca({ onVoltar }: { onVoltar: () => void }) {
   const [itens, setItens] = useState<RecursoBiblioteca[]>(() => carregarBiblioteca());
@@ -13,7 +34,18 @@ export function Biblioteca({ onVoltar }: { onVoltar: () => void }) {
   const [resolvendoEmbutidos, setResolvendoEmbutidos] = useState(true);
   const [novaReferencia, setNovaReferencia] = useState({ titulo: "", descricao: "" });
   const [novaLeitura, setNovaLeitura] = useState({ titulo: "", fonte: "", url: "" });
+  const [itensCompartilhados, setItensCompartilhados] = useState<ItemCompartilhado[]>([]);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  useEffect(() => {
+    let cancelado = false;
+    buscarBibliotecaCompartilhada().then((lista) => {
+      if (!cancelado) setItensCompartilhados(lista);
+    });
+    return () => {
+      cancelado = true;
+    };
+  }, []);
 
   // Documentos que já vêm com o app (Proposta Definitiva, Ofícios etc.) só ganham `caminhoArquivo` real na primeira renderização — o app precisa perguntar ao processo main onde eles estão em disco.
   useEffect(() => {
@@ -100,6 +132,35 @@ export function Biblioteca({ onVoltar }: { onVoltar: () => void }) {
 
       {erro && (
         <div className="rounded border border-[color:var(--sm-bloqueio-border)] bg-[color:var(--sm-bloqueio-bg)] p-3 text-sm text-[color:var(--sm-bloqueio-text)]">{erro}</div>
+      )}
+
+      {itensCompartilhados.length > 0 && (
+        <Section
+          title={
+            <>
+              <Landmark size={16} strokeWidth={2} />
+              Publicado pela Entidade Gestora
+            </>
+          }
+        >
+          <p className="text-xs text-[color:var(--sm-text-dim)]">
+            Baixado automaticamente do site da Entidade Gestora do Anexo I.1 — não pode ser editado nem removido por aqui.
+          </p>
+          <ul className="space-y-2">
+            {itensCompartilhados.map((item) => (
+              <li key={item.id} className="rounded border border-[color:var(--sm-border)] p-2 text-sm">
+                <p className="font-medium">{item.titulo}</p>
+                <p className="mt-0.5 text-xs text-[color:var(--sm-text-dim)]">
+                  {item.temTextoExtraido ? "Texto disponível como contexto pra IA." : "Sem extração de texto ainda — confira a fonte."} · baixado em{" "}
+                  {new Date(item.baixadoEm).toLocaleDateString("pt-BR")}
+                </p>
+                <a href={item.url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-xs text-[color:var(--sm-accent)] hover:underline">
+                  Ver documento original →
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Section>
       )}
 
       <Section title="Documentos de referência">

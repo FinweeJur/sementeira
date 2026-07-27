@@ -1,4 +1,5 @@
 import type { ChatMessage, LLMResponse, ListarModelosResposta, ProviderConfig, ProviderDef, WebSearchResposta } from "./providers";
+import { montarTokenEmbutido } from "./gateway-token";
 
 /**
  * Transporte de IA para a versão web. No app instalado quem faz a chamada é o
@@ -101,7 +102,7 @@ async function chamarGateway(config: ProviderConfig, messages: ChatMessage[], es
   try {
     resp = await fetch(`${urlServidor(config)}/api/llm/chat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Sementeira-Token": config.apiKey ?? "" },
+      headers: { "Content-Type": "application/json", "X-Sementeira-Token": config.apiKey?.trim() || montarTokenEmbutido() },
       body: JSON.stringify({
         // O servidor resolve o endereço e a chave a partir deste id — o
         // navegador nunca manda URL nem chave, senão o gateway viraria um

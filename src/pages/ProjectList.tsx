@@ -1,16 +1,29 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Project } from "../lib/types";
 import { novoProjetoVazio } from "../lib/types";
 import arquetipos from "../data/arquetipos.json";
+import danos from "../data/danos.json";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { HistoricoVersoesModal } from "../components/HistoricoVersoesModal";
 import type { ProviderConfig } from "../lib/providers";
 import { PROVEDORES, configuracaoLLMPronta, nomeProvedor } from "../lib/providers";
 import { ehWeb } from "../lib/ambiente";
 import { avaliarConformidade } from "../lib/compliance-engine";
+import { listarComunidade, criarNaComunidade, removerDaComunidade, souAutorDe, type ItemComunidade } from "../lib/comunidade";
 import { Tooltip } from "../components/Tooltip";
 import { CabecalhoSecao } from "../components/CabecalhoSecao";
-import { Settings, CheckCircle2, Square, Sprout, Pencil, Upload, Scale, Table2, Globe, Bot, RefreshCw, BookOpen, Ticket, HeartHandshake } from "lucide-react";
+import { Section } from "../components/Section";
+import { Settings, CheckCircle2, Square, Sprout, Pencil, Upload, Scale, Table2, Globe, Bot, RefreshCw, BookOpen, Ticket, HeartHandshake, History, Share2 } from "lucide-react";
+
+interface ProjetoCompartilhado {
+  titulo: string;
+  ideia: string;
+  dano?: string;
+  arquetipo?: string;
+  local?: string;
+  abrangencia?: string;
+  orcamentoTotal: number;
+}
 
 const CHECKLIST_DISPENSADO_KEY = "sementeira-checklist-primeiro-uso-dispensado-v1";
 const AVISO_WEB_DISPENSADO_KEY = "sementeira-aviso-web-dispensado-v1";
@@ -33,6 +46,7 @@ export function ProjectList({
   onAbrirClube,
   onAbrirVoluntarios,
   onAbrirConfig,
+  onAbrirPrivacidade,
   llmConfig,
 }: {
   projects: Project[];
@@ -53,12 +67,57 @@ export function ProjectList({
   onAbrirVoluntarios: () => void;
   /** As Configurações vivem no App — ver comentário lá sobre o modal de importação. */
   onAbrirConfig: () => void;
+  onAbrirPrivacidade?: () => void;
   llmConfig: ProviderConfig;
 }) {
   const [paraExcluir, setParaExcluir] = useState<Project | null>(null);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [tituloEmEdicao, setTituloEmEdicao] = useState("");
   const [historicoDeId, setHistoricoDeId] = useState<string | null>(null);
+  const [paraCompartilhar, setParaCompartilhar] = useState<Project | null>(null);
+  const [projetosCompartilhados, setProjetosCompartilhados] = useState<ItemComunidade<ProjetoCompartilhado>[]>([]);
+  const [erroComunidade, setErroComunidade] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelado = false;
+    listarComunidade<ProjetoCompartilhado>("projetos").then((r) => {
+      if (cancelado) return;
+      if (r.ok) setProjetosCompartilhados(r.itens ?? []);
+      else setErroComunidade(r.erro ?? null);
+    });
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  async function confirmarCompartilharProjeto() {
+    if (!paraCompartilhar) return;
+    const dano = danos.find((d) => d.id === paraCompartilhar.danoId);
+    const arquetipo = arquetipos.find((a) => a.id === paraCompartilhar.arquetipoId);
+    const dados: ProjetoCompartilhado = {
+      titulo: paraCompartilhar.titulo || "(sem título)",
+      ideia: paraCompartilhar.ideiaTexto,
+      dano: dano?.nome,
+      arquetipo: arquetipo?.nome,
+      local: paraCompartilhar.local,
+      abrangencia: paraCompartilhar.abrangencia,
+      orcamentoTotal: paraCompartilhar.orcamento.reduce((soma, l) => soma + (l.valor || 0), 0),
+    };
+    const resultado = await criarNaComunidade("projetos", dados);
+    setParaCompartilhar(null);
+    if (!resultado.ok) {
+      setErroComunidade(resultado.erro ?? "Falha ao publicar.");
+      return;
+    }
+    const atualizado = await listarComunidade<ProjetoCompartilhado>("projetos");
+    if (atualizado.ok) setProjetosCompartilhados(atualizado.itens ?? []);
+  }
+
+  async function removerProjetoCompartilhado(id: string) {
+    const resultado = await removerDaComunidade("projetos", id);
+    if (resultado.ok) setProjetosCompartilhados((atual) => atual.filter((i) => i.id !== id));
+    else setErroComunidade(resultado.erro ?? "Falha ao remover.");
+  }
   const [checklistDispensado, setChecklistDispensado] = useState(() => localStorage.getItem(CHECKLIST_DISPENSADO_KEY) === "1");
   const modoWeb = ehWeb();
   const [avisoWebDispensado, setAvisoWebDispensado] = useState(() => localStorage.getItem(AVISO_WEB_DISPENSADO_KEY) === "1");
@@ -123,8 +182,9 @@ export function ProjectList({
           </div>
           <ul className="space-y-1 text-xs text-[color:var(--sm-text-dim)]">
             <li>
-              <strong className="text-[color:var(--sm-text)]">Seus projetos ficam só neste navegador, neste computador.</strong> Não existe conta, login
-              nem banco de dados nosso.
+              <strong className="text-[color:var(--sm-text)]">Seus projetos ficam só neste navegador, neste computador.</strong> Não existe conta nem
+              login. A única exceção é se você mesmo clicar em "compartilhar" num voluntário ou numa oferta do Clube — aí, e só aí, aquilo vai pra um
+              banco de dados público do servidor, visível a qualquer pessoa, com um aviso antes de confirmar.
             </li>
             <li>Por isso mesmo: limpar os dados do navegador apaga tudo. Guarde uma cópia dos projetos que importam para você.</li>
             {/* O texto do projeto só sai daqui quando a pessoa usa IA — e aí é
@@ -326,10 +386,11 @@ export function ProjectList({
                 {(p.versaoLapidacao ?? 0) > 0 && (
                   <button
                     onClick={() => setHistoricoDeId(p.id)}
-                    title="Ver histórico de versões lapidadas"
-                    className="rounded border border-[color:var(--sm-accent)]/40 bg-[color:var(--sm-accent)]/10 px-1.5 py-0.5 text-xs hover:bg-[color:var(--sm-accent)]/20"
+                    title="Ver histórico de versões lapidadas e o que mudou em cada uma"
+                    className="inline-flex items-center gap-1 rounded border border-[color:var(--sm-accent)]/40 bg-[color:var(--sm-accent)]/10 px-1.5 py-0.5 text-xs hover:bg-[color:var(--sm-accent)]/20"
                   >
-                    v{p.versaoLapidacao}
+                    <History size={12} strokeWidth={2} />
+                    v{p.versaoLapidacao} — histórico
                   </button>
                 )}
                 {editandoId !== p.id && (
@@ -342,6 +403,14 @@ export function ProjectList({
                     editar
                   </button>
                 )}
+                <button
+                  onClick={() => setParaCompartilhar(p)}
+                  className="inline-flex items-center gap-1 text-xs text-[color:var(--sm-accent)] hover:underline"
+                  title="Compartilhar um resumo deste projeto publicamente"
+                >
+                  <Share2 size={12} strokeWidth={2} />
+                  compartilhar
+                </button>
                 <button onClick={() => setParaExcluir(p)} className="text-xs text-[color:var(--sm-red)]">
                   excluir
                 </button>
@@ -368,6 +437,45 @@ export function ProjectList({
         )}
       </ul>
 
+      <Section
+        title={
+          <>
+            <Share2 size={16} strokeWidth={2} />
+            Projetos da comunidade (compartilhado publicamente)
+          </>
+        }
+      >
+        <p className="text-xs text-[color:var(--sm-text-dim)]">
+          Um resumo do projeto (título, ideia, dano, tipo, local e orçamento total) — nunca o coordenador, telefone, endereço ou e-mail de contato. Fica no
+          servidor, visível a qualquer pessoa que abrir o app, sem login. Use "compartilhar" num projeto acima pra publicar aqui.
+        </p>
+        {erroComunidade && <p className="text-xs text-[color:var(--sm-red)]">{erroComunidade}</p>}
+        <ul className="space-y-2">
+          {projetosCompartilhados.map((item) => (
+            <li key={item.id} className="rounded border border-[color:var(--sm-border)] p-2 text-sm">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="font-medium">{item.dados.titulo}</p>
+                  <p className="text-xs text-[color:var(--sm-text-dim)]">
+                    {item.dados.dano && `${item.dados.dano} · `}
+                    {item.dados.arquetipo && `${item.dados.arquetipo} · `}
+                    {item.dados.local && `${item.dados.local} · `}
+                    R$ {item.dados.orcamentoTotal.toFixed(2)}
+                  </p>
+                  {item.dados.ideia && <p className="mt-1 text-xs">{item.dados.ideia}</p>}
+                </div>
+                {souAutorDe(item.id) && (
+                  <button onClick={() => removerProjetoCompartilhado(item.id)} className="shrink-0 text-xs text-[color:var(--sm-red)]">
+                    remover
+                  </button>
+                )}
+              </div>
+            </li>
+          ))}
+          {projetosCompartilhados.length === 0 && <li className="text-[color:var(--sm-text-dim)]">Ninguém compartilhou um projeto ainda.</li>}
+        </ul>
+      </Section>
+
       <footer>
         <button onClick={onVerTutorial} className="text-xs text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]">
           Ver tutorial de novo
@@ -386,6 +494,16 @@ export function ProjectList({
         />
       )}
 
+      {paraCompartilhar && (
+        <ConfirmDialog
+          titulo="Compartilhar publicamente?"
+          mensagem={`Um resumo de "${paraCompartilhar.titulo || "projeto sem título"}" (ideia, dano, tipo, local e orçamento total) vai ficar visível pra qualquer pessoa que abrir o app — sem login, sem aprovação. Dados de contato (coordenador, telefone, endereço, e-mail) NUNCA são incluídos. Você poderá remover depois, só neste navegador.`}
+          onConfirmar={confirmarCompartilharProjeto}
+          onCancelar={() => setParaCompartilhar(null)}
+          linkTexto={onAbrirPrivacidade ? "Ver política de privacidade" : undefined}
+          onLink={onAbrirPrivacidade}
+        />
+      )}
 
     </div>
 

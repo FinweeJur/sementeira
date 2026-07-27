@@ -1,4 +1,4 @@
-import { Moon, Sun, Contrast, Sprout, Upload, Scale, Globe, Bot, RefreshCw, BookOpen, Ticket, HeartHandshake, Settings } from "lucide-react";
+import { Moon, Sun, Contrast, Sprout, Upload, Scale, Globe, Bot, RefreshCw, BookOpen, GraduationCap, Ticket, HeartHandshake, Shield, Settings } from "lucide-react";
 import type { FontScale, Tema } from "../lib/preferences";
 import { Tooltip } from "./Tooltip";
 
@@ -23,6 +23,8 @@ export function NavBar({
   onCopiloto,
   onRevisaoGeral,
   onBiblioteca,
+  onAprender,
+  onPrivacidade,
   onClube,
   onVoluntarios,
 }: {
@@ -39,6 +41,8 @@ export function NavBar({
   onCopiloto: () => void;
   onRevisaoGeral: () => void;
   onBiblioteca: () => void;
+  onAprender: () => void;
+  onPrivacidade: () => void;
   onClube: () => void;
   onVoluntarios: () => void;
 }) {
@@ -75,10 +79,14 @@ export function NavBar({
 
         <div className="h-4 w-px bg-[color:var(--sm-border)]" aria-hidden="true" />
         <NavIconButton icone={BookOpen} rotulo="Biblioteca" dica="Documentos de referência do processo e leituras de apoio" onClick={onBiblioteca} />
+        <NavIconButton icone={GraduationCap} rotulo="Aprender" dica="Currículo passo a passo de como montar um projeto na Sementeira" onClick={onAprender} />
 
         <div className="h-4 w-px bg-[color:var(--sm-border)]" aria-hidden="true" />
         <NavIconButton icone={Ticket} rotulo="Clube" dica="Clube de benefícios: programa que conecta produtos dos projetos às famílias atingidas" onClick={onClube} />
         <NavIconButton icone={HeartHandshake} rotulo="Cadastro" dica="Voluntários: pessoas disponíveis para mutirões" onClick={onVoluntarios} />
+
+        <div className="h-4 w-px bg-[color:var(--sm-border)]" aria-hidden="true" />
+        <NavIconButton icone={Shield} rotulo="Privacidade" dica="Política de privacidade — como a Sementeira trata os dados de quem usa o app (LGPD)" onClick={onPrivacidade} />
       </div>
 
       <div className="flex items-center gap-3">

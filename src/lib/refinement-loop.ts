@@ -5,6 +5,7 @@ import { montarChecklistFinal } from "./checklist";
 import { carregarConfigLLM, enviarMensagemLLM, nomeProvedor, type ProviderConfig } from "./providers";
 import { montarBlocoDiretrizesGlobais } from "./diretrizes-globais";
 import { montarBlocoBiblioteca } from "./biblioteca";
+import { montarBlocoDocumentosBase } from "./documentos-base";
 import { parseJsonDeResposta } from "./json-parsing";
 import danos from "../data/danos.json";
 import arquetipos from "../data/arquetipos.json";
@@ -540,7 +541,7 @@ export function reverterParaVersao(project: Project, versaoAlvo: number): Projec
 
 async function chamarPapel(prompt: string, configOverride?: ProviderConfig, project?: Project): Promise<{ ok: boolean; texto?: string; erro?: string }> {
   const config = configOverride ?? carregarConfigLLM();
-  const contexto = [montarBlocoDiretrizesGlobais(), montarBlocoBiblioteca(project)].filter(Boolean).join("\n\n");
+  const contexto = [montarBlocoDocumentosBase(), montarBlocoDiretrizesGlobais(), montarBlocoBiblioteca(project)].filter(Boolean).join("\n\n");
   const conteudo = contexto ? `${prompt}\n\n${contexto}` : prompt;
   const resposta = await enviarMensagemLLM(config, [{ role: "user", content: conteudo }], { esperaJson: true });
   if (!resposta.ok) return { ok: false, erro: resposta.erro };

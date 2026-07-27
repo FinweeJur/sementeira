@@ -1,15 +1,60 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Project } from "../lib/types";
 import { carregarClube, salvarClube, type OfertaBeneficio, type RegraPontos, type Premio } from "../lib/clube-beneficios";
 import { lapidarClube, ETAPAS_PORTFOLIO_ROTULO, type ResultadoLapidacaoClube } from "../lib/refinement-ecosystem";
 import { exportarClubeBeneficiosDocx } from "../lib/export";
+import { listarComunidade, criarNaComunidade, removerDaComunidade, souAutorDe, type ItemComunidade } from "../lib/comunidade";
 import { Section } from "../components/Section";
 import { inputClass } from "../components/Field";
 import { CabecalhoSecao } from "../components/CabecalhoSecao";
-import { RefreshCw, Check } from "lucide-react";
+import { ConfirmDialog } from "../components/ConfirmDialog";
+import { RefreshCw, Check, Ticket } from "lucide-react";
 
-export function ClubeBeneficios({ projects, onVoltar }: { projects: Project[]; onVoltar: () => void }) {
+interface OfertaCompartilhada {
+  tituloProjeto: string;
+  titulo: string;
+  descricao: string;
+}
+
+export function ClubeBeneficios({ projects, onVoltar, onAbrirPrivacidade }: { projects: Project[]; onVoltar: () => void; onAbrirPrivacidade?: () => void }) {
   const [clube, setClube] = useState(carregarClube());
+  const [compartilhadas, setCompartilhadas] = useState<ItemComunidade<OfertaCompartilhada>[]>([]);
+  const [erroComunidade, setErroComunidade] = useState<string | null>(null);
+  const [paraCompartilhar, setParaCompartilhar] = useState<OfertaBeneficio | null>(null);
+
+  useEffect(() => {
+    let cancelado = false;
+    listarComunidade<OfertaCompartilhada>("clube").then((r) => {
+      if (cancelado) return;
+      if (r.ok) setCompartilhadas(r.itens ?? []);
+      else setErroComunidade(r.erro ?? null);
+    });
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  async function confirmarCompartilharOferta() {
+    if (!paraCompartilhar) return;
+    const resultado = await criarNaComunidade("clube", {
+      tituloProjeto: nomeProjeto(paraCompartilhar.projectId),
+      titulo: paraCompartilhar.titulo,
+      descricao: paraCompartilhar.descricao,
+    });
+    setParaCompartilhar(null);
+    if (!resultado.ok) {
+      setErroComunidade(resultado.erro ?? "Falha ao publicar.");
+      return;
+    }
+    const atualizado = await listarComunidade<OfertaCompartilhada>("clube");
+    if (atualizado.ok) setCompartilhadas(atualizado.itens ?? []);
+  }
+
+  async function removerCompartilhada(id: string) {
+    const resultado = await removerDaComunidade("clube", id);
+    if (resultado.ok) setCompartilhadas((atual) => atual.filter((i) => i.id !== id));
+    else setErroComunidade(resultado.erro ?? "Falha ao remover.");
+  }
   const [lapidando, setLapidando] = useState(false);
   const [progressoLapidacao, setProgressoLapidacao] = useState<string | null>(null);
   const [lapidacao, setLapidacao] = useState<ResultadoLapidacaoClube | null>(null);
@@ -190,9 +235,14 @@ export function ClubeBeneficios({ projects, onVoltar }: { projects: Project[]; o
               <span>
                 <strong>{nomeProjeto(o.projectId)}</strong> — {o.titulo}: {o.descricao}
               </span>
-              <button onClick={() => removerOferta(o.id)} className="text-xs text-[color:var(--sm-red)]">
-                remover
-              </button>
+              <div className="flex shrink-0 items-center gap-2">
+                <button onClick={() => setParaCompartilhar(o)} className="text-xs text-[color:var(--sm-accent)] hover:underline">
+                  compartilhar
+                </button>
+                <button onClick={() => removerOferta(o.id)} className="text-xs text-[color:var(--sm-red)]">
+                  remover
+                </button>
+              </div>
             </li>
           ))}
           {clube.ofertas.length === 0 && <li className="text-[color:var(--sm-text-dim)]">Nenhuma oferta cadastrada.</li>}
@@ -264,6 +314,46 @@ export function ClubeBeneficios({ projects, onVoltar }: { projects: Project[]; o
           {clube.premios.length === 0 && <li className="text-[color:var(--sm-text-dim)]">Nenhum prêmio cadastrado.</li>}
         </ul>
       </Section>
+
+      <Section
+        title={
+          <>
+            <Ticket size={16} strokeWidth={2} />
+            Vitrine da comunidade (compartilhado publicamente)
+          </>
+        }
+      >
+        <p className="text-xs text-[color:var(--sm-text-dim)]">
+          Diferente das ofertas acima, isto fica no servidor e qualquer pessoa que abrir o app vê — sem login. Use "compartilhar" numa oferta cadastrada acima.
+        </p>
+        {erroComunidade && <p className="text-xs text-[color:var(--sm-red)]">{erroComunidade}</p>}
+        <ul className="space-y-2">
+          {compartilhadas.map((item) => (
+            <li key={item.id} className="flex items-center justify-between rounded border border-[color:var(--sm-border)] px-2 py-1 text-sm">
+              <span>
+                <strong>{item.dados.tituloProjeto}</strong> — {item.dados.titulo}: {item.dados.descricao}
+              </span>
+              {souAutorDe(item.id) && (
+                <button onClick={() => removerCompartilhada(item.id)} className="shrink-0 text-xs text-[color:var(--sm-red)]">
+                  remover
+                </button>
+              )}
+            </li>
+          ))}
+          {compartilhadas.length === 0 && <li className="text-[color:var(--sm-text-dim)]">Ninguém compartilhou uma oferta ainda.</li>}
+        </ul>
+      </Section>
+
+      {paraCompartilhar && (
+        <ConfirmDialog
+          titulo="Compartilhar publicamente?"
+          mensagem={`A oferta "${paraCompartilhar.titulo}" vai ficar visível pra qualquer pessoa que abrir o app — sem login, sem aprovação. Você poderá remover depois, só neste navegador.`}
+          onConfirmar={confirmarCompartilharOferta}
+          onCancelar={() => setParaCompartilhar(null)}
+          linkTexto={onAbrirPrivacidade ? "Ver política de privacidade" : undefined}
+          onLink={onAbrirPrivacidade}
+        />
+      )}
     </div>
   );
 }
