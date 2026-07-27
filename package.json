@@ -59,7 +59,8 @@
     "three": "^0.170.0"
   },
   "overrides": {
-    "uuid": "^11.1.1"
+    "uuid": "^11.1.1",
+    "brace-expansion": "^5.0.8"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.4",
