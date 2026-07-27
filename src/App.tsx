@@ -281,7 +281,7 @@ export function App() {
         onClube={() => setTela({ nome: "clube" })}
         onVoluntarios={() => setTela({ nome: "voluntarios" })}
       />
-      {renderizarTela()}
+      <div className="pl-12">{renderizarTela()}</div>
       <TaskIndicator onAbrir={() => setSidebarTarefasAberta(true)} />
       {sidebarTarefasAberta && (
         <TaskSidebar
