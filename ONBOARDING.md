@@ -15,8 +15,9 @@ simulador de sustentabilidade. **Não é app de mobilização/popular** (ver §1
 
 - **Repo**: `FinweeJur/sementeira` — **público** (código visível, mas licença proprietária —
   ver abaixo), branch default `master`
-- **Versão atual**: `0.1.0` (tag `v0.1.0` existe; **sem release** automática no GitHub — o workflow
-  `release.yml` só dispara em *novas* tags `v*`, e esta tag é anterior ao workflow)
+- **Versão atual**: `0.3.0` (tags `v0.1.0`, `v0.2.0` e `v0.3.0`; a release automática do GitHub
+  já funciona — "Sementeira 0.3.0" saiu de `v0.3.0` pelo `release.yml`. Só `v0.1.0` ficou sem
+  release, por ser anterior ao workflow)
 - **Licença**: © 2026 Artur Colito (todos os direitos reservados — repo público NÃO é licença aberta)
 
 ## 2. Stack (essencial)
@@ -39,7 +40,7 @@ simulador de sustentabilidade. **Não é app de mobilização/popular** (ver §1
 npm run dev         # renderer (vite :5183) + electron juntos (concurrently + wait-on)
 npm run typecheck   # tsc -p . --noEmit — OBRIGATÓRIO após toda mudança
 npm run build       # tsc -b && vite build → dist/
-npm run dist        # build + electron-builder → release/Sementeira Setup 0.1.0.exe
+npm run dist        # build + electron-builder → release/Sementeira Setup 0.3.0.exe
 ```
 
 **⚠️ Caveat de dev (do AGENTS.md)**: após mudanças, **reinicie o processo Electron** e confirme o
