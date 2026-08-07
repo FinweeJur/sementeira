@@ -1,0 +1,4232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Sementeira-Jogo — Jogo da Reparação</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    // Anti-FOUC: aplica o tema ANTES do layout para evitar flash claro→escuro.
+    // Mesma lógica de temaInicial() (duplicada aqui porque o script principal
+    // ainda não carregou neste ponto do <head>).
+    (function () {
+      try {
+        var t = localStorage.getItem('sementeira_tema');
+        if (t !== 'escuro' && t !== 'claro') {
+          t = (window.matchMedia &&
+               window.matchMedia('(prefers-color-scheme: dark)').matches)
+            ? 'escuro' : 'claro';
+        }
+        document.documentElement.dataset.tema = t;
+      } catch (_) { /* localStorage indisponível */ }
+    })();
+  </script>
+  <style>
+    /* ═══ PLANO A — Identidade visual consolidada ═══
+       6 cores-âncora + tokens de espaçamento/raio + 2 tipografias.
+       Mantém arquivo único offline (Google Fonts via @import com fallback). */
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Nunito:wght@400;600;700&display=swap');
+
+    :root {
+      /* Paleta âncora (6 cores) */
+      --c-verde:   #2e8b57;   /* verde-terra: marca, ações primárias */
+      --c-verde-e: #1b5e20;   /* verde-escuro: títulos, hover */
+      --c-verde-c: #4caf50;   /* verde-claro: indicador reparação */
+      --c-marrom:  #7d5b3e;   /* ocre/marrom: terra, dicas */
+      --c-bege:    #f8f5ef;   /* bege-papel: fundo */
+      --c-bege-2:  #f1ece1;   /* bege mais quente: cards */
+      --c-amarelo: #ffd600;   /* amarelo-sol: energia, destaque */
+      --c-azul:    #4fc3f7;   /* azul-rio: confiança, links */
+      --c-laranja: #ff9800;   /* laranja: participação, avançar */
+      --c-vermelho:#c62828;   /* vermelho-alerta: bloqueio, custo */
+      --c-texto:   #2d2a24;   /* texto principal (marrom-escuro quente) */
+      --c-texto-2: #6b6358;   /* texto secundário */
+
+      /* Superfícies derivadas (rebatidas no tema escuro) */
+      --c-surface:      #ffffff;   /* topo do painel/topbar/modal */
+      --c-surface-2:    var(--c-bege-2); /* cards/elevados */
+      --c-borda:        #ece7da;   /* bordas e divisórias */
+      --c-trilho:       #e6e0d2;   /* trilho das barras de indicador */
+      --c-disabled:     #c9c4ba;   /* botão desabilitado */
+      --c-autonomia:    #8bc34a;   /* barra de Autonomia (fora das 6 âncoras) */
+      --c-canvas-1:     #b8d8c0;   /* fundo do canvas (topo do gradiente) */
+      --c-canvas-2:     #cfe8d2;   /* fundo do canvas (base do gradiente) */
+      --c-canvas-sombra: rgba(27,42,20,0.15);
+      --c-fundo-ok:     #e8f5e9;   /* fundos verdes (status/efeito) */
+      --c-fundo-alerta: #ffebee;   /* fundos vermelhos (custo/bloqueio) */
+      --c-fundo-atencao:#fff3e0;   /* fundos laranja/amarelo (risco/dica) */
+      --c-fundo-suave:  #efe9d8;   /* fundo ocre de hover (abas) */
+      --c-fundo-streak: #fce4ec;   /* fundo rosa do streak */
+      --c-fundo-azul:   #e3f2fd;   /* fundo azul da mentora */
+
+      /* Tokens de espaçamento (escala 4px) */
+      --esp-0: 2px;
+      --esp-1: 4px;
+      --esp-2: 8px;
+      --esp-3: 12px;
+      --esp-4: 16px;
+      --esp-5: 24px;
+      --esp-6: 32px;
+
+      /* Tokens de raio */
+      --raio-1: 6px;
+      --raio-2: 10px;
+      --raio-3: 14px;
+      --raio-4: 20px;
+
+      /* Sombras (2 níveis) */
+      --sombra-1: 0 2px 8px rgba(46,139,87,0.10);
+      --sombra-2: 0 8px 24px rgba(46,139,87,0.16);
+      --sombra-modal: 0 16px 48px rgba(27,42,20,0.30);
+
+      /* Tipografia */
+      --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+      --font-corpo: 'Nunito', 'Segoe UI', Arial, sans-serif;
+
+      /* Easing padrão (overshoot p/ entradas) */
+      --ease-pop: cubic-bezier(.34,1.56,.64,1);
+      --ease-out: cubic-bezier(.22,.61,.36,1);
+    }
+
+    /* ─── Tema escuro: rebatidas as variáveis de superfície/contraste ───
+       Sobrescreve só o necessário; acentos (verde/amarelo/azul/laranja/
+       vermelho/marrom) mantêm-se, com leve bump de contraste. */
+    [data-tema="escuro"] {
+      --c-bege:    #14181a;   /* fundo principal */
+      --c-bege-2:  #1c2226;   /* cards quentes */
+      --c-verde-e: #6fcf97;   /* títulos/hover: claro p/ contrastar */
+      --c-texto:   #e7e3d8;   /* texto principal */
+      --c-texto-2: #a39c8d;   /* texto secundário */
+
+      --c-surface:      #1f2421;
+      --c-surface-2:    #262c28;
+      --c-borda:        #3a4239;
+      --c-trilho:       #333a34;
+      --c-disabled:     #3f4540;
+      --c-autonomia:    #7cb342;
+      --c-canvas-1:     #0e1626;
+      --c-canvas-2:     #121b2a;
+      --c-canvas-sombra: rgba(0,0,0,0.35);
+      --c-fundo-ok:     #1b3a2a;
+      --c-fundo-alerta: #3a1f22;
+      --c-fundo-atencao:#3a2c14;
+      --c-fundo-suave:  #2a2f33;
+      --c-fundo-streak: #3a2230;
+      --c-fundo-azul:   #182838;
+
+      --sombra-1: 0 2px 10px rgba(0,0,0,0.45);
+      --sombra-2: 0 10px 28px rgba(0,0,0,0.55);
+      --sombra-modal: 0 16px 48px rgba(0,0,0,0.70);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-corpo);
+      background: var(--c-bege);
+      color: var(--c-texto);
+      line-height: 1.6;
+      font-size: 16px;
+    }
+
+    h1, h2, h3 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--c-verde-e);
+      letter-spacing: -0.01em;
+    }
+
+    /* ─── Layout principal ─── */
+    .app {
+      display: grid;
+      grid-template-columns: 1fr 360px;   /* mapa maior, painel 360px */
+      grid-template-rows: auto 1fr auto;
+      gap: var(--esp-3);
+      padding: var(--esp-3);
+      max-width: 1280px;
+      margin: 0 auto;
+      min-height: 100vh;
+    }
+
+    /* ─── Topbar (logo + HUD) ─── */
+    header.topbar {
+      grid-column: 1 / -1;
+      background: var(--c-surface);
+      border-radius: var(--raio-3);
+      box-shadow: var(--sombra-1);
+      padding: var(--esp-4) var(--esp-5);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: var(--esp-3);
+      border-bottom: 3px solid var(--c-verde);
+    }
+    .logo { display: flex; align-items: center; gap: var(--esp-3); }
+    .logo .semente {
+      font-size: 1.8rem;
+      filter: drop-shadow(0 2px 4px rgba(46,139,87,0.3));
+      animation: balancar 4s ease-in-out infinite;
+      transform-origin: bottom center;
+    }
+    @keyframes balancar { 0%,100%{transform:rotate(-4deg);} 50%{transform:rotate(4deg);} }
+    /* Botão de alternância de tema (claro/escuro) — canto direito da topbar */
+    .btn-tema {
+      width: 40px; height: 40px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      border: 1.5px solid var(--c-borda);
+      background: var(--c-surface-2);
+      color: var(--c-verde-e);
+      font-size: 1.2rem;
+      line-height: 1;
+      cursor: pointer;
+      box-shadow: var(--sombra-1);
+      transition: transform 0.2s var(--ease-pop), background 0.2s, border-color 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-tema:hover { transform: scale(1.12) rotate(-8deg); border-color: var(--c-verde); }
+    .btn-tema:active { transform: scale(0.94); }
+    .btn-tema:focus-visible { outline: 2px solid var(--c-azul); outline-offset: 2px; }
+    .logo h1 {
+      font-size: 1.5rem;
+      margin: 0;
+    }
+    .logo h1 small {
+      font-family: var(--font-corpo);
+      font-weight: 400;
+      color: var(--c-texto-2);
+      font-size: 0.62em;
+      display: block;
+      margin-top: 2px;
+    }
+
+    /* ─── HUD de recursos (pílulas) ─── */
+    .hud {
+      display: flex;
+      gap: var(--esp-2);
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .recurso {
+      background: var(--c-bege);
+      border-radius: var(--raio-4);
+      padding: var(--esp-1) var(--esp-3);
+      font-size: 0.9em;
+      font-weight: 600;
+      border-left: 4px solid var(--c-verde);
+      white-space: nowrap;
+      transition: transform 0.25s var(--ease-pop);
+    }
+    .recurso.energia { border-left-color: var(--c-amarelo); }
+    .recurso.inovacao { border-left-color: #1e88e5; }
+    .recurso.mobilizacao { border-left-color: #e91e63; }
+    .recurso.transparencia { border-left-color: var(--c-marrom); }
+    .recurso.streak { border-left-color: #ad1457; background: var(--c-fundo-streak); }
+    .recurso b {
+      color: var(--c-verde-e);
+      font-family: var(--font-display);
+      font-size: 1.1em;
+    }
+    /* Microanimação: recurso sacode ao ser gasto */
+    .recurso.sacudir { animation: sacudir 0.4s var(--ease-out); }
+    @keyframes sacudir {
+      0%,100% { transform: translateX(0); }
+      20% { transform: translateX(-4px) scale(1.05); }
+      40% { transform: translateX(4px); }
+      60% { transform: translateX(-2px); }
+      80% { transform: translateX(2px); }
+    }
+
+    /* ─── Mapa (protagonista) ─── */
+    .mapa-wrap {
+      background: linear-gradient(165deg, #e8f3ea 0%, var(--c-bege) 100%);
+      border-radius: var(--raio-3);
+      box-shadow: var(--sombra-1);
+      padding: var(--esp-3);
+      display: flex;
+      flex-direction: column;
+      gap: var(--esp-3);
+      border: 1px solid rgba(46,139,87,0.08);
+      position: relative;   /* ancorar controles de zoom */
+    }
+    .zoom-controles {
+      position: absolute;
+      top: var(--esp-4);
+      right: var(--esp-4);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      z-index: 5;
+    }
+    .zoom-btn {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 2px solid var(--c-surface);
+      background: rgba(27,94,32,0.85);
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      transition: background 0.15s, transform 0.1s;
+      display: flex; align-items: center; justify-content: center;
+      line-height: 1;
+    }
+    .zoom-btn:hover { background: var(--c-verde-e); transform: scale(1.1); }
+    .zoom-btn:active { transform: scale(0.95); }
+    canvas#mapa {
+      width: 100%;
+      height: auto;
+      background: linear-gradient(180deg, var(--c-canvas-1) 0%, var(--c-canvas-2) 100%);
+      border-radius: var(--raio-2);
+      cursor: grab;
+      display: block;
+      box-shadow: inset 0 2px 8px var(--c-canvas-sombra);
+    }
+    canvas#mapa:active { cursor: grabbing; }
+
+    /* Cabeçalho do mapa (título + legenda explicativa) */
+    .mapa-cabecalho {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: var(--esp-2);
+      padding: 0 var(--esp-1);
+    }
+    .mapa-titulo h3 {
+      font-size: 1.05rem;
+      margin: 0;
+    }
+    .mapa-subtitulo {
+      font-size: 0.78em;
+      color: var(--c-texto-2);
+      margin: 0;
+    }
+    .mapa-legenda {
+      display: flex;
+      gap: var(--esp-3);
+      flex-wrap: wrap;
+      font-size: 0.78em;
+      color: var(--c-texto-2);
+    }
+    .leg-item { display: inline-flex; align-items: center; gap: var(--esp-1); white-space: nowrap; }
+    .leg-cor {
+      display: inline-block;
+      width: 12px; height: 12px;
+      border-radius: 3px;
+      border: 1px solid rgba(0,0,0,0.15);
+    }
+    @media (max-width: 820px) {
+      .mapa-cabecalho { flex-direction: column; align-items: flex-start; }
+      .mapa-legenda { font-size: 0.72em; }
+    }
+
+    /* ─── Barra de ações ─── */
+    .acoes {
+      display: flex;
+      gap: var(--esp-2);
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    button.btn {
+      background: var(--c-verde);
+      color: white;
+      border: none;
+      padding: var(--esp-3) var(--esp-5);
+      border-radius: var(--raio-2);
+      font-family: var(--font-corpo);
+      font-size: 0.95em;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.18s var(--ease-out), transform 0.12s var(--ease-out), box-shadow 0.18s;
+      box-shadow: var(--sombra-1);
+    }
+    button.btn:hover {
+      background: var(--c-verde-e);
+      box-shadow: var(--sombra-2);
+      transform: translateY(-1px);
+    }
+    button.btn:active { transform: translateY(0) scale(0.97); }
+    button.btn:disabled {
+      background: var(--c-disabled); cursor: not-allowed; box-shadow: none; transform: none;
+    }
+    button.btn.avancar {
+      background: var(--c-laranja);
+      font-size: 1.05em;
+      padding: var(--esp-3) var(--esp-6);
+    }
+    button.btn.avancar:hover { background: #e65100; }
+    /* Microanimação: botão "respira" quando clicável e há algo a fazer */
+    button.btn.avancar.respirar:not(:disabled) {
+      animation: respirar 2s ease-in-out infinite;
+    }
+    @keyframes respirar {
+      0%,100% { box-shadow: 0 0 0 0 rgba(255,152,0,0.5); }
+      50% { box-shadow: 0 0 0 10px rgba(255,152,0,0); }
+    }
+    button.btn.secundario {
+      background: var(--c-surface);
+      color: var(--c-verde-e);
+      border: 1.5px solid var(--c-borda);
+      padding: var(--esp-2) var(--esp-4);
+      font-size: 0.88em;
+    }
+    button.btn.secundario:hover {
+      background: var(--c-bege);
+      border-color: var(--c-verde);
+    }
+
+    /* ─── Painel lateral ─── */
+    aside.painel {
+      background: var(--c-surface);
+      border-radius: var(--raio-3);
+      box-shadow: var(--sombra-1);
+      padding: var(--esp-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--esp-4);
+      overflow-y: auto;
+      max-height: 82vh;
+      border: 1px solid rgba(46,139,87,0.06);
+    }
+    .bloco-titulo {
+      font-family: var(--font-corpo);
+      font-size: 0.72em;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--c-marrom);
+      font-weight: 700;
+      margin-bottom: var(--esp-2);
+      padding-bottom: var(--esp-1);
+      border-bottom: 1px solid var(--c-borda);
+    }
+    .projeto-card {
+      background: var(--c-bege);
+      border-radius: var(--raio-2);
+      padding: var(--esp-3);
+      border-left: 4px solid var(--c-verde-c);
+    }
+    .projeto-nome {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.05em;
+      color: var(--c-verde-e);
+    }
+    .projeto-estagio {
+      display: inline-block;
+      background: var(--c-fundo-ok);
+      color: var(--c-verde-e);
+      border-radius: var(--raio-1);
+      padding: var(--esp-1) var(--esp-2);
+      font-size: 0.8em;
+      font-weight: 700;
+      margin-left: var(--esp-2);
+      transition: transform 0.4s var(--ease-pop);
+    }
+    .projeto-estagio.pulsar { animation: pulso-verde 0.6s var(--ease-pop); }
+    @keyframes pulso-verde {
+      0% { transform: scale(1); background: var(--c-fundo-ok); }
+      50% { transform: scale(1.18); background:#a5d6a7; }
+      100% { transform: scale(1); background: var(--c-fundo-ok); }
+    }
+    .projeto-meta {
+      font-size: 0.85em;
+      color: var(--c-texto-2);
+      margin-top: var(--esp-1);
+    }
+    .projeto-meta b { color: var(--c-verde-e); }
+    #p-gov.gov-pendente { color: var(--c-vermelho); font-weight: 600; }
+    #p-gov.gov-ativa { color: var(--c-verde-e); font-weight: 700; }
+    #input-importar { display: none; }
+
+    /* ─── Indicadores ─── */
+    .indicador {
+      display: flex;
+      align-items: center;
+      gap: var(--esp-2);
+      margin: var(--esp-2) 0;
+      font-size: 0.92em;
+      font-weight: 600;
+    }
+    .indicador .nome { min-width: 92px; }
+    .barra-fundo {
+      flex: 1;
+      height: 10px;
+      background: var(--c-trilho);
+      border-radius: var(--raio-4);
+      overflow: hidden;
+      position: relative;
+    }
+    .barra-fundo > div {
+      height: 100%;
+      border-radius: var(--raio-4);
+      transition: width 0.6s var(--ease-out);
+    }
+    /* Microanimação: flash quando indicador muda */
+    .barra-fundo.flash > div { animation: flash-barra 0.7s var(--ease-out); }
+    @keyframes flash-barra {
+      0% { filter: brightness(1); }
+      30% { filter: brightness(1.6) saturate(1.4); box-shadow: 0 0 12px currentColor; }
+      100% { filter: brightness(1); }
+    }
+    .indicador b {
+      font-family: var(--font-display);
+      min-width: 28px;
+      text-align: right;
+      color: var(--c-verde-e);
+    }
+
+    /* ─── Diário / log ─── */
+    .log {
+      background: var(--c-bege);
+      border-radius: var(--raio-2);
+      padding: var(--esp-3);
+      font-size: 0.85em;
+      max-height: 140px;
+      overflow-y: auto;
+      border: 1px solid var(--c-borda);
+      line-height: 1.5;
+    }
+    .log div {
+      margin-bottom: var(--esp-1);
+      padding: var(--esp-1) 0;
+      border-bottom: 1px dashed var(--c-borda);
+    }
+    .log div:last-child { border-bottom: none; }
+    .log div b { color: var(--c-marrom); font-family: var(--font-display); }
+    .log div.novo { animation: slideIn 0.4s var(--ease-pop); }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-12px); background: var(--c-fundo-atencao); }
+      to { opacity: 1; transform: translateX(0); background: transparent; }
+    }
+
+    /* ─── Auditoria ─── */
+    #auditoria { font-size: 0.85em; }
+    #auditoria .veredito {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.1em;
+    }
+    #auditoria .pend {
+      color: var(--c-texto-2);
+      padding: var(--esp-1) 0 var(--esp-1) var(--esp-2);
+    }
+    #auditoria.bloqueio {
+      background: var(--c-fundo-alerta);
+      border-radius: var(--raio-2);
+      padding: var(--esp-3);
+      border-left: 4px solid var(--c-vermelho);
+      animation: alerta-pulso 1.2s ease-in-out infinite;
+    }
+    @keyframes alerta-pulso {
+      0%,100% { box-shadow: 0 0 0 0 rgba(198,40,40,0.4); }
+      50% { box-shadow: 0 0 0 6px rgba(198,40,40,0); }
+    }
+
+    /* ─── Faixa de alerta preventivo (B2.4) ─── */
+    .alerta-perigo {
+      margin: var(--esp-2) var(--esp-3) 0;
+      padding: var(--esp-2) var(--esp-4);
+      border-radius: var(--raio-2);
+      font-size: 0.88em;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+    .alerta-perigo[hidden] { display: none; }
+    .alerta-perigo.critico {
+      background: var(--c-fundo-alerta);
+      color: var(--c-vermelho);
+      border-left: 4px solid var(--c-vermelho);
+      animation: alerta-pulso 1.4s ease-in-out infinite;
+    }
+    .alerta-perigo.atencao {
+      background: var(--c-fundo-atencao);
+      color: #e65100;
+      border-left: 4px solid var(--c-laranja);
+    }
+    /* Pílula de recurso em estado crítico */
+    .recurso.critico {
+      border-color: var(--c-vermelho) !important;
+      color: var(--c-vermelho) !important;
+      animation: alerta-pulso 1.4s ease-in-out infinite;
+    }
+
+    /* ─── Abas do painel lateral ─── */
+    .abas {
+      display: flex;
+      gap: var(--esp-1);
+      border-bottom: 2px solid var(--c-verde-c);
+      padding-bottom: 0;
+    }
+    .aba {
+      flex: 1;
+      padding: var(--esp-2) var(--esp-1);
+      border: none;
+      background: var(--c-bege);
+      color: var(--c-marrom);
+      font-family: var(--font-corpo);
+      font-size: 0.82em;
+      font-weight: 600;
+      border-radius: var(--raio-2) var(--raio-2) 0 0;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.15s ease;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .aba:hover { background: var(--c-fundo-suave); transform: translateY(-1px); }
+    .aba.ativa {
+      background: var(--c-surface);
+      color: var(--c-verde-e);
+      font-weight: 700;
+      border-bottom: 3px solid var(--c-verde-c);
+      margin-bottom: -2px;            /* sobrepõe a borda do .abas */
+    }
+    .aba:focus-visible { outline: 2px solid var(--c-azul); outline-offset: 2px; }
+    /* Conteúdo das abas: cada container é um flex column com o mesmo gap do painel */
+    .aba-conteudo {
+      display: flex;
+      flex-direction: column;
+      gap: var(--esp-3);
+    }
+    .aba-conteudo[hidden] { display: none; }
+    /* Badge pulsante na aba Auditoria quando há atenção/bloqueio */
+    .badge-aud {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 16px;
+      height: 16px;
+      padding: 0 4px;
+      background: var(--c-vermelho);
+      color: white;
+      font-size: 0.7em;
+      font-weight: 700;
+      border-radius: 8px;
+      animation: pulse-badge 1s ease-in-out infinite;
+    }
+    @keyframes pulse-badge {
+      0%,100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(198,40,40,0.5); }
+      50% { transform: scale(1.15); box-shadow: 0 0 0 4px rgba(198,40,40,0); }
+    }
+
+    /* ─── Overlay / Modal ─── */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(27,42,20,0.55);   /* escurece mais pra focar no dilema */
+      backdrop-filter: blur(3px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: var(--esp-4);
+    }
+    .overlay.show { display: flex; animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .modal {
+      background: var(--c-surface);
+      border-radius: var(--raio-4);
+      padding: var(--esp-5);
+      max-width: 520px;
+      width: 100%;
+      box-shadow: var(--sombra-modal);
+      animation: pop 0.35s var(--ease-pop);
+      max-height: 90vh;
+      overflow-y: auto;
+      border-top: 5px solid var(--c-verde);
+    }
+    @keyframes pop {
+      from { transform: scale(0.9) translateY(20px); opacity: 0; }
+      to { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    .modal h2 {
+      font-size: 1.4rem;
+      margin-bottom: var(--esp-1);
+    }
+    .modal .sub {
+      color: var(--c-texto-2);
+      margin-bottom: var(--esp-4);
+      font-size: 0.96em;
+      line-height: 1.55;
+    }
+
+    /* ─── Opções de dilema ─── */
+    .opcao {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: var(--c-bege);
+      border: 2px solid var(--c-borda);
+      border-radius: var(--raio-2);
+      padding: var(--esp-3) var(--esp-4);
+      margin: var(--esp-2) 0;
+      cursor: pointer;
+      transition: all 0.18s var(--ease-out);
+      font-family: var(--font-corpo);
+    }
+    .opcao:hover:not(:disabled) {
+      border-color: var(--c-verde);
+      background: #eef7ee;
+      transform: translateY(-2px);
+      box-shadow: var(--sombra-1);
+    }
+    .opcao:disabled { opacity: 0.5; cursor: not-allowed; }
+    .opcao-titulo {
+      font-weight: 700;
+      margin-bottom: var(--esp-1);
+      color: var(--c-verde-e);
+    }
+    .opcao-desc { font-size: 0.88em; color: var(--c-texto-2); line-height: 1.45; }
+    /* Dica da mentora por opção — só no 1º dilema (didático, B2.3) */
+    .opcao-dica-mentora {
+      margin-top: var(--esp-2);
+      padding: var(--esp-2) var(--esp-3);
+      background: var(--c-fundo-azul);
+      border-left: 3px solid var(--c-azul);
+      border-radius: var(--raio-1);
+      font-size: 0.84em;
+      color: var(--c-texto);
+      line-height: 1.45;
+    }
+    .tags { margin-top: var(--esp-2); }
+    .tag {
+      display: inline-block;
+      font-size: 0.74em;
+      font-weight: 700;
+      padding: var(--esp-1) var(--esp-2);
+      border-radius: var(--raio-1);
+      margin-right: var(--esp-1);
+    }
+    .tag.custo { background: var(--c-fundo-alerta); color: var(--c-vermelho); }
+    .tag.efeito { background: var(--c-fundo-ok); color: var(--c-verde-e); }
+    .tag.risco { background: var(--c-fundo-atencao); color: #e65100; }
+    .tag.insuficiente {
+      display: block;
+      margin-top: var(--esp-1);
+      color: var(--c-vermelho);
+      font-size: 0.82em;
+      font-style: italic;
+    }
+
+    .mentora {
+      background: linear-gradient(110deg, var(--c-fundo-azul), var(--c-bege));
+      border-left: 5px solid #1e88e5;
+      border-radius: var(--raio-2);
+      padding: var(--esp-3) var(--esp-4);
+      margin-bottom: var(--esp-3);
+      display: flex;
+      gap: var(--esp-3);
+      align-items: flex-start;
+    }
+    .mentora-avatar { font-size: 1.6rem; flex-shrink: 0; }
+    .mentora i { color: #1565c0; font-size: 0.92em; line-height: 1.5; }
+
+    /* Tradução inline de jargão (B4.1) */
+    .jargao {
+      display: inline;
+      color: var(--c-marrom);
+      font-size: 0.82em;
+      font-style: italic;
+      background: rgba(125,91,62,0.10);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+    /* Banner do 1º dilema (didático) */
+    .banner-didatico {
+      background: linear-gradient(110deg, var(--c-fundo-atencao), var(--c-bege));
+      border-left: 5px solid var(--c-amarelo);
+      border-radius: var(--raio-2);
+      padding: var(--esp-3) var(--esp-4);
+      margin-bottom: var(--esp-3);
+      font-size: 0.92em;
+      line-height: 1.55;
+      color: var(--c-texto);
+    }
+    .banner-didatico strong { color: #e65100; }
+
+    /* Próxima meta no card do projeto */
+    .proxima-meta {
+      margin-top: var(--esp-2);
+      padding-top: var(--esp-2);
+      border-top: 1px dashed var(--c-borda);
+      font-size: 0.82em;
+      font-weight: 600;
+    }
+
+    /* Tela de seleção de projeto */
+    .grid-projetos {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--esp-3);
+      margin-top: var(--esp-3);
+    }
+    .card-projeto {
+      background: var(--c-surface);
+      border: 2px solid var(--c-borda);
+      border-top: 5px solid var(--cor-proj, var(--c-verde));
+      border-radius: var(--raio-2);
+      padding: var(--esp-3);
+      cursor: pointer;
+      text-align: center;
+      font-family: inherit;
+      transition: all 0.2s var(--ease-out);
+      display: flex;
+      flex-direction: column;
+      gap: var(--esp-1);
+    }
+    .card-projeto:hover {
+      border-color: var(--cor-proj, var(--c-verde));
+      transform: translateY(-3px);
+      box-shadow: var(--sombra-2);
+    }
+    .card-proj-emoji { font-size: 2.6rem; }
+    .card-proj-nome {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--cor-proj, var(--c-verde-e));
+    }
+    .card-proj-desc {
+      font-size: 0.85em;
+      color: var(--c-texto-2);
+      line-height: 1.45;
+      flex: 1;
+    }
+    .card-proj-meta {
+      display: flex;
+      justify-content: space-around;
+      font-size: 0.82em;
+      font-weight: 600;
+      color: var(--c-verde-e);
+      padding: var(--esp-1) 0;
+      border-top: 1px dashed var(--c-borda);
+      border-bottom: 1px dashed var(--c-borda);
+    }
+    .card-proj-frase {
+      font-size: 0.8em;
+      font-style: italic;
+      color: var(--c-marrom);
+    }
+    @media (max-width: 560px) {
+      .grid-projetos { grid-template-columns: 1fr; }
+    }
+
+    /* Painel de gestão do empreendimento (ações) */
+    .gestao-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--esp-2);
+      font-size: 0.82em;
+    }
+    .gestao-item {
+      background: var(--c-bege);
+      border-radius: var(--raio-1);
+      padding: var(--esp-2);
+      text-align: center;
+    }
+    .gestao-item .icone { font-size: 1.2em; }
+    .gestao-item .valor {
+      font-family: var(--font-display);
+      font-weight: 700;
+      color: var(--c-verde-e);
+      display: block;
+      font-size: 1.1em;
+    }
+    .gestao-item .rotulo {
+      color: var(--c-texto-2);
+      font-size: 0.85em;
+    }
+
+    .dica-valor {
+      margin-top: var(--esp-4);
+      font-size: 0.88em;
+      color: var(--c-marrom);
+      font-style: italic;
+      padding-top: var(--esp-3);
+      border-top: 1px dashed var(--c-borda);
+    }
+    .fechar-x {
+      float: right;
+      background: none; border: none; font-size: 1.5rem;
+      cursor: pointer; color: var(--c-texto-2);
+      line-height: 1; padding: 0 var(--esp-1);
+      transition: color 0.15s, transform 0.15s;
+    }
+    .fechar-x:hover { color: var(--c-vermelho); transform: rotate(90deg); }
+
+    /* ─── Pop-up flutuante de efeito (+18 participação) ─── */
+    .pop-efeito {
+      position: fixed;
+      z-index: 250;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.3rem;
+      pointer-events: none;
+      animation: voar 1.6s var(--ease-out) forwards;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    @keyframes voar {
+      0% { opacity: 0; transform: translateY(0) scale(0.5); }
+      20% { opacity: 1; transform: translateY(-10px) scale(1.2); }
+      100% { opacity: 0; transform: translateY(-60px) scale(1); }
+    }
+
+    /* ─── Banner de celebração (progressão de estágio) ─── */
+    .celebracao {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      z-index: 300;
+      background: linear-gradient(135deg, var(--c-verde-e), var(--c-verde));
+      color: white;
+      padding: var(--esp-5) var(--esp-6);
+      border-radius: var(--raio-4);
+      text-align: center;
+      box-shadow: var(--sombra-modal);
+      animation: celebIn 0.5s var(--ease-pop), celebOut 0.5s var(--ease-out) 2s forwards;
+    }
+    @keyframes celebIn { from { transform: translate(-50%,-50%) scale(0.5); opacity: 0; } to { transform: translate(-50%,-50%) scale(1); opacity: 1; } }
+    @keyframes celebOut { to { transform: translate(-50%,-50%) scale(1.1); opacity: 0; } }
+    .celebracao .emoji { font-size: 3.5rem; display: block; margin-bottom: var(--esp-2); animation: girar 0.8s var(--ease-pop); }
+    @keyframes girar { from { transform: rotate(-180deg) scale(0); } to { transform: rotate(0) scale(1); } }
+    .celebracao h3 { color: white; font-size: 1.8rem; margin-bottom: var(--esp-1); }
+    .celebracao p { opacity: 0.95; font-size: 1rem; }
+
+    /* ─── Banner de aviso (recursos insuficientes) ─── */
+    .aviso {
+      position: fixed;
+      bottom: var(--esp-5); left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--c-vermelho); color: white;
+      padding: var(--esp-3) var(--esp-5);
+      border-radius: var(--raio-2);
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(198,40,40,0.4);
+      z-index: 200; opacity: 0;
+      transition: opacity 0.3s, transform 0.3s var(--ease-out);
+      pointer-events: none;
+    }
+    .aviso.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ─── Tela de fim de jogo (score + conquistas + recorde) ─── */
+    .fim-cabecalho { text-align: center; margin-bottom: var(--esp-3); }
+    .fim-emoji { font-size: 3.5rem; line-height: 1; margin-bottom: var(--esp-1); animation: girar 0.8s var(--ease-pop); }
+    .fim-cabecalho h2 { font-family: var(--font-display); margin: 0; }
+    /* Cores por classe de resultado */
+    .classe-memoravel h2, .classe-exitoso h2 { color: var(--c-verde-e); }
+    .classe-parcial h2 { color: var(--c-laranja); }
+    .classe-interrompido h2, .classe-derrota h2 { color: var(--c-vermelho); }
+    .fim-projeto { text-align: center; color: var(--c-texto-2); margin-bottom: var(--esp-4); font-size: 0.92em; }
+
+    .score-card {
+      background: var(--c-surface-2); border: 1px solid var(--c-borda);
+      border-radius: var(--raio-3); padding: var(--esp-3) var(--esp-4);
+      margin-bottom: var(--esp-4); font-size: 0.9em;
+    }
+    .score-linha {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: var(--esp-1) 0; border-bottom: 1px dashed var(--c-borda);
+    }
+    .score-linha:last-child { border-bottom: none; }
+    .score-pos { color: var(--c-verde-e); font-weight: 700; }
+    .score-neg { color: var(--c-vermelho); font-weight: 700; }
+    .score-total {
+      margin-top: var(--esp-2); padding-top: var(--esp-3);
+      border-top: 2px solid var(--c-verde-e); border-bottom: none;
+      font-size: 1.15em; font-weight: 700; color: var(--c-verde-e);
+    }
+    .score-total span:last-child small { font-size: 0.6em; color: var(--c-texto-2); font-weight: 400; }
+
+    .bloco { margin-bottom: var(--esp-4); }
+    .bloco h3 { font-size: 1em; margin: 0 0 var(--esp-2); color: var(--c-texto); }
+    .selos-grid { display: flex; flex-wrap: wrap; gap: var(--esp-2); }
+    .selo {
+      display: inline-flex; flex-direction: column; align-items: center; gap: 2px;
+      background: var(--c-fundo-ok); border: 1px solid var(--c-verde-c);
+      border-radius: var(--raio-2); padding: var(--esp-2) var(--esp-3); min-width: 84px;
+    }
+    .selo > span:first-child, .selo { /* emoji grande */ }
+    .selo { font-size: 1.6rem; }
+    .selo small { font-size: 0.72em; color: var(--c-verde-e); font-weight: 600; }
+
+    .recorde-linha {
+      background: var(--c-fundo-azul); border-radius: var(--raio-2);
+      padding: var(--esp-2) var(--esp-3); margin-bottom: var(--esp-4);
+      font-size: 0.85em; color: var(--c-texto-2); text-align: center;
+    }
+    .recorde-linha b { color: var(--c-texto); }
+
+    .fim-mentora {
+      background: var(--c-fundo-azul); border-left: 4px solid var(--c-azul);
+      border-radius: var(--raio-2); padding: var(--esp-3) var(--esp-4);
+      margin-bottom: var(--esp-4); line-height: 1.6; font-size: 0.92em;
+    }
+    .fim-acoes { display: flex; gap: var(--esp-2); justify-content: center; }
+
+    footer {
+      grid-column: 1 / -1;
+      text-align: center;
+      color: var(--c-texto-2);
+      font-size: 0.82em;
+      padding: var(--esp-2);
+      line-height: 1.6;
+    }
+    footer small { color: var(--c-texto-2); }
+
+    @media (max-width: 820px) {
+      .app { grid-template-columns: 1fr; }
+      aside.painel { max-height: none; }
+      .logo h1 { font-size: 1.2rem; }
+    }
+
+    /* Acessibilidade: respeitar redução de movimento */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      .logo .semente { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="logo">
+        <span class="semente">🌱</span>
+        <h1>Sementeira-Jogo <small>Jogo da Reparação · Limalândia</small></h1>
+      </div>
+      <div class="hud">
+        <div class="recurso" id="hud-semana" title="Em qual semana do ciclo de 12 semanas você está. O tempo é o desafio central do jogo.">📅 Semana <b id="v-semana">1</b>/<span id="v-max">12</span></div>
+        <div class="recurso energia" id="recurso-energia" title="⚡ Energia — recarrega toda semana. Cada ação (resolver dilema, assembleia) custa energia. Se zerar, semana de descanso forçado (-5 autonomia).">⚡ <b id="v-energia">5</b>/5</div>
+        <div class="recurso" id="recurso-verba" title="💰 Verba — dinheiro do Anexo 1.1. NÃO recarrega. Gaste com sabedoria, é a única fonte até dilemas trazerem mais.">💰 R$ <b id="v-verba">80.000</b></div>
+        <div class="recurso inovacao" id="recurso-inov" title="💡 Inovação — soluções criativas. Use pra transformar problemas em oportunidades (compra coletiva, parcerias). Máximo 3.">💡 <b id="v-inov">1</b>/3</div>
+        <div class="recurso mobilizacao" id="recurso-mob" title="🤝 Mobilização — capacidade de chamar parceiros (CRAS, escola, igreja). Resolve dilemas com ajuda externa. Máximo 10.">🤝 <b id="v-mob">2</b>/10</div>
+        <div class="recurso transparencia" id="recurso-transp" title="📋 Transparência — seu escudo contra auditoria e mudanças de regra. Obriga prestação de contas pública. Máximo 2.">📋 <b id="v-transp">1</b>/2</div>
+        <div class="recurso streak" id="hud-streak" style="display:none;" title="🔥 Streak — bônus por participar várias semanas seguidas. Quebrou o ritmo? Zera, mas recomeça fácil.">🔥 Streak <b id="v-streak">0</b></div>
+      </div>
+      <button class="btn-tema" id="btn-tema" type="button" aria-label="Alternar tema claro e escuro" title="Alternar tema (claro/escuro)">☀️</button>
+    </header>
+
+    <!-- Faixa de alerta preventivo (B2.4) — só visível quando há perigo ativo -->
+    <div class="alerta-perigo" id="alerta-perigo" hidden aria-live="polite"></div>
+
+    <div class="mapa-wrap">
+      <div class="mapa-cabecalho">
+        <div class="mapa-titulo">
+          <h3>🗺️ Território de Limalândia</h3>
+          <p class="mapa-subtitulo">Arraste pra mover · clique nas construções pra saber mais · veja sua estamparia crescer 🌱</p>
+        </div>
+        <div class="mapa-legenda" id="mapa-legenda">
+          <span class="leg-item">🏭 Estamparia</span>
+          <span class="leg-item">🔆 Painel solar</span>
+          <span class="leg-item">⛰️ Morro</span>
+          <span class="leg-item">🌾 Vale</span>
+          <span class="leg-item">🌊 Rio Cristalino</span>
+        </div>
+      </div>
+      <canvas id="mapa" width="760" height="440"></canvas>
+      <div class="zoom-controles">
+        <button class="zoom-btn" id="btn-zoom-in" title="Aproximar (ver o projeto de perto)">➕</button>
+        <button class="zoom-btn" id="btn-zoom-reset" title="Voltar ao zoom padrão">🎯</button>
+        <button class="zoom-btn" id="btn-zoom-out" title="Afastar (ver o território todo)">➖</button>
+      </div>
+      <div class="acoes">
+        <button class="btn avancar" id="btn-avancar">➡️ Avançar 1 semana</button>
+        <button class="btn" id="btn-acoes" style="background:var(--c-marrom);">🎯 Ações da semana</button>
+        <button class="btn secundario" id="btn-energia">⚡ Diagnosticar rede de energia</button>
+        <button class="btn secundario" id="btn-salvar">💾 Salvar</button>
+        <button class="btn secundario" id="btn-carregar">📂 Carregar</button>
+        <button class="btn secundario" id="btn-exportar">📤 Exportar .seedproj</button>
+        <button class="btn secundario" id="btn-importar">📥 Importar .seedproj</button>
+        <button class="btn secundario" id="btn-glossario">📖 Termos</button>
+        <button class="btn secundario" id="btn-ajuda">ℹ️ Como funciona</button>
+        <!-- input escondido: o import de arquivos só funciona via <input type=file> -->
+        <input type="file" id="input-importar" accept=".seedproj,application/json">
+      </div>
+    </div>
+
+    <aside class="painel">
+      <!-- Header fixo: identidade do projeto sempre visível (nome + estágio + viço) -->
+      <div class="projeto-card">
+        <div><span class="projeto-nome" id="p-nome">—</span><span class="projeto-estagio" id="p-estagio">🌱 semente</span></div>
+        <div class="projeto-meta">Viço: <b id="p-vico">80</b>/100 · Governança: <span id="p-gov" class="gov-pendente">⚠ pendente</span></div>
+      </div>
+
+      <!-- Botões de aba -->
+      <div class="abas" role="tablist">
+        <button class="aba ativa" data-aba="estado" role="tab" aria-selected="true">📊 Estado</button>
+        <button class="aba" data-aba="diario" role="tab" aria-selected="false">📜 Diário</button>
+        <button class="aba" data-aba="auditoria" role="tab" aria-selected="false">⚖️ Auditoria <span class="badge-aud" hidden>!</span></button>
+      </div>
+
+      <!-- Aba Estado: meta + gestão + indicadores -->
+      <div class="aba-conteudo" data-aba="estado" role="tabpanel">
+        <div>
+          <div class="bloco-titulo">Próxima meta</div>
+          <div class="projeto-meta proxima-meta" id="proxima-meta">🎯 Próxima meta: —</div>
+        </div>
+        <div>
+          <div class="bloco-titulo">Gestão do empreendimento</div>
+          <div class="gestao-grid" id="gestao-grid"></div>
+        </div>
+        <div>
+          <div class="bloco-titulo">Indicadores do território</div>
+          <div class="indicador" title="🌿 Reparação — impacto concreto do projeto na vida da comunidade. Sobe quando o projeto gera renda, redução de custos ou melhoria real."><span class="nome">🌿 Reparação</span> <span class="barra-fundo" id="barra-rep"><div id="bar-rep" style="background:var(--c-verde-c);width:10%;"></div></span><b id="v-rep">10</b></div>
+          <div class="indicador" title="👥 Participação — o quanto a comunidade está envolvida e decidindo junto. Sobe com assembleias, mobilização e adesão."><span class="nome">👥 Participação</span> <span class="barra-fundo" id="barra-part"><div id="bar-part" style="background:var(--c-laranja);width:15%;"></div></span><b id="v-part">15</b></div>
+          <div class="indicador" title="💰 Autonomia — independência financeira do projeto. Sobe quando ele gera renda própria e não depende só de verba externa."><span class="nome">💰 Autonomia</span> <span class="barra-fundo" id="barra-aut"><div id="bar-aut" style="background:var(--c-autonomia);width:5%;"></div></span><b id="v-aut">5</b></div>
+          <div class="indicador" title="🤝 Confiança — credibilidade e governança. Sobe com transparência, prestação de contas e decisões éticas."><span class="nome">🤝 Confiança</span> <span class="barra-fundo" id="barra-conf"><div id="bar-conf" style="background:var(--c-azul);width:20%;"></div></span><b id="v-conf">20</b></div>
+        </div>
+      </div>
+
+      <!-- Aba Diário -->
+      <div class="aba-conteudo" data-aba="diario" role="tabpanel" hidden>
+        <div>
+          <div class="bloco-titulo">📜 Diário do território</div>
+          <div class="log" id="log"></div>
+        </div>
+      </div>
+
+      <!-- Aba Auditoria -->
+      <div class="aba-conteudo" data-aba="auditoria" role="tabpanel" hidden>
+        <div>
+          <div class="bloco-titulo">⚖️ Auditoria (Ofício 46)</div>
+          <div id="auditoria">—</div>
+        </div>
+      </div>
+    </aside>
+
+    <footer>
+      🌱 Sementeira-Jogo · protótipo educativo de reparação popular · inspirado na luta do Movimento dos Atingidos por Limalândia.<br>
+      <small>Decisões do jogo refletem regras reais do Ofício 46 e do Anexo 1.1. Aqui você aprende errando — sem risco real.</small>
+    </footer>
+  </div>
+
+  <!-- Modal genérico (dilema / onboarding / fim) -->
+  <div class="overlay" id="overlay">
+    <div class="modal" id="modal"><!-- preenchido por JS --></div>
+  </div>
+
+  <div class="aviso" id="aviso"></div>
+
+<script>
+'use strict';
+
+// ════════════════════════════════════════════════════════════
+// SEMEIRA-JOGO — Motor do jogo (reducer determinístico puro)
+// Canvas 2D isométrico · 100% offline · sem dependências externas
+// ════════════════════════════════════════════════════════════
+
+// ─── Tipos de terreno do mapa (grid 16x10) ──────────────────
+const TERRENO = { TERRA: 0, TRILHA: 1, MORRO: 2, VALE: 3, RIO: 4, ASFALTO: 5 };
+
+// Paletas de terreno por tema. TERRENO_COR é reatribuído em aplicarTema();
+// desenharTile()/desenharParedeElevacao() leem-no e derivam tons via clarear().
+const PALETA_TERRENO_CLARO = {
+  [TERRENO.TERRA]:   '#cdb489',
+  [TERRENO.TRILHA]:  '#b89b6a',
+  [TERRENO.MORRO]:   '#8d6e63',
+  [TERRENO.VALE]:    '#8bc34a',
+  [TERRENO.RIO]:     '#4fc3f7',
+  [TERRENO.ASFALTO]: '#546e7a'
+};
+// Noite: tons frios e escuros; rio vira azul-petróleo luminoso; asfalto quase-preto.
+const PALETA_TERRENO_ESCURO = {
+  [TERRENO.TERRA]:   '#4a4233',
+  [TERRENO.TRILHA]:  '#3f3929',
+  [TERRENO.MORRO]:   '#3d352e',
+  [TERRENO.VALE]:    '#2f5d3a',
+  [TERRENO.RIO]:     '#2a6f97',
+  [TERRENO.ASFALTO]: '#1c2429'
+};
+let TERRENO_COR = { ...PALETA_TERRENO_CLARO };
+
+// Cores do céu (gradiente do topo do canvas). Reatribuídas em aplicarTema().
+let CEU_TOPO  = '#bbdefb';
+let CEU_BASE  = 'rgba(187,222,251,0)';
+// Custo de travessia para o A* (fluxo de energia)
+const TERRENO_CUSTO = {
+  [TERRENO.TERRA]: 1, [TERRENO.TRILHA]: 1, [TERRENO.MORRO]: 3,
+  [TERRENO.VALE]: 1, [TERRENO.RIO]: Infinity, [TERRENO.ASFALTO]: 1
+};
+// Mapa fixo determinístico (mesmo a cada execução)
+// Mapa do território (0=terra, 1=trilha, 2=morro, 3=vale, 4=rio, 5=asfalto/rua)
+// O asfalto (5) corta o mapa em diagonal — a rua principal que divide bairros.
+const MAPA = [
+  [2,2,2,0,0,1,0,0,0,5,0,3,3,3,3,3],
+  [2,2,0,0,0,1,1,0,5,0,0,3,3,3,3,3],
+  [2,0,0,1,1,1,0,5,0,0,0,3,3,3,3,3],
+  [0,0,1,1,1,0,5,0,0,0,3,3,3,3,3,3],
+  [0,1,1,1,0,5,0,0,0,3,3,3,3,3,3,4],
+  [1,1,1,0,5,0,0,0,3,3,3,3,3,3,4,4],
+  [1,1,0,5,0,0,0,3,3,3,3,3,3,4,4,4],
+  [1,0,5,0,0,0,3,3,3,3,3,3,4,4,4,4],
+  [0,5,0,0,0,3,3,3,3,3,3,4,4,4,4,4],
+  [5,0,0,0,3,3,3,3,3,3,4,4,4,4,4,4]
+];
+const MAPA_LARG = 16, MAPA_ALT = 10;
+
+const ESTAGIOS = ['semente','broto','muda','arvore','frutificando'];
+const ESTAGIO_EMOJI = { semente:'🌱', broto:'🌿', muda:'🌳', arvore:'🏭', frutificando:'🍎' };
+
+// ════════════════════════════════════════════════════════════
+// CATÁLOGO DE PROJETOS — o jogador escolhe qual tocar
+// ════════════════════════════════════════════════════════════
+// Cada projeto define: identidade visual, construções iniciais no mapa,
+// emojis de estágio específicos, valores iniciais e descrição pro jogador leigo.
+const PROJETOS = {
+  estamparia: {
+    id: 'estamparia',
+    nome: 'Estamparia e Costura',
+    emoji: '🏭',
+    cor: '#1565c0',
+    descricao: 'Uma fábrica popular de confecção e estamparia, gerida por mulheres da comunidade. Produz uniformes escolares, camisetas e gera renda e emprego.',
+    frase: 'Tecido, cor e trabalho — a moda que veste a comunidade.',
+    construcoes: [
+      { tipo: 'estamparia', x: 8, y: 4 },
+      { tipo: 'painel',     x: 5, y: 6 }
+    ],
+    estagioEmoji: { semente:'🧵', broto:'👕', muda:'🏭', arvore:'🎽', frutificando:'🛍️' },
+    verbaInicial: 80000,
+    valoresIniciais: { reparacao: 10, participacao: 15, autonomia: 5, confianca: 20 }
+  },
+  horta: {
+    id: 'horta',
+    nome: 'Horta Comunitária',
+    emoji: '🥬',
+    cor: '#558b2f',
+    descricao: 'Produção coletiva de alimentos saudáveis e sem agrotóxico. Garante comida na mesa das famílias e renda com a venda do excedente.',
+    frase: 'Terra adubada, mesa fartíssima — comida é direito.',
+    construcoes: [
+      { tipo: 'horta',  x: 8, y: 4 },
+      { tipo: 'estamparia', x: 5, y: 6 }   // vizinho (parceiro) pra rede de energia
+    ],
+    estagioEmoji: { semente:'🌱', broto:'🌿', muda:'🥕', arvore:'🧺', frutificando:'🥗' },
+    verbaInicial: 50000,
+    valoresIniciais: { reparacao: 15, participacao: 20, autonomia: 8, confianca: 25 }
+  },
+  restaurante: {
+    id: 'restaurante',
+    nome: 'Restaurante Popular',
+    emoji: '🍲',
+    cor: '#e65100',
+    descricao: 'Cozinha comunitária que serve refeições baratas e nutritivas pra comunidade. Compra da horta local e gera emprego pra cozinheiras.',
+    frase: 'Panela no fogo, fome no passado — comer bem não é luxo.',
+    construcoes: [
+      { tipo: 'restaurante', x: 8, y: 4 },
+      { tipo: 'horta',       x: 5, y: 6 },
+      { tipo: 'painel',      x: 11, y: 3 }
+    ],
+    estagioEmoji: { semente:'🥄', broto:'🍳', muda:'🍲', arvore:'🍽️', frutificando:'🎉' },
+    verbaInicial: 70000,
+    valoresIniciais: { reparacao: 12, participacao: 18, autonomia: 6, confianca: 22 }
+  },
+  peixes: {
+    id: 'peixes',
+    nome: 'Tanque de Peixes',
+    emoji: '🐟',
+    cor: '#0277bd',
+    descricao: 'Criação de peixes (piscicultura) que aproveita a água do rio e gera proteína barata pra comunidade, além de renda com a venda.',
+    frase: 'Do rio pra mesa — proteína que vem da água e volta em vida.',
+    construcoes: [
+      { tipo: 'tanque',  x: 9, y: 6 },   // à beira do rio
+      { tipo: 'restaurante', x: 6, y: 4 }
+    ],
+    estagioEmoji: { semente:'💧', broto:'🐠', muda:'🐟', arvore:'🐡', frutificando:'🎏' },
+    verbaInicial: 90000,
+    valoresIniciais: { reparacao: 8, participacao: 14, autonomia: 10, confianca: 18 }
+  }
+};
+
+// ─── Estado inicial ──────────────────────────────────────────
+function estadoInicial(projetoId) {
+  // Ramo "pré-jogo": sem projeto escolhido. A tela de seleção cuida do resto.
+  if (!projetoId) {
+    return {
+      projetoEscolhido: null,   // null = tela de seleção visível
+      semana: 1, maxSemana: 12,
+      energia: 5, maxEnergia: 5,
+      verba: 80000, divida: 0,
+      recursos: { inovacao: 1, mobilizacao: 2, transparencia: 1, streak: 0 },
+      maxRecursos: { inovacao: 3, mobilizacao: 10, transparencia: 2 },
+      // interdicaoSanitaria / relatorioIJPendente / producaoParada: pendências
+      // ABERTAS por escolha do jogador (ver marcaPendencia nos dilemas). São
+      // "false = tudo certo", ao contrário de posEntregue/assembleiaConcepcao,
+      // que são "false = falta fazer". Isso também mantém save antigo válido:
+      // flag ausente vira undefined (falsy) e a auditoria não acusa nada.
+      projeto: { estagio:'semente', vico:80, participouSemana:false, posEntregue:false, assembleiaConcepcao:false, governancaTriaxial:false, capitalGiroMeses:6, equipe:0, maquinario:0, assistenciaTecnica:false, tecnologia:null, parcerias:0, interdicaoSanitaria:false, relatorioIJPendente:false, producaoParada:false },
+      distrito: { reparacao:10, participacao:15, autonomia:5, confianca:20 },
+      construcoes: [],
+      dilemaAtivo: null,
+      log: [],
+      onboardingPasso: 0,
+      auditoria: null,
+      rngSeed: 1624875309,
+      jogoFinalizado: false
+    };
+  }
+  // Ramo "com projeto": carrega valores do catálogo PROJETOS
+  const proj = PROJETOS[projetoId] || PROJETOS.estamparia;
+  return {
+    projetoEscolhido: projetoId,
+    semana: 1, maxSemana: 12,
+    energia: 5, maxEnergia: 5,
+    verba: proj.verbaInicial, divida: 0,
+    recursos: { inovacao: 1, mobilizacao: 2, transparencia: 1, streak: 0 },
+    maxRecursos: { inovacao: 3, mobilizacao: 10, transparencia: 2 },
+    projeto: { estagio:'semente', vico:80, participouSemana:false, posEntregue:false, assembleiaConcepcao:false, governancaTriaxial:false, capitalGiroMeses:6, equipe:0, maquinario:0, assistenciaTecnica:false, tecnologia:null, parcerias:0, interdicaoSanitaria:false, relatorioIJPendente:false, producaoParada:false },
+    distrito: { ...proj.valoresIniciais },
+    construcoes: proj.construcoes.map(c => ({ ...c })),
+    dilemaAtivo: null,
+    log: [{ t: 1, txt: `${proj.emoji} ${proj.nome} plantado em Limalândia. Dona Lúcia te acompanha. ${proj.frase}` }],
+    onboardingPasso: 0,
+    auditoria: null,
+    rngSeed: 1624875309,
+    jogoFinalizado: false
+  };
+}
+
+// ─── RNG determinístico (Lehmer / LCG) ───────────────────────
+function criarRng(seed) {
+  let s = seed >>> 0 || 1;
+  return function() {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+}
+
+// ════════════════════════════════════════════════════════════
+// DILEMAS — 9 riscos reais + 4 institucionais (IJs/empresa/prefeitura)
+// ════════════════════════════════════════════════════════════
+const DILEMAS = [
+  {
+    id:'D1', tipo:'adesao', emoji:'👥', estagios:['semente','broto'],
+    titulo:'Só 5 mulheres apareceram na oficina',
+    desc:'O estatuto exige 10 participantes para operar. Com menos gente, a produção não decola e o projeto pode travar na auditoria.',
+    dica:'Mobilização comunitária resolve mais que dinheiro — mas cansa (custa energia). Reduzir o estatuto alivia a gestão, porém enfraquece a assembleia e pode cair na auditoria.',
+    opcoes:[
+      { id:'A', titulo:'Mobilização porta-a-porta com CRAS e escola',
+        desc:'Chamamos parceiros da comunidade pra uma campanha de convite. Custa energia e mobilização, mas fortalece o coletivo.',
+        custo:{ energia:1, mobilizacao:2 }, efeitos:{ participacao:+18, confianca:+10, autonomia:+5 },
+        dicaOpcao:'Custa agora (energia e mobilização), mas sobe participação e confiança. É o caminho que fortalece o coletivo a longo prazo.' },
+      { id:'B', titulo:'Reduzir o estatuto pra 5 participantes',
+        desc:'Alteramos a regra interna pra funcionar com menos gente. Alivia a gestão (não gasta energia nem mobilização), mas enfraquece a assembleia comunitária — a auditoria pode reclamar.',
+        custo:{}, efeitos:{ confianca:-12, participacao:-10, vico:-8 },
+        quebraAssembleia:true, risco:'auditoria',
+        dicaOpcao:'Não custa recurso, mas derruba indicadores E quebra a assembleia. A auditoria vai reclamar — é trocar conforto agora por problema depois.' }
+    ]
+  },
+  {
+    id:'D2', tipo:'tecnica', emoji:'🔧', estagios:['broto','muda'],
+    titulo:'A prensa térmica quebrou',
+    desc:'Ninguém sabe consertar. Sem ela, não dá pra estampar — e o prazo da encomenda tá correndo.',
+    dica:'Criatividade transforma problema em autonomia. Tentar consertar em dupla ensina a turma toda.',
+    opcoes:[
+      { id:'A', titulo:'Contratar instrutor técnico',
+        desc:'Custa R$ 800 e resolve em 1 semana, com garantia.',
+        custo:{orcamento:800}, efeitos:{autonomia:+10, vico:+5} },
+      { id:'B', titulo:'Tentar consertar em dupla (gastar 1 inovação)',
+        desc:'Duas participantes se arriscam. Se der certo, economiza e ensina todo mundo.',
+        custo:{inovacao:1}, efeitos:{autonomia:+15, participacao:+8}, chanceSucesso:0.65,
+        falhaEfeitos:{vico:-12} },
+      { id:'C', titulo:'Deixar parado e esperar',
+        desc:'Não gasta agora, mas a produção para e a confiança cai. Com a prensa parada, a execução física do objeto trava — e a auditoria acusa.',
+        custo:{}, efeitos:{reparacao:-12, confianca:-15, vico:-20}, risco:'bloqueio',
+        marcaPendencia:'producaoParada',
+        dicaOpcao:'Parece de graça, mas abre uma pendência de BLOQUEIO na auditoria que só sai comprando maquinário ou contratando assistência técnica.' }
+    ]
+  },
+  {
+    id:'D3', tipo:'inadimplencia', emoji:'💸', estagios:['muda','arvore'],
+    titulo:'Cliente não pagou a 2ª parcela',
+    desc:'A encomenda de 200 camisetas valia R$ 6.000, mas só veio a entrada. Sem o resto, não compramos tecido.',
+    dica:'Ética e transparência: prestar contas publicamente dá credibilidade até pra cobrar.',
+    opcoes:[
+      { id:'A', titulo:'Processar judicialmente (usar 1 transparência)',
+        desc:'Acionamos assessoria jurídica comprovando a dívida. Demora 4 semanas.',
+        custo:{transparencia:1}, efeitos:{confianca:+15, verba:+4000} },
+      { id:'B', titulo:'Renegociar parcelas com desconto',
+        desc:'Oferecemos 15% de desconto pra receber em 30 dias. Menos lucro, mantém cliente.',
+        custo:{}, efeitos:{autonomia:+8, verba:+3400} },
+      { id:'C', titulo:'Perdoar a dívida e focar em novos clientes',
+        desc:'Abre mão do dinheiro. Sinaliza que inadimplência não tem consequência.',
+        custo:{}, efeitos:{reparacao:-5, autonomia:-12} }
+    ]
+  },
+  {
+    id:'D4', tipo:'licenciamento', emoji:'📋', estagios:['semente','broto','muda'],
+    titulo:'Vigilância Sanitária exigiu adequação elétrica',
+    desc:'Prazo de 15 dias, sob pena de interdição. O eletricista cobra R$ 3.500.',
+    dica:'Compromisso: ignorar o fiscal é a opção mais cara no longo prazo. Sempre.',
+    opcoes:[
+      { id:'A', titulo:'Contratar eletricista profissional',
+        desc:'Resolve rápido, mas consome boa parte do caixa.',
+        custo:{orcamento:3500}, efeitos:{confianca:+12} },
+      { id:'B', titulo:'Mudar pra espaço já regularizado (igreja/associação)',
+        desc:'Atrasa 1 semana, mas fortalece laços comunitários e não custa dinheiro.',
+        custo:{tempo:1}, efeitos:{participacao:+14, confianca:+10} },
+      { id:'C', titulo:'Ignorar e seguir operando',
+        desc:'Risco altíssimo: fiscalização pode interditar + multa. A adequação elétrica fica pendente no dossiê até alguém resolver.',
+        custo:{}, efeitos:{vico:-40, autonomia:-25}, risco:'bloqueio',
+        marcaPendencia:'interdicaoSanitaria',
+        dicaOpcao:'Não custa nada agora e é justamente por isso que engana: abre pendência de BLOQUEIO na auditoria, que só some contratando assistência técnica.' }
+    ]
+  },
+  {
+    id:'D5', tipo:'conflito', emoji:'🗣️', estagios:['broto','muda','arvore'],
+    titulo:'Duas coordenadoras disputam a presidência',
+    desc:'A assembleia tá dividida. Se o conflito persistir, 4 participantes ameaçam sair.',
+    dica:'Coletivismo: assembleia mediada restaura confiança melhor que impor decisão.',
+    opcoes:[
+      { id:'A', titulo:'Assembleia emergencial (1 mobilização + 1 semana)',
+        desc:'Reunimos todo mundo pra mediar. As duas dividem responsabilidades.',
+        custo:{mobilizacao:1, tempo:1}, efeitos:{confianca:+22, participacao:+10} },
+      { id:'B', titulo:'Contratar mediador externo',
+        desc:'Custa R$ 1.200, profissional imparcial, resolve em 3 dias.',
+        custo:{orcamento:1200}, efeitos:{confianca:+18} },
+      { id:'C', titulo:'Escolher um lado e demitir a outra',
+        desc:'Resolve rápido, mas cria ressentimento. Risco de saída em massa.',
+        custo:{}, efeitos:{participacao:-25, vico:-30}, risco:'bloqueio' }
+    ]
+  },
+  {
+    id:'D6', tipo:'insumos', emoji:'🧵', estagios:['muda','arvore'],
+    titulo:'Tecido subiu 40% numa semana',
+    desc:'Comprar agora compromete 80% do caixa. Esperar pode significar perder a encomenda.',
+    dica:'Criatividade: compra coletiva com outras cooperativas derruba o preço e cria parceria.',
+    opcoes:[
+      { id:'A', titulo:'Compra coletiva com outras cooperativas (1 inovação)',
+        desc:'Negociamos preço em volume. Tecido cai 20% e vira parceria permanente.',
+        custo:{inovacao:1}, efeitos:{autonomia:+18, verba:-1200} },
+      { id:'B', titulo:'Reajustar preço de venda',
+        desc:'Repassa o custo ao cliente. Risco de perder a encomenda.',
+        custo:{}, efeitos:{autonomia:+10, confianca:-8}, chanceSucesso:0.55,
+        falhaEfeitos:{verba:-3000, confianca:-10} },
+      { id:'C', titulo:'Comprar a prazo (gerar dívida)',
+        desc:'Pega o tecido agora e paga em 60 dias com juros. Pressão futura.',
+        custo:{}, efeitos:{divida:+2000, autonomia:-5} }
+    ]
+  },
+  {
+    id:'D7', tipo:'licitacao', emoji:'🏛️', estagios:['muda','arvore','frutificando'],
+    titulo:'Proposta de uniformes escolares foi rejeitada',
+    desc:'Motivo: "falta de experiência comprovada". Faltam 30 dias pra reapresentar.',
+    dica:'Criatividade + parceria: juntar com cooperativa já habilitada vence a barreira burocrática.',
+    opcoes:[
+      { id:'A', titulo:'Capacitação em licitações (1 inovação)',
+        desc:'Curso rápido sobre como montar proposta. Aumenta muito a chance de aprovação.',
+        custo:{inovacao:1}, efeitos:{autonomia:+25, verba:+45000}, chanceSucesso:0.7,
+        falhaEfeitos:{autonomia:-5} },
+      { id:'B', titulo:'Parceria com cooperativa já habilitada',
+        desc:'A parceira entra como executora. Custo: 10% da receita.',
+        custo:{mobilizacao:1}, efeitos:{autonomia:+18, participacao:+12} },
+      { id:'C', titulo:'Focar em encomendas privadas e ONGs',
+        desc:'Abre mão do contrato público. Menos receita, mas mais controle.',
+        custo:{}, efeitos:{autonomia:+8, verba:+12000} }
+    ]
+  },
+  {
+    id:'D8', tipo:'furto', emoji:'🛠️', estagios:['arvore','frutificando'],
+    titulo:'Máquina de costura foi danificada na mudança',
+    desc:'O conserto custa R$ 1.200 e leva 2 semanas. Sem ela, a produção cai 40%.',
+    dica:'Compromisso: prevenção (seguro) vale a pena. Rateio comunitário fortalece o coletivo.',
+    opcoes:[
+      { id:'A', titulo:'Acionar seguro comunitário',
+        desc:'Pagamos prêmio de R$ 500/ano. O seguro cobre o conserto.',
+        custo:{orcamento:500}, efeitos:{autonomia:+12} },
+      { id:'B', titulo:'Rateio comunitário (2 mobilização)',
+        desc:'Cada participante contribui com R$ 100. Custo zero em dinheiro.',
+        custo:{mobilizacao:2}, efeitos:{participacao:+16, confianca:+12} },
+      { id:'C', titulo:'Esperar doação de equipamento',
+        desc:'Não gasta agora. Risco: pode nunca chegar. Produção parada.',
+        custo:{}, efeitos:{vico:-25, reparacao:-14}, risco:'bloqueio' }
+    ]
+  },
+  {
+    id:'D9', tipo:'pos', emoji:'⏳', estagios:['muda','arvore','frutificando'],
+    titulo:'Faltam 2 meses pro fim do apoio do Anexo 1.1',
+    desc:'A cooperativa ainda não gera receita suficiente pra se manter sozinha. O que fazer?',
+    dica:'Positividade: criar fundo rotativo transforma dependência em autonomia estrutural.',
+    opcoes:[
+      { id:'A', titulo:'Criar fundo rotativo (20% do lucro mensal)',
+        desc:'Reserva compulsória pra manutenção e expansão. Exige disciplina coletiva.',
+        custo:{}, efeitos:{autonomia:+35, confianca:+20}, marcarPos:true },
+      { id:'B', titulo:'Buscar novas fontes (1 mobilização)',
+        desc:'Procurar editais, ONGs e empresas. Pode demorar e não garantir nada.',
+        custo:{mobilizacao:1}, efeitos:{autonomia:+12, verba:+20000}, chanceSucesso:0.6,
+        falhaEfeitos:{autonomia:-8} },
+      { id:'C', titulo:'Encerrar o projeto',
+        desc:'Decisão triste, mas honesta. Estrutura desmontada, equipamentos devolvidos.',
+        custo:{}, efeitos:{confianca:-30, vico:-99}, risco:'fim' }
+    ]
+  },
+  // ─── Dilemas institucionais (conflitos reais) ───────────
+  {
+    id:'D10', tipo:'ij', emoji:'⚖️', estagios:['broto','muda','arvore'],
+    titulo:'As Instituições de Justiça mudaram as regras',
+    desc:'Saiu comunicado novo: agora todo projeto precisa de um relatório técnico extra, que não existia antes. Prazo: 15 dias.',
+    dica:'Transparência coletiva é seu escudo contra mudanças de regra. Contestar organizado funciona.',
+    opcoes:[
+      { id:'A', titulo:'Mobilizar a Governança Popular pra contestar',
+        desc:'Carta coletiva questionando a mudança. Risco: pode piorar a relação com as IJs.',
+        custo:{mobilizacao:2}, efeitos:{participacao:+22, confianca:+15}, chanceSucesso:0.55,
+        falhaEfeitos:{confianca:-10} },
+      { id:'B', titulo:'Contratar consultoria pro relatório',
+        desc:'Custa R$ 2.500 e 1 semana de energia. Resolve rápido, aperta o caixa.',
+        custo:{orcamento:2500, energia:1}, efeitos:{confianca:+8} },
+      { id:'C', titulo:'Ignorar e seguir trabalhando',
+        desc:'Apostar que "ninguém vai fiscalizar". O relatório técnico exigido pelas IJs fica em aberto e o repasse trava.',
+        custo:{}, efeitos:{verba:-5000, autonomia:-20, vico:-35}, risco:'bloqueio',
+        marcaPendencia:'relatorioIJPendente',
+        dicaOpcao:'Além de derrubar verba e indicadores, abre pendência de BLOQUEIO na auditoria — pra fechar, é preciso prestar contas publicamente.' }
+    ]
+  },
+  {
+    id:'D11', tipo:'empresa', emoji:'🎭', estagios:['broto','muda','arvore'],
+    titulo:'A mineradora Ferro Norte fez evento no mesmo dia do nosso lançamento',
+    desc:'Um "dia da comunidade" com pipoca, brindes e sorteio — no mesmo horário. Menos da metade apareceu.',
+    dica:'Criatividade: expor a coincidência publicamente vira oportunidade de mobilização.',
+    opcoes:[
+      { id:'A', titulo:'Manter o lançamento e expor a coincidência',
+        desc:'Usamos o evento deles como prova de que reparação precisa ser genuína.',
+        custo:{transparencia:1}, efeitos:{participacao:+25, confianca:+18} },
+      { id:'B', titulo:'Adiar nosso lançamento pra semana seguinte',
+        desc:'Não gastamos nada, mas perdemos o timing e a energia do grupo.',
+        custo:{tempo:1}, efeitos:{participacao:-8, autonomia:+5} },
+      { id:'C', titulo:'Ir até o evento deles e fazer uma fala',
+        desc:'Risco de confronto. Ganho: visibilidade e coragem coletiva.',
+        custo:{energia:2}, efeitos:{participacao:+30, confianca:+22}, chanceSucesso:0.65,
+        falhaEfeitos:{confianca:-15} }
+    ]
+  },
+  {
+    id:'D12', tipo:'prefeitura', emoji:'🏛️💸', estagios:['muda','arvore','frutificando'],
+    titulo:'A Prefeitura "quer ajudar" — mudando o projeto',
+    desc:'Oferecem R$ 15.000 extras, mas exigem que a estamparia vire "artesanato pra turistas" em vez de confecção de renda local.',
+    dica:'Autonomia vale mais que verba fácil. Recusar mantém a identidade e a confiança.',
+    opcoes:[
+      { id:'A', titulo:'Recusar a verba e manter o projeto original',
+        desc:'Perdemos R$ 15.000, mas preservamos a autonomia e a identidade.',
+        custo:{}, efeitos:{autonomia:+25, confianca:+15} },
+      { id:'B', titulo:'Aceitar parcialmente e adaptar (1 inovação)',
+        desc:'Linha de turismo sem abandonar a produção principal.',
+        custo:{inovacao:1}, efeitos:{autonomia:+12, reparacao:-5, verba:+15000} },
+      { id:'C', titulo:'Aceitar tudo e virar "artesanato pra turistas"',
+        desc:'O dinheiro entra agora, mas o projeto perde a razão de ser.',
+        custo:{}, efeitos:{participacao:-35, confianca:-28, vico:-40, verba:+15000}, risco:'fim' }
+    ]
+  },
+  {
+    id:'D13', tipo:'prefeitura', emoji:'🗳️', estagios:['arvore','frutificando'],
+    titulo:'Novo prefeito, nova regra',
+    desc:'A Secretaria agora exige que 50% dos insumos sejam de fornecedores da cidade vizinha — onde não temos parceiros.',
+    dica:'Negociar com dados na mão (transparência) costuma render exceções razoáveis.',
+    opcoes:[
+      { id:'A', titulo:'Negociar com a Secretaria (1 mobilização + 1 transparência)',
+        desc:'Levamos dados mostrando que a regra inviabiliza o projeto.',
+        custo:{mobilizacao:1, transparencia:1}, efeitos:{confianca:+18}, chanceSucesso:0.6,
+        falhaEfeitos:{autonomia:-10} },
+      { id:'B', titulo:'Buscar fornecedores na cidade vizinha',
+        desc:'Custo: 1 semana + R$ 800 de transporte. Logística mais cara.',
+        custo:{orcamento:800, tempo:1}, efeitos:{autonomia:-5} },
+      { id:'C', titulo:'Ignorar e seguir com fornecedores locais',
+        desc:'Risco: prefeitura corta apoio logístico e isenção fiscal.',
+        custo:{}, efeitos:{autonomia:-15, verba:-2000}, risco:'bloqueio' }
+    ]
+  }
+];
+
+// Eventos setoriais (lutas paralelas que atravessam o projeto)
+const EVENTOS_SETORIAIS = [
+  { id:'E1', emoji:'⚖️', titulo:'Luta pela responsabilização',
+    desc:'A mineradora Ferro Norte tenta adiar o julgamento criminal dos engenheiros. A comunidade quer um ato público — mas consome energia e tempo.',
+    opcoes:[
+      { texto:'Participar do ato (2 energia, 1 mobilização)', custo:{energia:2, mobilizacao:1}, efeitos:{confianca:+18} },
+      { texto:'Apoiar à distância (assinatura online)', custo:{}, efeitos:{participacao:+6} },
+      { texto:'Focar só no projeto agora', custo:{}, efeitos:{autonomia:+4} }
+    ] },
+  { id:'E2', emoji:'🆘', titulo:'Auxílio emergencial em risco',
+    desc:'Cortes no auxílio que muitas participantes recebem. A assembleia debate se o projeto se posiciona.',
+    opcoes:[
+      { texto:'Publicar nota de apoio às atingidas (1 mobilização)', custo:{mobilizacao:1}, efeitos:{confianca:+15} },
+      { texto:'Ajudar internamente (cestas básicas)', custo:{orcamento:500}, efeitos:{reparacao:+10} },
+      { texto:'Não se envolver', custo:{}, efeitos:{autonomia:+3} }
+    ] },
+  { id:'E3', emoji:'🌱', titulo:'Reparação socioambiental avança',
+    desc:'Projeto de reflorestamento do Rio Cristalino precisa de placas de identificação. A estamparia pode produzir — mas desvia a equipe.',
+    opcoes:[
+      { texto:'Aceitar e produzir as placas (1 semana)', custo:{tempo:1}, efeitos:{reparacao:+22, verba:+3000} },
+      { texto:'Indicar outro parceiro', custo:{}, efeitos:{participacao:+8} },
+      { texto:'Recusar — foco no projeto', custo:{}, efeitos:{autonomia:+5} }
+    ] }
+];
+
+// ════════════════════════════════════════════════════════════
+// AÇÕES DE GESTÃO — atividades que o jogador escolhe fazer na semana
+// (além de resolver dilemas e avançar o tempo). Cada uma custa energia.
+// ════════════════════════════════════════════════════════════
+const ACOES = [
+  {
+    id: 'selecionar_equipe',
+    emoji: '👥',
+    titulo: 'Selecionar e formar equipe',
+    desc: 'Chamar e capacitar novas pessoas da comunidade pra equipe da estamparia.',
+    custo: { energia: 2, mobilizacao: 1 },
+    disponivel: (e) => e.projeto.equipe < 12,
+    aplicar: (e) => {
+      e.projeto.equipe += 2;
+      e.projeto.participouSemana = true;
+      return { participacao: +12, autonomia: +6, confianca: +5, txt: `👥 Equipe ampliada pra ${e.projeto.equipe} pessoas. Mais gente produzindo!` };
+    }
+  },
+  {
+    id: 'comprar_maquinario',
+    emoji: '🧵',
+    titulo: 'Comprar maquinário',
+    desc: 'Adquirir máquina de costura/prensa pra aumentar a produção. Custo alto, mas desbloqueia capacidade.',
+    custo: { energia: 1, orcamento: 8000 },
+    disponivel: (e) => e.projeto.maquinario < 2,
+    aplicar: (e) => {
+      e.projeto.maquinario += 1;
+      const nivel = e.projeto.maquinario === 1 ? 'básico (1 prensa + 3 máquinas)' : 'completo (linha de produção)';
+      // Máquina nova destrava a produção que ficou parada no dilema da prensa.
+      const destravou = e.projeto.producaoParada;
+      if (destravou) e.projeto.producaoParada = false;
+      return { autonomia: +15, reparacao: +8, verba: 0, txt: `🧵 Maquinário nível ${e.projeto.maquinario}: ${nivel}. Produção duplicada!` + (destravou ? ' Produção retomada — pendência da auditoria fechada.' : '') };
+    }
+  },
+  {
+    id: 'assistencia_tecnica',
+    emoji: '🧑‍🔧',
+    titulo: 'Contratar assistência técnica',
+    desc: 'Trazer um técnico pra resolver manutenção, evitar quebras e treinar a equipe.',
+    custo: { energia: 1, orcamento: 2500 },
+    // Segue disponível enquanto houver instalação irregular ou máquina parada
+    // pra consertar — senão, quem já tinha contratado antes do dilema ficaria
+    // sem NENHUMA saída pra pendência aberta (beco sem saída de 9 semanas).
+    disponivel: (e) => !e.projeto.assistenciaTecnica || e.projeto.interdicaoSanitaria || e.projeto.producaoParada,
+    aplicar: (e) => {
+      e.projeto.assistenciaTecnica = true;
+      const consertou = [];
+      if (e.projeto.interdicaoSanitaria) { e.projeto.interdicaoSanitaria = false; consertou.push('adequação elétrica regularizada'); }
+      if (e.projeto.producaoParada) { e.projeto.producaoParada = false; consertou.push('máquina de volta a rodar'); }
+      const extra = consertou.length ? ` ${consertou.join(' e ')} — pendência da auditoria fechada.` : '';
+      return { autonomia: +10, confianca: +6, txt: '🧑‍🔧 Assistência técnica contratada. Manutenção preventiva ativa por 4 semanas.' + extra };
+    }
+  },
+  {
+    id: 'escolher_tecnologia_livre',
+    emoji: '🔓',
+    titulo: 'Adotar tecnologia livre (código aberto)',
+    desc: 'Software e desenhos de máquina em código aberto. Mais barato, adaptável à comunidade, mas exige aprendizado.',
+    custo: { energia: 1, inovacao: 1 },
+    disponivel: (e) => e.projeto.tecnologia === null,
+    aplicar: (e) => {
+      e.projeto.tecnologia = 'livre';
+      return { autonomia: +18, participacao: +8, txt: '🔓 Tecnologia livre adotada! A comunidade domina e adapta o conhecimento. Independência de fornecedor.' };
+    }
+  },
+  {
+    id: 'escolher_tecnologia_paga',
+    emoji: '💼',
+    titulo: 'Adotar tecnologia paga (proprietária)',
+    desc: 'Sistema fechado de empresa. Funciona rápido e tem suporte, mas prende a fornecedor e custa mensal.',
+    custo: { energia: 1, orcamento: 5000 },
+    disponivel: (e) => e.projeto.tecnologia === null,
+    aplicar: (e) => {
+      e.projeto.tecnologia = 'paga';
+      e.divida += 500;   // custo mensal implícito
+      return { reparacao: +10, autonomia: -4, confianca: -3, txt: '💼 Tecnologia paga adotada. Produção acelerou, mas há custo mensal e dependência de fornecedor.' };
+    }
+  },
+  {
+    id: 'assembleia',
+    emoji: '🗳️',
+    titulo: 'Convocar assembleia comunitária',
+    desc: 'Reunir a comunidade pra decidir coletivamente. Fortalece governança e participação.',
+    custo: { energia: 2, mobilizacao: 1 },
+    disponivel: (e) => true,
+    aplicar: (e) => {
+      e.projeto.participouSemana = true;
+      if (!e.projeto.assembleiaConcepcao) e.projeto.assembleiaConcepcao = true;
+      // Quórum aleatório (depende da mobilização)
+      const quorum = Math.min(0.9, 0.4 + e.recursos.mobilizacao * 0.05);
+      const bonus = quorum >= 0.6 ? 25 : 12;
+      return { participacao: +bonus, confianca: +bonus, txt: `🗳️ Assembleia realizada! Quórum de ${Math.round(quorum*100)}%. A comunidade decidiu junto.` };
+    }
+  },
+  {
+    id: 'buscar_parceria',
+    emoji: '🤝',
+    titulo: 'Buscar parcerias (CRAS, escola, cooperativas)',
+    desc: 'Articula parcerias que trazem recursos, conhecimento e clientela. Acumula pra dilemas futuros.',
+    custo: { energia: 2, mobilizacao: 1 },
+    disponivel: (e) => e.projeto.parcerias < 5,
+    aplicar: (e) => {
+      e.projeto.parcerias += 1;
+      return { participacao: +8, confianca: +7, verba: +4000, txt: `🤝 Parceria ${e.projeto.parcerias} firmada! Nova rede de apoio pra comunidade.` };
+    }
+  },
+  {
+    id: 'resolver_conflito',
+    emoji: '🕊️',
+    titulo: 'Mediar conflito interno',
+    desc: 'Quando a equipe está tensa, sentar todo mundo pra conversar e alinhar. Cuida do clima do coletivo.',
+    custo: { energia: 2 },
+    disponivel: (e) => true,
+    aplicar: (e) => {
+      e.projeto.participouSemana = true;
+      return { confianca: +14, participacao: +6, vico: +6, txt: '🕊️ Conflito mediado. O grupo se escutou e se reencontrou.' };
+    }
+  },
+  {
+    id: 'prestar_contas',
+    emoji: '📋',
+    titulo: 'Prestar contas publicamente',
+    desc: 'Publicar balancete e decisões no mural da comunidade. Escudo contra auditoria e fortalece transparência.',
+    custo: { energia: 1 },
+    disponivel: (e) => true,
+    aplicar: (e) => {
+      e.recursos.transparencia = Math.min(e.maxRecursos.transparencia, e.recursos.transparencia + 1);
+      // "Escudo contra auditoria" da descrição vira efeito de verdade: é a
+      // prestação de contas que fecha o relatório técnico cobrado pelas IJs.
+      const fechou = e.projeto.relatorioIJPendente;
+      if (fechou) e.projeto.relatorioIJPendente = false;
+      return { confianca: +10, txt: '📋 Contas prestadas no mural. A comunidade viu pra onde foi cada real. +1 transparência.' + (fechou ? ' Relatório às IJs entregue junto — pendência da auditoria fechada.' : '') };
+    }
+  },
+  {
+    id: 'inovar',
+    emoji: '💡',
+    titulo: 'Rodada de inovação',
+    desc: 'Momento de criatividade coletiva: novas ideias de produto, processo ou parceria. Gera carta de inovação.',
+    custo: { energia: 2 },
+    disponivel: (e) => true,
+    aplicar: (e) => {
+      e.recursos.inovacao = Math.min(e.maxRecursos.inovacao, e.recursos.inovacao + 1);
+      return { autonomia: +6, txt: '💡 Rodada de inovação! A equipe bolou melhorias. +1 carta de inovação.' };
+    }
+  },
+  {
+    id: 'constituir_governanca',
+    emoji: '🏛️',
+    titulo: 'Constituir governança triaxial',
+    desc: 'Estruturar os 3 pilares: gestão participativa (assembleia), operacional (equipe técnica) e controle social (fiscalização independente). Escudo forte contra a auditoria do Ofício 46.',
+    custo: { energia: 2, mobilizacao: 1, orcamento: 1500 },
+    disponivel: (e) => !e.projeto.governancaTriaxial,
+    aplicar: (e) => {
+      e.projeto.governancaTriaxial = true;
+      e.projeto.participouSemana = true;
+      return { participacao: +15, confianca: +18, autonomia: +10, txt: '🏛️ Governança triaxial constituída! Os 3 pilares — participativo, operacional e controle social — estão ativos. A auditoria do Ofício 46 vai respeitar.' };
+    }
+  },
+  {
+    id: 'entregar_pos',
+    emoji: '📑',
+    titulo: 'Elaborar e entregar o POS',
+    desc: 'Plano Operativo do Sistema: a "receita de bolo" do projeto (metas, cronograma, indicadores). Obrigatório quando a verba passa de R$ 50 mil. Sem ele, a auditoria BLOQUEIA o ciclo.',
+    custo: { energia: 2, mobilizacao: 1 },
+    disponivel: (e) => !e.projeto.posEntregue,
+    aplicar: (e) => {
+      e.projeto.posEntregue = true;
+      e.projeto.participouSemana = true;
+      return { confianca: +12, transparencia: 0, txt: '📑 POS entregue! O projeto agora tem rumo claro e auditável — ninguém mais pode dizer que é "ideia solta".' };
+    }
+  },
+  {
+    id: 'repor_capital_giro',
+    emoji: '💰',
+    titulo: 'Repor capital de giro',
+    desc: 'Reinvestir verba no caixa pra manter o projeto respirando por mais meses. O Ofício 46 exige capital de giro até 6 meses — acima disso, a auditoria cobra justificativa.',
+    custo: { energia: 1, orcamento: 4000 },
+    disponivel: (e) => e.projeto.capitalGiroMeses < 6,
+    aplicar: (e) => {
+      e.projeto.capitalGiroMeses = 6;
+      return { autonomia: +8, confianca: +6, txt: '💰 Capital de giro recomposto pra 6 meses. O caixa tá blindado e dentro da regra.' };
+    }
+  }
+];
+
+// ════════════════════════════════════════════════════════════
+// AUDITORIA — regras do Ofício 46
+// ════════════════════════════════════════════════════════════
+function auditar(estado) {
+  const p = estado.projeto;
+  const pendencias = [];
+  let veredito = 'ok';
+  const checar = (cond, msg, sev) => {
+    if (cond) {
+      pendencias.push({ msg, sev });
+      if (sev === 'bloqueio' || veredito === 'bloqueio') veredito = 'bloqueio';
+      else if (sev === 'atencao') veredito = 'atencao';
+    }
+  };
+  // POS obrigatório para verba > 50k
+  checar(!p.posEntregue && estado.verba > 50000, '📋 POS obrigatório (verba > R$ 50 mil) — sem ele, bloqueio', 'bloqueio');
+  // Capital de giro <= 6 meses
+  checar(p.capitalGiroMeses > 6, '⚠️ Capital de giro excede 6 meses — precisa justificar', 'atencao');
+  // Assembleia na concepção
+  checar(!p.assembleiaConcepcao, '👥 Falta assembleia comunitária na concepção', 'atencao');
+  // Governança triaxial
+  checar(!p.governancaTriaxial, '🏛️ Governança incompleta (participativa + operacional + controle social)', 'atencao');
+  // Pendências abertas por escolha do jogador em dilemas de risco 'bloqueio'.
+  // Note a polaridade invertida em relação aos checks acima: aqui a flag
+  // LIGADA é que é o problema (e save antigo, sem a flag, não acusa nada).
+  checar(p.interdicaoSanitaria, '⚡ Adequação elétrica não feita — operação sujeita a interdição da Vigilância Sanitária', 'bloqueio');
+  checar(p.relatorioIJPendente, '⚖️ Relatório técnico exigido pelas IJs não entregue — repasse bloqueado', 'bloqueio');
+  checar(p.producaoParada, '🔧 Produção parada — execução física do objeto travada', 'bloqueio');
+  return { veredito, pendencias };
+}
+
+// ─── Alertas preventivos (B2.4) ──────────────────────────────
+// Avalia o estado e devolve os perigos ATIVOS, ordenados por gravidade.
+// Função PURA (só lê). Usada por sincronizarUI p/ mostrar a faixa #alerta-perigo.
+// severidade: 'critico' (vermelho) | 'atencao' (laranja). Só um alerta é exibido
+// por vez (o mais grave), mas a lista completa fica disponível pra futura expansão.
+function avaliarPerigos(estado) {
+  // Sem projeto escolhido ou em estado de "não-jogo", não há perigos a alertar.
+  if (!estado || !estado.projetoEscolhido || estado.jogoFinalizado || estado.dilemaAtivo) return [];
+  const p = estado.projeto || {};
+  const alertas = [];
+
+  // POS obrigatório faltando com verba alta → bloqueio garantido na auditoria
+  if (!p.posEntregue && estado.verba > 50000) {
+    alertas.push({ sev:'critico', peso:0, txt:'📋 POS obrigatório faltando — a auditoria vai BLOQUEAR o ciclo. Entregue o POS nas Ações da semana.' });
+  }
+  // Verba acabando (não recarrega — sem dinheiro, ações param)
+  if (estado.verba < 5000) {
+    alertas.push({ sev:'critico', peso:1, txt:`💰 Verba acabando (R$ ${estado.verba.toLocaleString('pt-BR')}) — sem dinheiro, as ações que custam verba ficam indisponíveis.` });
+  }
+  // Energia baixa — descanso forçado custa autonomia
+  if (estado.energia <= 1) {
+    alertas.push({ sev:'atencao', peso:2, txt:'⚡ Pouca energia — avançar a semana vai causar descanso forçado (autonomia -5).' });
+  }
+  // Última semana do ciclo
+  if (estado.semana >= estado.maxSemana) {
+    alertas.push({ sev:'atencao', peso:3, txt:'⏳ Última semana! O ciclo encerra no próximo "Avançar" — resolva pendências da auditoria agora.' });
+  }
+
+  // Ordena por gravidade: crítico antes de atenção; dentro da mesma severidade,
+  // menor "peso" primeiro (POS/bloqueio é o mais urgente de todos).
+  // O peso já incorpora severidade (crítico < atenção) e prioridade dentro de cada uma.
+  alertas.sort((a, b) => (a.peso ?? 9) - (b.peso ?? 9));
+  return alertas;
+}
+
+// ════════════════════════════════════════════════════════════
+// PONTUAÇÃO + CONQUISTAS — sintetizam o ciclo final numa nota e selos
+// Funções PURAS (só leem o estado) pra facilitar teste e leitura.
+// ════════════════════════════════════════════════════════════
+// Bônus por estágio alcançado (escala crescente: semente→frutificando).
+const PONTOS_ESTAGIO = { semente: 0, broto: 10, muda: 22, arvore: 32, frutificando: 40 };
+
+function calcularPontuacao(estado) {
+  const d = estado.distrito;
+  const p = estado.projeto;
+  const a = estado.auditoria || { veredito: 'ok' };
+
+  // 1. Núcleo: média dos 4 indicadores (0–100)
+  const media = Math.round((d.reparacao + d.participacao + d.autonomia + d.confianca) / 4);
+
+  // 2. Bônus por estágio alcançado (0–40)
+  const bonusEstagio = PONTOS_ESTAGIO[p.estagio] ?? 0;
+
+  // 3. Bônus/penalidade do veredito da auditoria
+  const bonusVeredito = a.veredito === 'ok' ? 30 : a.veredito === 'atencao' ? 0 : -20;
+
+  // 4. Ajuste fino: viço final (0–20), capital humano (equipe + parcerias)
+  const ajusteVico = Math.round((p.vico / 100) * 20);          // 0–20
+  const ajusteRede = Math.min(20, p.equipe * 1 + p.parcerias * 3); // até +20
+
+  const bruto = media + bonusEstagio + bonusVeredito + ajusteVico + ajusteRede;
+  const score = Math.max(0, Math.min(200, bruto));
+
+  return { media, bonusEstagio, bonusVeredito, ajusteVico, ajusteRede, score };
+}
+
+// Classifica o score numa faixa textual + ícone + feedback da mentora.
+function classificarScore(score, estado) {
+  const fracassoTotal = estado.projeto.vico <= 0;
+  if (fracassoTotal) {
+    return {
+      titulo: '😢 O projeto não resistiu',
+      emoji: '😢',
+      classe: 'derrota',
+      mentora: 'O viço chegou a zero. Foi um ciclo difícil — mas cada erro vira lição pro próximo projeto. A reparação popular se constrói no aprendizado coletivo.'
+    };
+  }
+  if (score >= 150) {
+    return {
+      titulo: '🌟 Projeto memorável!',
+      emoji: '🌟',
+      classe: 'memoravel',
+      mentora: 'Isso aqui é referência! O projeto de Limalândia vai virar caso exemplar de reparação popular. A comunidade saiu mais forte, organizada e autônoma.'
+    };
+  }
+  if (score >= 110) {
+    return {
+      titulo: '🏆 Ciclo exitoso!',
+      emoji: '🏆',
+      classe: 'exitoso',
+      mentora: 'O projeto floresceu! Os 3 pilares — participativo, operacional e controle social — seguraram a auditoria do Ofício 46. A comunidade provou que dá pra fazer diferente.'
+    };
+  }
+  if (score >= 70) {
+    return {
+      titulo: '🌱 Ciclo parcial',
+      emoji: '🌱',
+      classe: 'parcial',
+      mentora: 'O projeto sobreviveu, mas há muito a melhorar. Reflita: montou governança triaxial? Entregou o POS? A auditoria perdoa pouco — estrutura certa salva o ciclo.'
+    };
+  }
+  return {
+    titulo: '⚠️ Ciclo interrompido',
+    emoji: '⚠️',
+    classe: 'interrompido',
+    mentora: 'Os indicadores ficaram baixos. A reparação é um caminho longo — cada tentativa ensina. Na próxima, priorize assembleia, governança e transparência desde cedo.'
+  };
+}
+
+// Lista de conquistas (selos). Cada uma: condição boleana sobre o estado final.
+function calcularConquistas(estado) {
+  const p = estado.projeto;
+  const d = estado.distrito;
+  const a = estado.auditoria || { veredito: 'ok' };
+  const media = Math.round((d.reparacao + d.participacao + d.autonomia + d.confianca) / 4);
+  const selos = [
+    { id: 'frutificou', emoji: '🍎', nome: 'Frutificou', cond: p.estagio === 'frutificando' },
+    { id: 'governanca', emoji: '🏛️', nome: 'Governança triaxial', cond: p.governancaTriaxial === true },
+    { id: 'pos', emoji: '📑', nome: 'POS entregue', cond: p.posEntregue === true },
+    { id: 'redes', emoji: '🤝', nome: '5 parcerias', cond: p.parcerias >= 5 },
+    { id: 'streak', emoji: '🔥', nome: 'Streak ≥ 6', cond: (estado.recursos.streak || 0) >= 6 },
+    { id: 'auditoria_ok', emoji: '✅', nome: 'Auditoria ok', cond: a.veredito === 'ok' },
+    { id: 'media_alta', emoji: '📈', nome: 'Média ≥ 70', cond: media >= 70 },
+    { id: 'sem_divida', emoji: '💸', nome: 'Sem endividamento', cond: estado.divida <= 0 }
+  ];
+  return selos.filter(s => s.cond);
+}
+
+// ════════════════════════════════════════════════════════════
+// A* PATHFINDING — fluxo de energia da estamparia aos consumidores
+// ════════════════════════════════════════════════════════════
+function heuristic(a, b) { return Math.abs(a.x - b.x) + Math.abs(a.y - b.y); }
+
+function aStar(inicio, fim) {
+  const chave = (x, y) => x + ',' + y;
+  const aberto = new Map();            // chave -> {x,y,f}
+  const veioDe = {};
+  const g = {};
+  const f = {};
+  const startKey = chave(inicio.x, inicio.y);
+  aberto.set(startKey, { ...inicio, f: heuristic(inicio, fim) });
+  g[startKey] = 0;
+  f[startKey] = heuristic(inicio, fim);
+
+  while (aberto.size > 0) {
+    // Pega o nó com menor f
+    let atualKey = null, atualF = Infinity, atual = null;
+    for (const [k, v] of aberto) {
+      if (f[k] < atualF) { atualF = f[k]; atualKey = k; atual = v; }
+    }
+    if (!atual) break;
+
+    if (atual.x === fim.x && atual.y === fim.y) {
+      const caminho = [];
+      let no = atualKey;
+      while (no) {
+        const [x, y] = no.split(',').map(Number);
+        caminho.unshift({ x, y });
+        no = veioDe[no];
+      }
+      return caminho;
+    }
+
+    aberto.delete(atualKey);
+
+    for (const [dx, dy] of [[0,-1],[1,0],[0,1],[-1,0]]) {
+      const nx = atual.x + dx, ny = atual.y + dy;
+      if (nx < 0 || nx >= MAPA_LARG || ny < 0 || ny >= MAPA_ALT) continue;
+      const custo = TERRENO_CUSTO[MAPA[ny][nx]];
+      if (custo === Infinity) continue;   // rio = intransponível
+      const nKey = chave(nx, ny);
+      const tentG = g[atualKey] + custo;
+      if (tentG < (g[nKey] ?? Infinity)) {
+        veioDe[nKey] = atualKey;
+        g[nKey] = tentG;
+        f[nKey] = tentG + heuristic({ x: nx, y: ny }, fim);
+        if (!aberto.has(nKey)) aberto.set(nKey, { x: nx, y: ny, f: f[nKey] });
+      }
+    }
+  }
+  return null;  // sem caminho (energia não chega)
+}
+
+// ════════════════════════════════════════════════════════════
+// REDUCER — única fonte de verdade (função pura)
+// ════════════════════════════════════════════════════════════
+function clonar(o) { return JSON.parse(JSON.stringify(o)); }
+const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+function podePagar(estado, custo) {
+  if (!custo) return { ok: true };
+  if (custo.orcamento && estado.verba < custo.orcamento) return { ok:false, falta:'verba' };
+  if (custo.energia && estado.energia < custo.energia) return { ok:false, falta:'energia' };
+  if (custo.inovacao && estado.recursos.inovacao < custo.inovacao) return { ok:false, falta:'inovação' };
+  if (custo.mobilizacao && estado.recursos.mobilizacao < custo.mobilizacao) return { ok:false, falta:'mobilização' };
+  if (custo.transparencia && estado.recursos.transparencia < custo.transparencia) return { ok:false, falta:'transparência' };
+  return { ok: true };
+}
+
+function aplicarCusto(estado, custo) {
+  if (!custo) return;
+  if (custo.orcamento) {
+    estado.verba -= custo.orcamento;
+    // Capital de giro desgasta conforme o caixa é consumido: cada R$ 1.000
+    // gastos drenam ~1 mês de reserva. Dá "teeth" ao cheque do Ofício 46.
+    const p = estado.projeto;
+    if (p && typeof p.capitalGiroMeses === 'number') {
+      const mesesPerdidos = Math.floor(custo.orcamento / 1000);
+      p.capitalGiroMeses = Math.max(0, p.capitalGiroMeses - mesesPerdidos);
+    }
+  }
+  if (custo.energia) estado.energia -= custo.energia;
+  if (custo.inovacao) estado.recursos.inovacao -= custo.inovacao;
+  if (custo.mobilizacao) estado.recursos.mobilizacao -= custo.mobilizacao;
+  if (custo.transparencia) estado.recursos.transparencia -= custo.transparencia;
+}
+
+function aplicarEfeitos(estado, efeitos) {
+  if (!efeitos) return;
+  const d = estado.distrito;
+  if (efeitos.reparacao) d.reparacao = clamp(d.reparacao + efeitos.reparacao, 0, 100);
+  if (efeitos.participacao) d.participacao = clamp(d.participacao + efeitos.participacao, 0, 100);
+  if (efeitos.autonomia) d.autonomia = clamp(d.autonomia + efeitos.autonomia, 0, 100);
+  if (efeitos.confianca) d.confianca = clamp(d.confianca + efeitos.confianca, 0, 100);
+  if (efeitos.vico) estado.projeto.vico = clamp(estado.projeto.vico + efeitos.vico, 0, 100);
+  if (efeitos.verba) estado.verba = Math.max(0, estado.verba + efeitos.verba);
+  if (efeitos.divida) estado.divida += efeitos.divida;
+}
+
+// Avança estágio quando indicadores batem as metas
+function tentarProgredir(estado, rng) {
+  const p = estado.projeto;
+  const d = estado.distrito;
+  const metas = {
+    semente:      { reparacao:20, participacao:15, autonomia:10, prox:'broto' },
+    broto:        { reparacao:35, participacao:25, autonomia:20, prox:'muda' },
+    muda:         { reparacao:50, participacao:40, autonomia:30, prox:'arvore' },
+    arvore:       { reparacao:70, participacao:55, autonomia:45, prox:'frutificando' }
+  }[p.estagio];
+  if (!metas) return null;
+  if (d.reparacao >= metas.reparacao && d.participacao >= metas.participacao && d.autonomia >= metas.autonomia) {
+    p.estagio = metas.prox;
+    estado.recursos.inovacao = Math.min(estado.maxRecursos.inovacao, estado.recursos.inovacao + 1);
+    estado.recursos.mobilizacao = Math.min(estado.maxRecursos.mobilizacao, estado.recursos.mobilizacao + 2);
+    return metas.prox;
+  }
+  return null;
+}
+
+function reduzir(estado, acao) {
+  const e = clonar(estado);
+  const rng = criarRng(e.rngSeed + e.semana * 7 + (acao.type ? 13 : 0));
+
+  switch (acao.type) {
+    case 'AVANCAR_SEMANA': {
+      if (e.dilemaAtivo) return estado;        // precisa resolver dilema antes
+      if (e.jogoFinalizado) return estado;
+
+      // Energia: se acabou, força descanso (recupera, mas perde autonomia)
+      if (e.energia <= 0) {
+        e.energia = 2;
+        e.distrito.autonomia = clamp(e.distrito.autonomia - 5, 0, 100);
+        e.log.push({ t: e.semana, txt: '😴 Sem energia — semana de descanso forçado. Autonomia -5.' });
+        e.semana += 1;
+      } else {
+        e.semana += 1;
+        e.energia = e.maxEnergia;              // recarrega
+      }
+
+      // Streak de participação
+      if (e.projeto.participouSemana) {
+        e.recursos.streak += 1;
+      } else {
+        e.recursos.streak = 0;
+      }
+      e.projeto.participouSemana = false;
+
+      // Crescimento orgânico dos indicadores (varia com estágio)
+      const boost = {
+        semente:      { r:2, p:1, a:1, c:1 },
+        broto:        { r:4, p:3, a:2, c:2 },
+        muda:         { r:6, p:5, a:4, c:3 },
+        arvore:       { r:8, p:7, a:6, c:5 },
+        frutificando: { r:12,p:10,a:9, c:8 }
+      }[e.projeto.estagio] || { r:1, p:1, a:1, c:1 };
+      const variacao = 1 + (rng() - 0.5) * 0.4;  // ±20%
+      e.distrito.reparacao   = clamp(e.distrito.reparacao   + Math.round(boost.r * variacao), 0, 100);
+      e.distrito.participacao= clamp(e.distrito.participacao+ Math.round(boost.p * variacao), 0, 100);
+      e.distrito.autonomia   = clamp(e.distrito.autonomia   + Math.round(boost.a * variacao), 0, 100);
+      e.distrito.confianca   = clamp(e.distrito.confianca   + Math.round(boost.c * variacao), 0, 100);
+
+      // Regeneração lenta de recursos
+      if (e.recursos.inovacao < e.maxRecursos.inovacao && rng() < 0.4) e.recursos.inovacao += 1;
+      if (e.recursos.mobilizacao < e.maxRecursos.mobilizacao && rng() < 0.3) e.recursos.mobilizacao += 1;
+      if (e.recursos.transparencia < e.maxRecursos.transparencia && rng() < 0.2) e.recursos.transparencia += 1;
+
+      // Dilema didático garantido na semana 2 (B2.3 — calibra o 1º dilema p/ ensinar a mecânica)
+      if (!e.dilemaAtivo && e.semana === 2) {
+        const d1 = DILEMAS.find(d => d.id === 'D1');
+        if (d1) {
+          e.dilemaAtivo = clonar(d1);
+          e.dilemaAtivo.didatico = true;   // marca pra mentora explicar opção por opção
+          e.log.push({ t: e.semana, txt: `${d1.emoji} Primeiro dilema: ${d1.titulo}` });
+        }
+      }
+      // Demais dilemas: ~22% por semana, exceto se já disparou o didático
+      else if (!e.dilemaAtivo && rng() < 0.22) {
+        const possiveis = DILEMAS.filter(d => d.estagios.includes(e.projeto.estagio));
+        if (possiveis.length) {
+          const d = possiveis[Math.floor(rng() * possiveis.length)];
+          e.dilemaAtivo = clonar(d);
+          e.log.push({ t: e.semana, txt: `${d.emoji} Dilema: ${d.titulo}` });
+        }
+      }
+      // Evento setorial (~10%, só se não houver dilema)
+      else if (!e.dilemaAtivo && e.semana > 3 && rng() < 0.10) {
+        const ev = EVENTOS_SETORIAIS[Math.floor(rng() * EVENTOS_SETORIAIS.length)];
+        e.dilemaAtivo = { ...clonar(ev), tipo:'setorial', opcoes: ev.opcoes.map((o,i)=>({...o, id:String(i)})) };
+        e.log.push({ t: e.semana, txt: `${ev.emoji} Evento setorial: ${ev.titulo}` });
+      }
+
+      // Progressão de estágio
+      const prog = tentarProgredir(e, rng);
+      if (prog) e.log.push({ t: e.semana, txt: `${ESTAGIO_EMOJI[prog]} Projeto avançou pra: ${prog}! (+recursos)` });
+
+      e.auditoria = auditar(e);
+
+      // Fim de ciclo
+      if (e.semana > e.maxSemana) {
+        e.jogoFinalizado = true;
+      }
+      break;
+    }
+
+    case 'RESOLVER_DILEMA': {
+      if (!e.dilemaAtivo) return estado;
+      const dilema = e.dilemaAtivo;
+      const opcao = dilema.opcoes.find(o => o.id === acao.opcaoId);
+      if (!opcao) return estado;
+
+      const chk = podePagar(e, opcao.custo);
+      if (!chk.ok) {
+        return { ...estado, _aviso: `Faltou ${chk.falta} pra essa escolha. Tente outra opção.` };
+      }
+      aplicarCusto(e, opcao.custo);
+
+      // Sucesso/fracasso em opções arriscadas
+      let efeitosAplicar = opcao.efeitos;
+      if (opcao.chanceSucesso !== undefined) {
+        const sucesso = rng() < opcao.chanceSucesso;
+        if (!sucesso) {
+          efeitosAplicar = opcao.falhaEfeitos || { vico: -15 };
+          e.log.push({ t: e.semana, txt: `❌ A opção não deu certo... ${JSON.stringify(efeitosAplicar)}` });
+        }
+      }
+      aplicarEfeitos(e, efeitosAplicar);
+
+      // Marcar POS / assembleia / governança conforme o dilema
+      if (opcao.marcarPos) e.projeto.posEntregue = true;
+      if (dilema.tipo === 'adesao' || dilema.tipo === 'conflito') {
+        e.projeto.assembleiaConcepcao = true;
+        e.projeto.participouSemana = true;
+      }
+      // Opção que "quebra" a assembleia (ex: reduzir o estatuto): anula a
+      // assembleia na concepção, fazendo a auditoria cair pra 'atenção'.
+      if (opcao.quebraAssembleia) e.projeto.assembleiaConcepcao = false;
+      // Mesma ideia do quebraAssembleia, generalizada: a opção declara QUAL
+      // flag de pendência ela abre, e a auditoria (auditar) lê a flag. Antes
+      // disso, `risco:'bloqueio'` era só texto — o jogador "ignorava a
+      // fiscalização" e nada acontecia de fato no estado.
+      if (opcao.marcaPendencia) e.projeto[opcao.marcaPendencia] = true;
+      // Compromisso: resolver bem o dilema conta como participação
+      e.projeto.participouSemana = true;
+
+      e.log.push({ t: e.semana, txt: `✅ ${dilema.titulo} → ${opcao.titulo}` });
+
+      // Fim de jogo por escolha catastrófica
+      if (opcao.risco === 'fim' || (e.projeto.vico <= 0)) {
+        e.jogoFinalizado = true;
+      }
+
+      e.dilemaAtivo = null;
+      e.auditoria = auditar(e);
+      break;
+    }
+
+    case 'EXECUTAR_ACAO': {
+      // Ação de gestão escolhida pelo jogador durante a semana.
+      // Nota: `acao` aqui é o parâmetro de reduzir (a action dispatch),
+      // e o callback do find usa `a` (item do array ACOES) p/ evitar TDZ.
+      const def = ACOES.find(a => a.id === acao.acaoId);
+      if (!def) return estado;
+      if (!def.disponivel(e)) return { ...estado, _aviso: 'Essa ação não está disponível agora.' };
+      const chk = podePagar(e, def.custo);
+      if (!chk.ok) return { ...estado, _aviso: `Faltou ${chk.falta} pra essa ação.` };
+      aplicarCusto(e, def.custo);
+      const resultado = def.aplicar(e);
+      aplicarEfeitos(e, resultado);
+      // Marca participação se a ação for coletiva (assembleia, conflito, equipe, parceria)
+      e.log.push({ t: e.semana, txt: resultado.txt });
+      e.auditoria = auditar(e);
+      break;
+    }
+
+    case 'CONCLUIR_ONBOARDING': {
+      e.onboardingPasso += 1;
+      break;
+    }
+
+    case 'NOVO_JOGO': {
+      return estadoInicial();
+    }
+
+    default:
+      return estado;
+  }
+  return e;
+}
+
+// ════════════════════════════════════════════════════════════
+// RENDER CANVAS ISOMÉTRICO
+// ════════════════════════════════════════════════════════════
+const canvas = document.getElementById('mapa');
+const ctx = canvas.getContext('2d');
+const TILE_W = 54, TILE_H = 27;             // losango isométrico
+const OFFSET_X_BASE = canvas.width / 2;
+const OFFSET_Y_BASE = 40;
+// Offsets mutáveis (pan do mapa via arrasto)
+let offsetX = OFFSET_X_BASE;
+let offsetY = OFFSET_Y_BASE;
+let zoom = 1.0;                                // zoom do mapa (1.0 = padrão)
+let panX = 0, panY = 0;                        // translação da câmera (px da tela)
+const ZOOM_MIN = 0.6, ZOOM_MAX = 2.5;
+const caminhoEnergia = [];                    // animação A*
+let tooltipMapa = null;                       // {x,y,texto} ou null
+let tileHover = null;                         // {x,y} do tile sob o mouse
+
+// ─── Malha viária (estrada contínua, estilo SimCity) ────────
+// Larguras em px (no espaço do canvas, antes do zoom da câmera).
+const RUA_BORDA = 13;     // acostamento claro (desenhado por baixo)
+const RUA_CORPO = 10;     // asfalto escuro
+const RUA_FAIXA = 1.6;    // faixa amarela central tracejada
+
+// Config visual de cada tipo de construção (reconhecível)
+const CONSTRUCOES_VIS = {
+  estamparia: {
+    nome: 'Estamparia e Costura',
+    desc: 'O coração do projeto. Aqui as mulheres produzem.',
+    larg: 36, prof: 18, altura: 30,
+    corBase: '#1565c0', corLado: '#0d47a1', corTopo: '#ffd600',
+    corTelhado: '#e65100', emoji: '🏭', temChamine: true
+  },
+  painel: {
+    nome: 'Painel solar',
+    desc: 'Gera energia limpa pro projeto.',
+    larg: 30, prof: 15, altura: 16,
+    corBase: '#546e7a', corLado: '#37474f', corTopo: '#4fc3f7',
+    corTelhado: '#29b6f6', emoji: '🔆'
+  },
+  casa: {
+    nome: 'Casa da comunidade',
+    desc: 'Famílias que participam do projeto.',
+    larg: 24, prof: 12, altura: 22,
+    corBase: '#efebe9', corLado: '#d7ccc8', corTopo: '#ff7043',
+    corTelhado: '#d84315', emoji: '🏠'
+  },
+  horta: {
+    nome: 'Horta comunitária',
+    desc: 'Produção de alimentos do coletivo.',
+    larg: 28, prof: 14, altura: 8,
+    corBase: '#7d5b3e', corLado: '#5d4037', corTopo: '#aee571',
+    corTelhado: '#66bb6a', emoji: '🥬'
+  },
+  restaurante: {
+    nome: 'Restaurante Popular',
+    desc: 'Cozinha comunitária que serve refeições baratas e nutritivas.',
+    larg: 34, prof: 17, altura: 26,
+    corBase: '#ef6c00', corLado: '#e65100', corTopo: '#ffd600',
+    corTelhado: '#bf360c', emoji: '🍲'
+  },
+  tanque: {
+    nome: 'Tanque de Peixes',
+    desc: 'Criação de peixes que aproveita a água do rio.',
+    larg: 32, prof: 16, altura: 10,
+    corBase: '#0277bd', corLado: '#01579b', corTopo: '#4fc3f7',
+    corTelhado: '#0288d1', emoji: '🐟'
+  }
+};
+
+function gridParaTela(gx, gy) {
+  // Coordenadas em "espaço do mundo" (sem zoom). O render aplica ctx.setTransform.
+  return {
+    x: offsetX + (gx - gy) * (TILE_W / 2),
+    y: offsetY + (gx + gy) * (TILE_H / 2)
+  };
+}
+
+// Tela → grid (para detecção de hover). Inverte o setTransform: world = (screen - pan)/zoom
+function telaParaGrid(sx, sy) {
+  const wx = (sx - panX) / zoom;
+  const wy = (sy - panY) / zoom;
+  const dx = wx - offsetX;
+  const dy = wy - offsetY;
+  const gx = Math.round((dx / (TILE_W/2) + dy / (TILE_H/2)) / 2);
+  const gy = Math.round((dy / (TILE_H/2) - dx / (TILE_W/2)) / 2);
+  return { x: gx, y: gy };
+}
+
+// Hash determinístico por coordenada (textura estável por tile)
+function hashTile(x, y) {
+  let h = (x * 374761393 + y * 668265263) >>> 0;
+  h = (h ^ (h >> 13)) * 1274126177;
+  return ((h ^ (h >> 16)) >>> 0) / 4294967296;
+}
+
+// ═══ Altura Z por tipo de terreno (elevação real do terreno) ═══
+// Morro sobe em "rampa" suave interpolada (sem degraus por linha de gy),
+// considerando a vizinhança pra criar encosta contínua. Vale tem leve
+// ondulação. Demais terrenos são planos. Não toca no asfalto/rio.
+// Altura-alvo bruta por tile (antes da interpolação suavizante).
+function alturaBrutaMorro(gx, gy) {
+  // Pico no canto noroeste do maciço de morro;cai suavemente em "cônicas".
+  // Usa distância ponderada ao "pico" ideal + variação determinística por tile.
+  const picoX = 0.5, picoY = 0.5;                 // pico no canto NW do maciço
+  const dx = gx - picoX, dy = gy - picoY;
+  const dist = Math.sqrt(dx * dx + dy * dy);      // distância euclidiana ao pico
+  const alturaMax = 30;                           // ~30px no topo
+  const alcance = 4.6;                            // raio onde a altura decai a zero
+  let h = Math.max(0, (alcance - dist) / alcance) * alturaMax;
+  h += hashTile(gx, gy) * 5;                       // microvariação natural (0..5px)
+  return h;
+}
+// Altura interpolada bilinearmente entre os 4 tiles de morro mais próximos,
+// eliminando degraus entre tiles vizinhos (encosta contínua).
+function alturaTerreno(gx, gy) {
+  const tipo = MAPA[gy][gx];
+  if (tipo === TERRENO.MORRO) {
+    // Suavização: média ponderada entre este tile e os vizinhos de morro.
+    // Peso do centro é maior; bordas fundem com a vizinhança.
+    let soma = 0, peso = 0;
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const nx = gx + dx, ny = gy + dy;
+        if (nx < 0 || ny < 0 || nx >= MAPA_LARG || ny >= MAPA_ALT) continue;
+        if (MAPA[ny][nx] !== TERRENO.MORRO) continue;
+        const d = (dx === 0 && dy === 0) ? 1 : 0.45;  // centro pesa mais
+        soma += alturaBrutaMorro(nx, ny) * d;
+        peso += d;
+      }
+    }
+    return peso > 0 ? soma / peso : alturaBrutaMorro(gx, gy);
+  }
+  if (tipo === TERRENO.VALE) {
+    // Vale permanece plano (não distorce o grid), mas ganha "corpo" via textura
+    // (tufos maiores e flores) na função desenharTile, não via altura.
+    return 0;
+  }
+  return 0;   // demais terrenos: plano
+}
+
+// Sombra projetada no chão (sol a NW)
+function desenharSombra(x, y, larg, prof, altura) {
+  const off = altura * 0.35;
+  ctx.fillStyle = 'rgba(27,42,20,0.18)';
+  ctx.beginPath();
+  ctx.moveTo(x - larg + off, y + off);
+  ctx.lineTo(x + off, y + prof + off);
+  ctx.lineTo(x + larg + off, y + off);
+  ctx.lineTo(x + off, y - prof + off);
+  ctx.closePath();
+  ctx.fill();
+}
+
+// Losango preenchido numa posição (x,y) da tela — helper usado por tile e "paredes" de elevação
+function losango(x, y, cor) {
+  ctx.beginPath();
+  ctx.moveTo(x, y - TILE_H/2);
+  ctx.lineTo(x + TILE_W/2, y);
+  ctx.lineTo(x, y + TILE_H/2);
+  ctx.lineTo(x - TILE_W/2, y);
+  ctx.closePath();
+  ctx.fillStyle = cor;
+  ctx.fill();
+}
+
+// Desenha a "parede" lateral de um tile elevado (face SE e face SW) — dá volume ao morro.
+// Usa gradiente vertical (topo claro → base escura) pra simular encosta iluminada.
+// Faces só aparecem onde há saliência real em relação ao vizinho (elimina bandas em áreas planas).
+function desenharParedeElevacao(gx, gy, topoX, topoY, hTopo) {
+  if (hTopo <= 0.5) return;
+  // Cor base do topo (terra/morro) pra derivar a paleta da encosta
+  const corTopo = TERRENO_COR[MAPA[gy][gx]] || '#8d6e63';
+  // Altura dos vizinhos: só desenha a face se este tile for MAIS alto que o vizinho
+  // (face virada pra fora da encosta). Em área plana interna, nada é desenhado.
+  const vizS = gy < MAPA_ALT - 1 ? alturaTerreno(gx, gy + 1) : 0;   // sul
+  const vizO = gx < MAPA_LARG - 1 ? alturaTerreno(gx + 1, gy) : 0;  // leste (sudoeste na tela)
+  const faceSE = hTopo - vizS;     // face direita-inferior (sul)
+  const faceSW = hTopo - vizO;     // face esquerda-inferior (leste)
+
+  const pintarFace = (x1, y1, x2, y2, x3, y3, x4, y4, baseEscura, topoClaro, alturaFace) => {
+    if (alturaFace <= 0.5) return;
+    // Gradiente vertical: topo da face (junto ao topo do tile) é claro; base é escura.
+    const grad = ctx.createLinearGradient(0, Math.min(y1, y2), 0, Math.max(y3, y4));
+    grad.addColorStop(0, topoClaro);
+    grad.addColorStop(1, baseEscura);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3); ctx.lineTo(x4, y4);
+    ctx.closePath();
+    ctx.fill();
+  };
+
+  // Paleta derivada da cor do topo: encosta é mais escura (sombra da saliência)
+  const escuro = clarear(corTopo, -0.35) || '#5d4037';
+  const medio  = clarear(corTopo, -0.15) || '#795548';
+  const topoClaro = clarear(corTopo, 0.08) || corTopo;
+
+  // Face SE (direita-inferior): vértices direito e inferior do topo descendo ao chão
+  pintarFace(
+    topoX + TILE_W/2, topoY,                 // direito do topo
+    topoX, topoY + TILE_H/2,                 // inferior do topo
+    topoX, topoY + TILE_H/2 + hTopo,         // inferior no chão
+    topoX + TILE_W/2, topoY + hTopo,         // direito no chão
+    escuro, topoClaro, faceSE
+  );
+  // Face SW (esquerda-inferior): vértices inferior e esquerdo do topo
+  pintarFace(
+    topoX, topoY + TILE_H/2,                 // inferior do topo
+    topoX - TILE_W/2, topoY,                 // esquerdo do topo
+    topoX - TILE_W/2, topoY + hTopo,         // esquerdo no chão
+    topoX, topoY + TILE_H/2 + hTopo,         // inferior no chão
+    medio, topoClaro, faceSW
+  );
+}
+
+// Tile com elevação Z + textura + bordas integradas (sem "quadriculado")
+function desenharTile(gx, gy, tipo) {
+  const base = gridParaTela(gx, gy);          // centro base (sem elevação)
+  const h = hashTile(gx, gy);
+  const hTopo = alturaTerreno(gx, gy);        // elevação deste tile
+  const topoY = base.y - hTopo;               // centro do topo (deslocado pra cima)
+
+  // 1. PAREDES de elevação (desenhadas ANTES do topo, pra topo ficar por cima)
+  desenharParedeElevacao(gx, gy, base.x, topoY, hTopo);
+
+  // 2. Cor base do topo (com gradiente)
+  let cor = TERRENO_COR[tipo];
+  const grad = ctx.createLinearGradient(base.x, topoY - TILE_H/2, base.x, topoY + TILE_H/2);
+  grad.addColorStop(0, clarear(cor, 0.14));
+  grad.addColorStop(1, cor);
+  losango(base.x, topoY, grad);
+
+  // 3. Textura por tipo (no plano do topo)
+  ctx.save();
+  if (tipo === TERRENO.MORRO) {
+    // Cumeeira: linha mais clara no topo da elevação (realça a crista do morro)
+    if (hTopo > 16) {
+      ctx.strokeStyle = 'rgba(255,248,220,0.30)';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(base.x - TILE_W/3, topoY - 1);
+      ctx.quadraticCurveTo(base.x, topoY - 3, base.x + TILE_W/3, topoY - 1);
+      ctx.stroke();
+    }
+    // Pedras orgânicas (mais e maiores) com sombra própria
+    for (let i = 0; i < 6; i++) {
+      const a = hashTile(gx*7+i, gy*3) * Math.PI * 2;
+      const r = 2 + hashTile(gx, gy*5+i) * 8;
+      const px = base.x + Math.cos(a)*r;
+      const py = topoY + Math.sin(a)*r*0.5;
+      const raio = 2 + hashTile(gx*3+i, gy*2) * 3;
+      // sombra da pedra (deslocada pra baixo-direita)
+      ctx.fillStyle = 'rgba(40,25,18,0.30)';
+      ctx.beginPath(); ctx.arc(px + 1, py + 1, raio, 0, Math.PI*2); ctx.fill();
+      // pedra
+      ctx.fillStyle = 'rgba(120,93,72,0.55)';
+      ctx.beginPath(); ctx.arc(px, py, raio, 0, Math.PI*2); ctx.fill();
+      // realce (luz NW)
+      ctx.fillStyle = 'rgba(255,240,210,0.25)';
+      ctx.beginPath(); ctx.arc(px - raio*0.35, py - raio*0.35, raio*0.45, 0, Math.PI*2); ctx.fill();
+    }
+    // Grama rala espetada nas bordas (mais orgânica)
+    ctx.strokeStyle = 'rgba(70,95,50,0.55)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 4; i++) {
+      const a = hashTile(gx+i, gy*9) * Math.PI * 2;
+      const r = TILE_W/3 + hashTile(gx*5, gy+i) * 3;
+      const px = base.x + Math.cos(a)*r;
+      const py = topoY + Math.sin(a)*r*0.5;
+      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + (hashTile(gx,gy*3+i)-0.5)*2, py - 3); ctx.stroke();
+    }
+  } else if (tipo === TERRENO.VALE) {
+    // Tufos de grama densa com volume (sombra própria + realce de luz) — dão
+    // aparência 3D ao vale sem elevar o tile (não distorce o grid).
+    for (let i = 0; i < 7; i++) {
+      const a = hashTile(gx*2+i, gy*3) * Math.PI * 2;
+      const r = 3 + hashTile(gx, gy+i) * 10;
+      const px = base.x + Math.cos(a)*r;
+      const py = topoY + Math.sin(a)*r*0.5;
+      const raio = 2.2 + hashTile(gx*4+i, gy) * 1.8;   // tufos maiores
+      // sombra projetada (sol NW) — dá volume ao tufo
+      ctx.fillStyle = 'rgba(20,60,20,0.30)';
+      ctx.beginPath(); ctx.arc(px + 1.2, py + 1.2, raio, 0, Math.PI*2); ctx.fill();
+      // corpo do tufo (verde médio)
+      ctx.fillStyle = 'rgba(56,142,60,0.85)';
+      ctx.beginPath(); ctx.arc(px, py, raio, 0, Math.PI*2); ctx.fill();
+      // realce de luz (topo esquerdo)
+      ctx.fillStyle = 'rgba(165,214,167,0.7)';
+      ctx.beginPath(); ctx.arc(px - raio*0.3, py - raio*0.3, raio*0.55, 0, Math.PI*2); ctx.fill();
+      // Florzinha clara esporádica ("vida" no mapa) — mais visível
+      if (hashTile(gx*11+i, gy*7) > 0.7) {
+        const corFlor = hashTile(gx+i, gy*5) > 0.5 ? '#ffd54f' : '#f48fb1';
+        ctx.fillStyle = corFlor;
+        ctx.beginPath(); ctx.arc(px - 0.6, py - raio - 0.4, 1.4, 0, Math.PI*2); ctx.fill();
+        // miolo
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.beginPath(); ctx.arc(px - 0.6, py - raio - 0.4, 0.5, 0, Math.PI*2); ctx.fill();
+      }
+    }
+  } else if (tipo === TERRENO.RIO) {
+    // Ondulação animada
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 1.2;
+    const fase = frame * 0.05 + gx * 0.7 + gy * 0.5;
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      const yy = topoY + i * 5 + Math.sin(fase + i) * 1.5;
+      ctx.moveTo(base.x - TILE_W/2 + 4, yy);
+      ctx.quadraticCurveTo(base.x - 6, yy - 2, base.x, yy);
+      ctx.quadraticCurveTo(base.x + 6, yy + 2, base.x + TILE_W/2 - 4, yy);
+      ctx.stroke();
+    }
+  } else if (tipo === TERRENO.TERRA || tipo === TERRENO.TRILHA) {
+    // Manchas escuras
+    ctx.fillStyle = 'rgba(93,64,55,0.18)';
+    for (let i = 0; i < 2; i++) {
+      const a = hashTile(gx+i, gy*4) * Math.PI * 2;
+      const r = 5 + hashTile(gx*3, gy+i) * 8;
+      ctx.beginPath();
+      ctx.arc(base.x + Math.cos(a)*r, topoY + Math.sin(a)*r*0.5, 2 + h*2, 0, Math.PI*2);
+      ctx.fill();
+    }
+  } else if (tipo === TERRENO.ASFALTO) {
+    // Granulação sutil do asfalto (a faixa/acostamento vêm da malha viária contínua,
+    // desenhada separadamente em desenharMalhaViaria, pra não ficar "retangular").
+    ctx.fillStyle = 'rgba(30,40,46,0.30)';
+    for (let i = 0; i < 8; i++) {
+      const a = hashTile(gx*3+i, gy*5) * Math.PI * 2;
+      const r = 2 + hashTile(gx, gy+i*2) * (TILE_W/2 - 4);
+      ctx.beginPath();
+      ctx.arc(base.x + Math.cos(a)*r, topoY + Math.sin(a)*r*0.5, 0.7, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+
+  // 4. Bordas INTEGRADAS — só desenha aresta se vizinho tiver altura/tipo DIFERENTE
+  // (elimina o efeito "quadriculado" em áreas homogêneas)
+  const aresta = (cond, x1, y1, x2, y2) => {
+    if (!cond) return;
+    ctx.strokeStyle = 'rgba(27,42,20,0.18)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  };
+  const topoEsq = base.x - TILE_W/2, topoDir = base.x + TILE_W/2;
+  const topoCima = topoY - TILE_H/2, topoBaixo = topoY + TILE_H/2;
+  // Vizinhos
+  const vizN  = gy > 0           ? alturaTerreno(gx, gy-1) : -1;
+  const vizS  = gy < MAPA_ALT-1  ? alturaTerreno(gx, gy+1) : -1;
+  const vizL  = gx > 0           ? alturaTerreno(gx-1, gy) : -1;
+  const vizO  = gx < MAPA_LARG-1 ? alturaTerreno(gx+1, gy) : -1;
+  // Aresta só em degraus relevantes (≥ 4px) — a encosta suave não deve gerar grade fina.
+  // Tiles contínuos e mesma altura ficam sem borda.
+  const saltoS = Math.abs(vizS - hTopo);
+  const saltoO = Math.abs(vizO - hTopo);
+  aresta(saltoS >= 4, topoDir, topoBaixo, base.x, topoBaixo + TILE_H/2);   // SE
+  aresta(saltoO >= 4, base.x, topoBaixo + TILE_H/2, topoEsq, topoBaixo);   // SW
+}
+
+// ─── Malha viária contínua (estilo SimCity) ─────────────────
+// Em vez de desenhar a estrada tile-a-tile (que fica "retangular"), percorre
+// todos os tiles de asfalto e liga o CENTRO de cada um ao centro dos vizinhos
+// de asfalto. As esquinas viram curvas suaves porque cada "trilha" (sequência
+// de tiles conectados em linha) é desenhada como UMA polilinha contínua com
+// lineJoin 'round' + arredondamento via quadraticCurveTo nas dobras.
+function ehAsfalto(x, y) {
+  return x >= 0 && y >= 0 && x < MAPA_LARG && y < MAPA_ALT && MAPA[y][x] === TERRENO.ASFALTO;
+}
+// Extrai "trilhas" da malha: cada trilha é uma lista de pontos (centros de tile)
+// onde tiles consecutivos são vizinhos. Ponto de dobra (esquina) é onde a trilha
+// muda de direção. As trilhas se cruzam em cruzamentos; isso é OK (ficam sobrepostos).
+function extrairTrilhas() {
+  const visitado = new Set();           // arestas já percorridas (chave "x1,y1>x2,y2")
+  const chave = (x1, y1, x2, y2) => {
+    // normaliza pra que a ordem dos extremos não importe
+    const a = x1 * 100 + y1, b = x2 * 100 + y2;
+    return a < b ? a + '>' + b : b + '>' + a;
+  };
+  const vizinhos = (x, y) => {
+    const out = [];
+    if (ehAsfalto(x + 1, y)) out.push([x + 1, y]);
+    if (ehAsfalto(x - 1, y)) out.push([x - 1, y]);
+    if (ehAsfalto(x, y + 1)) out.push([x, y + 1]);
+    if (ehAsfalto(x, y - 1)) out.push([x, y - 1]);
+    return out;
+  };
+  const trilhas = [];
+  // Para cada aresta ainda não visitada, estende uma trilha nas duas direções
+  // enquanto houver continuidade (vizinho único = não é cruzamento/ponta).
+  for (let y = 0; y < MAPA_ALT; y++) {
+    for (let x = 0; x < MAPA_LARG; x++) {
+      if (!ehAsfalto(x, y)) continue;
+      for (const [vx, vy] of vizinhos(x, y)) {
+        if (visitado.has(chave(x, y, vx, vy))) continue;
+        // nova trilha começando pela aresta (x,y)-(vx,vy)
+        const pts = [{ x, y }, { x: vx, y: vy }];
+        visitado.add(chave(x, y, vx, vy));
+        // estende pra frente a partir de (vx,vy)
+        let cur = [vx, vy], prev = [x, y];
+        while (true) {
+          const vs = vizinhos(cur[0], cur[1]).filter(([nx, ny]) => !(nx === prev[0] && ny === prev[1]) && !visitado.has(chave(cur[0], cur[1], nx, ny)));
+          if (vs.length !== 1) break;           // cruzamento ou ponta: para
+          const [nx, ny] = vs[0];
+          visitado.add(chave(cur[0], cur[1], nx, ny));
+          pts.push({ x: nx, y: ny });
+          prev = cur; cur = [nx, ny];
+        }
+        // estende pra trás a partir de (x,y)
+        cur = [x, y]; prev = [vx, vy];
+        while (true) {
+          const vs = vizinhos(cur[0], cur[1]).filter(([nx, ny]) => !(nx === prev[0] && ny === prev[1]) && !visitado.has(chave(cur[0], cur[1], nx, ny)));
+          if (vs.length !== 1) break;
+          const [nx, ny] = vs[0];
+          visitado.add(chave(cur[0], cur[1], nx, ny));
+          pts.unshift({ x: nx, y: ny });
+          prev = cur; cur = [nx, ny];
+        }
+        trilhas.push(pts);
+      }
+    }
+  }
+  return trilhas;
+}
+function desenharMalhaViaria() {
+  const trilhas = extrairTrilhas();
+  if (trilhas.length === 0) return;
+  // Converte cada trilha (lista de {x,y} em coords de grid) em pontos de tela.
+  const trilhasTela = trilhas.map(tr => tr.map(p => gridParaTela(p.x, p.y)));
+
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // Traça uma trilha como caminho contínuo, arredondando as dobras com
+  // quadraticCurveTo no ponto de virada (centro do tile da esquina).
+  const tracarCaminho = () => {
+    for (const pts of trilhasTela) {
+      if (pts.length < 2) continue;
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length - 1; i++) {
+        // dobra: curva quadrática passando pelo vértice atual, controlando no próximo
+        ctx.quadraticCurveTo(pts[i].x, pts[i].y, (pts[i].x + pts[i + 1].x) / 2, (pts[i].y + pts[i + 1].y) / 2);
+      }
+      ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+    }
+  };
+
+  const pintar = (cor, largura, tracejado) => {
+    ctx.strokeStyle = cor;
+    ctx.lineWidth = largura;
+    ctx.setLineDash(tracejado || []);
+    ctx.beginPath();
+    tracarCaminho();
+    ctx.stroke();
+  };
+
+  pintar('#7d8b91', RUA_BORDA);                         // acostamento (baixo)
+  pintar('#3b4a52', RUA_CORPO);                         // asfalto
+  pintar('rgba(255,214,0,0.9)', RUA_FAIXA, [6, 5]);     // faixa amarela
+  ctx.setLineDash([]);
+
+  // Caps nos cruzamentos/pontas: disco da rua em cada tile de asfalto,
+  // pra garantir continuidade onde as trilhas se encontram ou terminam.
+  ctx.fillStyle = '#3b4a52';
+  for (let y = 0; y < MAPA_ALT; y++) {
+    for (let x = 0; x < MAPA_LARG; x++) {
+      if (!ehAsfalto(x, y)) continue;
+      const c = gridParaTela(x, y);
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, RUA_CORPO / 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+// Clareia (prop > 0) ou escurece (prop < 0) uma cor hex. Clamp em [0,255].
+function clarear(hex, prop) {
+  const n = parseInt(hex.slice(1), 16);
+  const clamp = v => Math.max(0, Math.min(255, v));
+  const r = clamp(((n >> 16) & 255) + Math.round(255 * prop));
+  const g = clamp(((n >> 8) & 255) + Math.round(255 * prop));
+  const b = clamp((n & 255) + Math.round(255 * prop));
+  return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+}
+
+// Construção específica por tipo (formas reconhecíveis, não genéricas)
+function desenharConstrucao(gx, gy, tipo, destacar) {
+  const v = CONSTRUCOES_VIS[tipo] || CONSTRUCOES_VIS.casa;
+  const base = gridParaTela(gx, gy);
+  const hTerreno = alturaTerreno(gx, gy);
+  const x = base.x;
+  const y = base.y - hTerreno;   // sobe junto com o terreno
+  const L = v.larg, P = v.prof, A = v.altura;
+
+  // Sombra no chão
+  desenharSombra(x, y, L, P, A);
+
+  // Halo de destaque
+  if (destacar) {
+    ctx.fillStyle = 'rgba(255,214,0,0.25)';
+    ctx.beginPath();
+    ctx.moveTo(x, y - TILE_H/2 - 2);
+    ctx.lineTo(x + TILE_W/2 + 2, y);
+    ctx.lineTo(x, y + TILE_H/2 + 2);
+    ctx.lineTo(x - TILE_W/2 - 2, y);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Despachar pra desenho específico por tipo
+  if (tipo === 'estamparia') desenharEstamparia(x, y, L, P, A);
+  else if (tipo === 'painel') desenharPainelSolar(x, y, L, P, A);
+  else if (tipo === 'horta') desenharHorta(x, y, L, P, A);
+  else if (tipo === 'restaurante') desenharRestaurante(x, y, L, P, A);
+  else if (tipo === 'tanque') desenharTanque(x, y, L, P, A);
+  else desenharCasa(x, y, L, P, A);   // casa e default
+
+  // Emoji flutuante sempre visível (identifica a construção)
+  const flut = Math.sin(frame * 0.04 + gx) * 2;
+  ctx.font = '16px serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.beginPath();
+  ctx.arc(x, y - A - 16 + flut, 11, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillText(v.emoji, x, y - A - 16 + flut);
+}
+
+// ── Estamparia: galpão com telhado em 2 águas + janelas + chaminé fumegante ──
+function desenharEstamparia(x, y, L, P, A) {
+  // Corpo (3 faces do galpão)
+  // Face esquerda (sombreada) — azul escuro
+  ctx.fillStyle = '#0d47a1';
+  ctx.beginPath();
+  ctx.moveTo(x - L, y);
+  ctx.lineTo(x, y + P);
+  ctx.lineTo(x, y + P - A);
+  ctx.lineTo(x - L, y - A);
+  ctx.closePath(); ctx.fill();
+  // Face direita (azul) — com janelas (retângulos amarelos acesos)
+  ctx.fillStyle = '#1565c0';
+  ctx.beginPath();
+  ctx.moveTo(x + L, y);
+  ctx.lineTo(x, y + P);
+  ctx.lineTo(x, y + P - A);
+  ctx.lineTo(x + L, y - A);
+  ctx.closePath(); ctx.fill();
+  // Janelas acesas (3 fileiras) na face direita
+  ctx.fillStyle = 'rgba(255,235,120,0.9)';
+  for (let i = 0; i < 3; i++) {
+    const jy = y - A + 8 + i * (A/4);
+    ctx.fillRect(x + L*0.5 - 3, jy, 6, 5);
+    ctx.fillRect(x + L*0.15, jy, 6, 5);
+  }
+  // Telhado em 2 águas (cumeeira central) — vermelho/laranja
+  const cumeeira = y - A - P * 0.9;
+  // Água esquerda
+  ctx.fillStyle = '#c62828';
+  ctx.beginPath();
+  ctx.moveTo(x - L, y - A);
+  ctx.lineTo(x, y - P - A);
+  ctx.lineTo(x, cumeeira);
+  ctx.lineTo(x - L, y - A - P*0.3);
+  ctx.closePath(); ctx.fill();
+  // Água direita
+  ctx.fillStyle = '#e53935';
+  ctx.beginPath();
+  ctx.moveTo(x + L, y - A);
+  ctx.lineTo(x, y - P - A);
+  ctx.lineTo(x, cumeeira);
+  ctx.lineTo(x + L, y - A - P*0.3);
+  ctx.closePath(); ctx.fill();
+  // Cumeeira
+  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(x - L, y - A - P*0.3); ctx.lineTo(x, cumeeira); ctx.lineTo(x + L, y - A - P*0.3);
+  ctx.stroke();
+  // Porta (laranja) na face esquerda
+  ctx.fillStyle = '#ef6c00';
+  ctx.fillRect(x - L*0.7, y - A*0.6, 8, A*0.6);
+  // Chaminé com fumaça animada
+  const cx = x + L * 0.45, cy = y - A - P*0.5;
+  ctx.fillStyle = '#5d4037';
+  ctx.fillRect(cx - 2, cy - 10, 4, 10);
+  for (let i = 0; i < 3; i++) {
+    const fy = cy - 12 - i * 5 - (frame * 0.3 % 5);
+    const fx = cx + Math.sin((frame * 0.05) + i) * 3;
+    ctx.fillStyle = `rgba(200,200,200,${0.5 - i * 0.15})`;
+    ctx.beginPath();
+    ctx.arc(fx, fy, 2 + i, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// ── Painel solar: estrutura metálica + placas inclinadas azuis (reconhecível) ──
+function desenharPainelSolar(x, y, L, P, A) {
+  // Base/pilotes (cinza escuro, baixa)
+  ctx.fillStyle = '#37474f';
+  ctx.beginPath();
+  ctx.moveTo(x - L*0.7, y);
+  ctx.lineTo(x, y + P*0.7);
+  ctx.lineTo(x, y + P*0.7 - 6);
+  ctx.lineTo(x - L*0.7, y - 6);
+  ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(x + L*0.7, y);
+  ctx.lineTo(x, y + P*0.7);
+  ctx.lineTo(x, y + P*0.7 - 6);
+  ctx.lineTo(x + L*0.7, y - 6);
+  ctx.closePath(); ctx.fill();
+  // Placa solar INCLINADA (losango azul escuro com grade de células) — a parte reconhecível
+  const py = y - A - 2;   // topo da placa
+  // Placa inclinada pra NE: losango maior e achatado
+  ctx.fillStyle = '#1565c0';
+  ctx.beginPath();
+  ctx.moveTo(x - L, py);
+  ctx.lineTo(x, py - P*0.8);       // canto norte elevado
+  ctx.lineTo(x + L, py);
+  ctx.lineTo(x, py + P*0.5);       // canto sul
+  ctx.closePath(); ctx.fill();
+  // Grade de células (linhas formando quadriculado azul-claro)
+  ctx.strokeStyle = 'rgba(100,181,246,0.7)';
+  ctx.lineWidth = 0.8;
+  for (let i = 1; i < 4; i++) {
+    const t = i / 4;
+    // linhas N-S
+    const x1 = x - L + (L*2)*t;
+    ctx.beginPath();
+    ctx.moveTo(x1, py);
+    ctx.lineTo(x1, py - P*0.8 + (P*1.3)*t);
+    ctx.stroke();
+  }
+  // Brilho reflexo (linhas claras diagonais)
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(x - L*0.6, py - P*0.2);
+  ctx.lineTo(x - L*0.2, py - P*0.6);
+  ctx.stroke();
+  // Haste de suporte (visível) do sul até a placa
+  ctx.strokeStyle = '#263238';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x, py + P*0.4);
+  ctx.stroke();
+}
+
+// ── Horta: canteiros retangulares com mudas verdes ──
+function desenharHorta(x, y, L, P, A) {
+  // Terreno da horta (marrom claro)
+  losango(x, y, '#8d6e63');
+  // 4 canteiros (retângulos verdes) alinhados isometricamente
+  ctx.fillStyle = '#558b2f';
+  for (let row = 0; row < 2; row++) {
+    for (let col = 0; col < 2; col++) {
+      const cx = x - L*0.5 + col * L*0.6;
+      const cy = y - P*0.3 + row * P*0.6;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - 4);
+      ctx.lineTo(cx + 8, cy);
+      ctx.lineTo(cx, cy + 4);
+      ctx.lineTo(cx - 8, cy);
+      ctx.closePath(); ctx.fill();
+      // mudas (pontinhos verde-claro)
+      ctx.fillStyle = '#aee571';
+      for (let m = 0; m < 3; m++) {
+        ctx.beginPath();
+        ctx.arc(cx - 4 + m*4, cy, 1.5, 0, Math.PI*2);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#558b2f';
+    }
+  }
+}
+
+// ── Casa: telhado vermelho simples + porta + janela ──
+function desenharCasa(x, y, L, P, A) {
+  ctx.fillStyle = '#d7ccc8';
+  ctx.beginPath();
+  ctx.moveTo(x - L, y); ctx.lineTo(x, y + P); ctx.lineTo(x, y + P - A); ctx.lineTo(x - L, y - A);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#efebe9';
+  ctx.beginPath();
+  ctx.moveTo(x + L, y); ctx.lineTo(x, y + P); ctx.lineTo(x, y + P - A); ctx.lineTo(x + L, y - A);
+  ctx.closePath(); ctx.fill();
+  // Telhado vermelho (2 águas)
+  ctx.fillStyle = '#bf360c';
+  ctx.beginPath();
+  ctx.moveTo(x - L, y - A); ctx.lineTo(x, y - P - A); ctx.lineTo(x, y - A - P*0.4); ctx.lineTo(x - L, y - A - P*0.2);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#d84315';
+  ctx.beginPath();
+  ctx.moveTo(x + L, y - A); ctx.lineTo(x, y - P - A); ctx.lineTo(x, y - A - P*0.4); ctx.lineTo(x + L, y - A - P*0.2);
+  ctx.closePath(); ctx.fill();
+  // Porta azul
+  ctx.fillStyle = '#1976d2';
+  ctx.fillRect(x - L*0.6, y - A*0.55, 6, A*0.55);
+}
+
+// ── Restaurante: cozinha laranja com telhado amarelo + chaminé + letreiro ──
+function desenharRestaurante(x, y, L, P, A) {
+  // Corpo (faces laranja)
+  ctx.fillStyle = '#bf360c';
+  ctx.beginPath();
+  ctx.moveTo(x - L, y); ctx.lineTo(x, y + P); ctx.lineTo(x, y + P - A); ctx.lineTo(x - L, y - A);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#ef6c00';
+  ctx.beginPath();
+  ctx.moveTo(x + L, y); ctx.lineTo(x, y + P); ctx.lineTo(x, y + P - A); ctx.lineTo(x + L, y - A);
+  ctx.closePath(); ctx.fill();
+  // Janelas grandes (salão) na face direita
+  ctx.fillStyle = 'rgba(255,243,224,0.95)';
+  ctx.fillRect(x + L*0.15, y - A*0.7, 10, A*0.45);
+  ctx.fillRect(x + L*0.5 - 4, y - A*0.7, 10, A*0.45);
+  // Telhado amarelo (2 águas)
+  ctx.fillStyle = '#f9a825';
+  ctx.beginPath();
+  ctx.moveTo(x - L, y - A); ctx.lineTo(x, y - P - A); ctx.lineTo(x, y - A - P*0.4); ctx.lineTo(x - L, y - A - P*0.2);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#ffd600';
+  ctx.beginPath();
+  ctx.moveTo(x + L, y - A); ctx.lineTo(x, y - P - A); ctx.lineTo(x, y - A - P*0.4); ctx.lineTo(x + L, y - A - P*0.2);
+  ctx.closePath(); ctx.fill();
+  // Chaminé com fumaça de cozinha (mais densa)
+  const cx = x + L * 0.4, cy = y - A - P*0.5;
+  ctx.fillStyle = '#5d4037';
+  ctx.fillRect(cx - 2, cy - 8, 4, 8);
+  for (let i = 0; i < 3; i++) {
+    const fy = cy - 10 - i * 5 - (frame * 0.25 % 5);
+    const fx = cx + Math.sin((frame * 0.06) + i) * 3;
+    ctx.fillStyle = `rgba(220,210,200,${0.55 - i * 0.15})`;
+    ctx.beginPath();
+    ctx.arc(fx, fy, 2.5 + i, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Letreiro "COMIDA" (faixa branca com texto)
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(x - L*0.8, y - A*0.35, L*0.4, 6);
+  ctx.fillStyle = '#bf360c';
+  ctx.font = '600 6px Nunito, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('COMIDA', x - L*0.6, y - A*0.35 + 4);
+}
+
+// ── Tanque de peixes: reservatório azul com água ondulada + peixes nadando ──
+function desenharTanque(x, y, L, P, A) {
+  // Borda do tanque (concreto/cinza)
+  losango(x, y, '#78909c');
+  // Água (losango azul interior)
+  losango(x, y - 2, '#4fc3f7');
+  // Reflexo animado na água
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(x, y - 2 - TILE_H/2 + 4);
+  ctx.lineTo(x + TILE_W/2 - 6, y - 2);
+  ctx.lineTo(x, y - 2 + TILE_H/2 - 4);
+  ctx.lineTo(x - TILE_W/2 + 6, y - 2);
+  ctx.closePath();
+  ctx.clip();
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+  ctx.lineWidth = 1;
+  const fase = frame * 0.06;
+  for (let i = -2; i <= 2; i++) {
+    ctx.beginPath();
+    const yy = y - 2 + i * 4 + Math.sin(fase + i) * 1.2;
+    ctx.moveTo(x - TILE_W/2, yy);
+    ctx.quadraticCurveTo(x, yy - 2, x + TILE_W/2, yy);
+    ctx.stroke();
+  }
+  // Peixes nadando (3 peixinhos animados)
+  for (let i = 0; i < 3; i++) {
+    const t = (frame * 0.02 + i * 0.33) % 1;
+    const fx = x - L*0.6 + t * L*1.2;
+    const fy = y - 2 + Math.sin(t * Math.PI * 2 + i) * 4;
+    ctx.fillStyle = ['#ffa726', '#ff7043', '#fff176'][i];
+    ctx.beginPath();
+    ctx.ellipse(fx, fy, 3, 1.5, 0, 0, Math.PI*2);
+    ctx.fill();
+    // rabinho
+    ctx.beginPath();
+    ctx.moveTo(fx - 3, fy);
+    ctx.lineTo(fx - 5, fy - 1.5);
+    ctx.lineTo(fx - 5, fy + 1.5);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+  // Borda superior do tanque (realce)
+  ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(x, y - 2 - TILE_H/2 + 4);
+  ctx.lineTo(x + TILE_W/2 - 6, y - 2);
+  ctx.stroke();
+}
+
+// Nuvens passando no céu (ambiente)
+const nuvens = [
+  { x: 100, y: 25, vel: 0.15, tam: 1 },
+  { x: 400, y: 18, vel: 0.10, tam: 1.3 },
+  { x: 650, y: 32, vel: 0.20, tam: 0.8 }
+];
+function desenharNuvens() {
+  for (const n of nuvens) {
+    n.x += n.vel;
+    if (n.x > canvas.width + 60) n.x = -60;
+    // Noite: nuvens mais escuras e translúcidas; dia: brancas clássicas.
+    ctx.fillStyle = temaEscuro ? 'rgba(150,160,185,0.35)' : 'rgba(255,255,255,0.7)';
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, 8 * n.tam, 0, Math.PI * 2);
+    ctx.arc(n.x + 10 * n.tam, n.y - 2, 10 * n.tam, 0, Math.PI * 2);
+    ctx.arc(n.x + 20 * n.tam, n.y, 8 * n.tam, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+let frame = 0;
+function render() {
+  frame++;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Céu degradê no topo (atrás do mapa) — SEM zoom (fundo fixo)
+  const ceu = ctx.createLinearGradient(0, 0, 0, 60);
+  ceu.addColorStop(0, CEU_TOPO);
+  ceu.addColorStop(1, CEU_BASE);
+  ctx.fillStyle = ceu;
+  ctx.fillRect(0, 0, canvas.width, 60);
+  desenharNuvens();
+
+  // Aplica transform da câmera: escala (zoom) + translação (pan)
+  ctx.setTransform(zoom, 0, 0, zoom, panX, panY);
+
+  // Tiles (terreno) com textura
+  for (let y = 0; y < MAPA_ALT; y++) {
+    for (let x = 0; x < MAPA_LARG; x++) {
+      desenharTile(x, y, MAPA[y][x]);
+    }
+  }
+
+  // Malha viária contínua (rua estilo SimCity) — sobre os tiles, sob as construções
+  desenharMalhaViaria();
+
+  // Destaque do tile sob hover (sutil)
+  if (tileHover && tileHover.x >= 0 && tileHover.x < MAPA_LARG && tileHover.y >= 0 && tileHover.y < MAPA_ALT) {
+    const { x: sx, y: sy } = gridParaTela(tileHover.x, tileHover.y);
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy - TILE_H/2);
+    ctx.lineTo(sx + TILE_W/2, sy);
+    ctx.lineTo(sx, sy + TILE_H/2);
+    ctx.lineTo(sx - TILE_W/2, sy);
+    ctx.closePath();
+    ctx.stroke();
+  }
+
+  // Caminho de energia (A*) animado
+  if (caminhoEnergia.length > 1) {
+    for (let i = 0; i < caminhoEnergia.length - 1; i++) {
+      const a = gridParaTela(caminhoEnergia[i].x, caminhoEnergia[i].y);
+      const b = gridParaTela(caminhoEnergia[i+1].x, caminhoEnergia[i+1].y);
+      ctx.strokeStyle = `rgba(255,214,0,${0.5 + 0.3*Math.sin(frame*0.12 + i)})`;
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    }
+    // Partículas viajando
+    const t = (frame % 60) / 60;
+    const idx = Math.floor(t * (caminhoEnergia.length - 1));
+    const p = gridParaTela(caminhoEnergia[idx].x, caminhoEnergia[idx].y);
+    ctx.fillStyle = '#fff59d';
+    ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, 2*Math.PI); ctx.fill();
+    ctx.strokeStyle = '#ffd600'; ctx.lineWidth = 2; ctx.stroke();
+  }
+
+  // Construções (ordenadas por profundidade) + destaque da principal/-hover
+  const ordenadas = [...estado.construcoes].sort((a,b) => (a.x+a.y) - (b.x+b.y));
+  for (const c of ordenadas) {
+    const ehHover = tileHover && tileHover.x === c.x && tileHover.y === c.y;
+    const ehPrincipal = c.tipo === 'estamparia';
+    desenharConstrucao(c.x, c.y, c.tipo, ehHover || ehPrincipal);
+  }
+
+  // Reset do transform da câmera (o tooltip usa coords de tela, sem zoom)
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+  // Overlay noturno: tinge terreno+construções+energia p/ coesão da paleta
+  // (desenhado depois do setTransform e ANTES do tooltip — este fica legível por cima).
+  if (temaEscuro) {
+    ctx.fillStyle = 'rgba(10,18,40,0.34)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  // Tooltip (renderizado por último, no topo) — coords de tela
+  if (tooltipMapa) {
+    ctx.save();
+    ctx.font = '600 13px Nunito, sans-serif';
+    const padding = 8;
+    const largTexto = ctx.measureText(tooltipMapa.titulo).width;
+    const tw = largTexto + padding * 2;
+    const th = 26;
+    let tx = tooltipMapa.x + 14;
+    let ty = tooltipMapa.y - 30;
+    if (tx + tw > canvas.width) tx = tooltipMapa.x - tw - 14;
+    if (ty < 0) ty = tooltipMapa.y + 20;
+    ctx.fillStyle = 'rgba(27,42,20,0.92)';
+    roundRect(tx, ty, tw, th, 6); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(tooltipMapa.titulo, tx + padding, ty + th/2);
+    ctx.restore();
+  }
+
+  requestAnimationFrame(render);
+}
+
+// Helper: retângulo arredondado
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+// Hover no canvas → detecta construção/tile e mostra tooltip
+canvas.addEventListener('mousemove', (e) => {
+  const { x: mx, y: my } = canvasCoords(e);
+  const g = telaParaGrid(mx, my);
+  tileHover = g;
+  // Verifica se está sobre uma construção
+  const sobre = estado.construcoes.find(c => c.x === g.x && c.y === g.y);
+  if (sobre) {
+    const v = CONSTRUCOES_VIS[sobre.tipo];
+    tooltipMapa = { x: mx, y: my, titulo: `${v.emoji} ${v.nome}` };
+    canvas.style.cursor = 'pointer';
+  } else if (g.x >= 0 && g.x < MAPA_LARG && g.y >= 0 && g.y < MAPA_ALT) {
+    const nomesTerreno = { 0:'terra', 1:'trilha', 2:'morro', 3:'vale', 4:'rio', 5:'asfalto' };
+    tooltipMapa = { x: mx, y: my, titulo: nomesTerreno[MAPA[g.y][g.x]] || '' };
+    canvas.style.cursor = 'grab';
+  } else {
+    tooltipMapa = null;
+    canvas.style.cursor = 'grab';
+  }
+});
+canvas.addEventListener('mouseleave', () => { tileHover = null; tooltipMapa = null; arrastando = false; });
+
+// Clique em construção abre tooltip detalhado em modal
+canvas.addEventListener('click', (e) => {
+  if (arrastando) return;
+  const { x: mx, y: my } = canvasCoords(e);
+  const g = telaParaGrid(mx, my);
+  const sobre = estado.construcoes.find(c => c.x === g.x && c.y === g.y);
+  if (!sobre) return;
+  const v = CONSTRUCOES_VIS[sobre.tipo];
+  abrirOverlay(`
+    <button class="fechar-x" onclick="fecharModal()">✖</button>
+    <h2>${v.emoji} ${v.nome}</h2>
+    <p class="sub">${v.desc}</p>
+    <p class="projeto-meta" style="margin-top:12px;">
+      📍 Posição no território: setor ${g.x},${g.y}<br>
+      🌱 No jogo: parte da rede comunitária que você está construindo.
+    </p>
+  `);
+});
+
+
+// ════════════════════════════════════════════════════════════
+// ESTADO + UI
+// ════════════════════════════════════════════════════════════
+let estado = estadoInicial();
+let overlayManualmenteFechado = false;   // true quando o jogador fechou o dilema pra olhar o mapa
+// Snapshot pra detectar mudanças e disparar microanimações
+let estadoAnterior = null;
+
+const $ = id => document.getElementById(id);
+
+// ─── Tema (claro/escuro) — toggle persistido + segue o SO no 1º acesso ───
+const TEMA_KEY = 'sementeira_tema';
+let temaEscuro = false;   // lido pelo render() para o overlay noturno do canvas
+
+// Resolve o tema inicial: preferência salva > preferência do SO > claro.
+function temaInicial() {
+  const salvo = localStorage.getItem(TEMA_KEY);
+  if (salvo === 'escuro' || salvo === 'claro') return salvo;
+  const sistemaEscuro = window.matchMedia &&
+    window.matchMedia('(prefers-color-scheme: dark)').matches;
+  return sistemaEscuro ? 'escuro' : 'claro';
+}
+
+// Aplica um tema ('claro'|'escuro'): seta o atributo, recalibra as cores do
+// canvas e atualiza o ícone/aria-pressed do botão. O loop de render() repinta
+// sozinho no próximo frame, então não há redraw manual aqui.
+function aplicarTema(tema) {
+  temaEscuro = tema === 'escuro';
+  document.documentElement.dataset.tema = tema;
+  // Reatribui a paleta do canvas (terreno + céu) conforme o tema.
+  TERRENO_COR = temaEscuro ? { ...PALETA_TERRENO_ESCURO } : { ...PALETA_TERRENO_CLARO };
+  CEU_TOPO = temaEscuro ? '#1a2740' : '#bbdefb';
+  CEU_BASE = temaEscuro ? 'rgba(10,18,40,0)' : 'rgba(187,222,251,0)';
+  // Atualiza o botão: ☀️ quando está no escuro (clique volta pro claro).
+  const btn = $('btn-tema');
+  if (btn) {
+    btn.textContent = temaEscuro ? '☀️' : '🌙';
+    btn.setAttribute('aria-pressed', String(temaEscuro));
+  }
+}
+
+// Alterna entre claro/escuro e grava a escolha manual.
+function alternarTema() {
+  const novo = temaEscuro ? 'claro' : 'escuro';
+  aplicarTema(novo);
+  try { localStorage.setItem(TEMA_KEY, novo); } catch (_) { /* modo privado */ }
+}
+
+
+// Anima contador de número subindo/descendo (requestAnimationFrame)
+function animarContador(el, de, para, duracaoMs = 600) {
+  if (de === para || !el) return;
+  const inicio = performance.now();
+  const delta = para - de;
+  function passo(agora) {
+    const t = Math.min(1, (agora - inicio) / duracaoMs);
+    const easing = 1 - Math.pow(1 - t, 3);   // ease-out-cubic
+    el.textContent = Math.round(de + delta * easing);
+    if (t < 1) requestAnimationFrame(passo);
+    else el.textContent = para;
+  }
+  requestAnimationFrame(passo);
+}
+
+// Flash na barra de indicador + pop-up flutuante com o delta
+function flashIndicador(barraId, indicadorId, nome, delta, cor) {
+  const barra = $(barraId);
+  const indicadorEl = $(indicadorId);
+  if (!barra || delta === 0) return;
+  barra.classList.remove('flash');
+  void barra.offsetWidth;            // força reflow pra reiniciar animação
+  barra.classList.add('flash');
+  // Pop-up flutuante posicionado sobre o indicador
+  if (indicadorEl) {
+    const rect = indicadorEl.getBoundingClientRect();
+    const pop = document.createElement('div');
+    pop.className = 'pop-efeito';
+    pop.textContent = (delta > 0 ? '+' : '') + delta;
+    pop.style.left = (rect.left + rect.width / 2 - 15) + 'px';
+    pop.style.top = (rect.top - 8) + 'px';
+    pop.style.color = delta > 0 ? cor : 'var(--c-vermelho)';
+    document.body.appendChild(pop);
+    setTimeout(() => pop.remove(), 1700);
+  }
+}
+
+// Sacode a pílula de recurso quando muda
+function sacudirRecurso(recursoId, valorAnterior, valorAtual) {
+  if (valorAnterior === valorAtual) return;
+  const el = $(recursoId);
+  if (!el) return;
+  el.classList.remove('sacudir');
+  void el.offsetWidth;
+  el.classList.add('sacudir');
+}
+
+// Celebração de progressão de estágio
+function celebrarProgressao(novoEstagio) {
+  const div = document.createElement('div');
+  div.className = 'celebracao';
+  div.innerHTML = `
+    <span class="emoji">${ESTAGIO_EMOJI[novoEstagio]}</span>
+    <h3>Seu projeto virou ${novoEstagio}!</h3>
+    <p>A comunidade comemora. +1 inovação, +2 mobilização de bônus.</p>
+  `;
+  document.body.appendChild(div);
+  // Pulsa o badge do estágio no painel
+  const badge = $('p-estagio');
+  badge.classList.remove('pulsar');
+  void badge.offsetWidth;
+  badge.classList.add('pulsar');
+  setTimeout(() => div.remove(), 2600);
+}
+
+function sincronizarUI() {
+  // Snapshot dos valores relevantes ANTES de atualizar a UI
+  const ant = estadoAnterior ? {
+    reparacao: estadoAnterior.distrito.reparacao,
+    participacao: estadoAnterior.distrito.participacao,
+    autonomia: estadoAnterior.distrito.autonomia,
+    confianca: estadoAnterior.distrito.confianca,
+    energia: estadoAnterior.energia,
+    verba: estadoAnterior.verba,
+    inov: estadoAnterior.recursos.inovacao,
+    mob: estadoAnterior.recursos.mobilizacao,
+    transp: estadoAnterior.recursos.transparencia,
+    estagio: estadoAnterior.projeto.estagio
+  } : null;
+
+  $('v-semana').textContent = estado.semana;
+  $('v-max').textContent = estado.maxSemana;
+  $('v-energia').textContent = estado.energia;
+  $('v-verba').textContent = estado.verba.toLocaleString('pt-BR');
+  $('v-inov').textContent = estado.recursos.inovacao;
+  $('v-mob').textContent = estado.recursos.mobilizacao;
+  $('v-transp').textContent = estado.recursos.transparencia;
+
+  // Streak só aparece a partir de 2
+  const streakEl = $('hud-streak');
+  if (estado.recursos.streak >= 2) {
+    streakEl.style.display = '';
+    $('v-streak').textContent = estado.recursos.streak;
+  } else {
+    streakEl.style.display = 'none';
+  }
+
+  // Alertas preventivos (B2.4) — faixa acima do mapa + pílulas em estado crítico
+  const alertas = avaliarPerigos(estado);
+  const alertaEl = $('alerta-perigo');
+  if (alertaEl) {
+    if (alertas.length) {
+      const a = alertas[0];   // exibe só o mais grave
+      alertaEl.textContent = a.txt;
+      alertaEl.className = 'alerta-perigo show ' + a.sev;
+      alertaEl.hidden = false;
+    } else {
+      alertaEl.className = 'alerta-perigo';
+      alertaEl.hidden = true;
+    }
+  }
+  // Pílulas críticas: energia ≤ 1 e verba < R$ 5k ganham borda pulsante
+  const pilEnergia = $('recurso-energia');
+  const pilVerba = $('recurso-verba');
+  if (pilEnergia) pilEnergia.classList.toggle('critico', estado.energia <= 1);
+  if (pilVerba) pilVerba.classList.toggle('critico', estado.verba < 5000);
+
+  // Projeto — detectar progressão de estágio
+  const progressou = ant && ant.estagio !== estado.projeto.estagio;
+  const projDef = estado.projetoEscolhido ? PROJETOS[estado.projetoEscolhido] : null;
+  const emojiEst = (projDef && projDef.estagioEmoji[estado.projeto.estagio]) || ESTAGIO_EMOJI[estado.projeto.estagio];
+  $('p-nome').textContent = projDef ? `${projDef.emoji} ${projDef.nome}` : '— escolha um projeto —';
+  $('p-estagio').textContent = `${emojiEst} ${estado.projeto.estagio}`;
+  $('p-vico').textContent = estado.projeto.vico;
+  const govEl = $('p-gov');
+  govEl.textContent = estado.projeto.governancaTriaxial ? '✅ ativa' : '⚠ pendente';
+  govEl.className = estado.projeto.governancaTriaxial ? 'gov-ativa' : 'gov-pendente';
+
+  // Próxima meta (B3.3) — quanto falta pra avançar de estágio
+  const metaEl = $('proxima-meta');
+  const metasEstagio = {
+    semente:      { reparacao:20, participacao:15, autonomia:10, prox:'broto', emoji:'🌿' },
+    broto:        { reparacao:35, participacao:25, autonomia:20, prox:'muda', emoji:'🌳' },
+    muda:         { reparacao:50, participacao:40, autonomia:30, prox:'arvore', emoji:'🏭' },
+    arvore:       { reparacao:70, participacao:55, autonomia:45, prox:'frutificando', emoji:'🍎' }
+  }[estado.projeto.estagio];
+  if (metaEl) {
+    if (!metasEstagio) {
+      metaEl.textContent = '🏆 Estágio máximo alcançado! Parabéns.';
+      metaEl.style.color = 'var(--c-verde-e)';
+    } else {
+      // Calcula qual indicador está mais longe da meta (o "gargalo")
+      const gaps = [
+        { nome:'reparação', falta: Math.max(0, metasEstagio.reparacao - estado.distrito.reparacao) },
+        { nome:'participação', falta: Math.max(0, metasEstagio.participacao - estado.distrito.participacao) },
+        { nome:'autonomia', falta: Math.max(0, metasEstagio.autonomia - estado.distrito.autonomia) }
+      ].sort((a,b) => b.falta - a.falta);
+      const gargalo = gaps[0];
+      if (gargalo.falta === 0) {
+        metaEl.textContent = `🎯 Próximo estágio: ${metasEstagio.emoji} ${metasEstagio.prox} — quase lá!`;
+        metaEl.style.color = 'var(--c-verde-e)';
+      } else {
+        metaEl.textContent = `🎯 Faltam +${gargalo.falta} ${gargalo.nome} p/ virar ${metasEstagio.emoji} ${metasEstagio.prox}`;
+        metaEl.style.color = 'var(--c-marrom)';
+      }
+    }
+  }
+
+  // Painel de gestão do empreendimento
+  const gEl = $('gestao-grid');
+  if (gEl) {
+    const p = estado.projeto;
+    const tecLabel = p.tecnologia === 'livre' ? '🔓 Livre' : p.tecnologia === 'paga' ? '💼 Paga' : '—';
+    gEl.innerHTML = `
+      <div class="gestao-item"><span class="icone">👥</span><span class="valor">${p.equipe}</span><span class="rotulo">equipe</span></div>
+      <div class="gestao-item"><span class="icone">🧵</span><span class="valor">${p.maquinario}/2</span><span class="rotulo">maquinário</span></div>
+      <div class="gestao-item"><span class="icone">🧑‍🔧</span><span class="valor">${p.assistenciaTecnica ? '✅' : '—'}</span><span class="rotulo">assist. técnica</span></div>
+      <div class="gestao-item"><span class="icone">💻</span><span class="valor" style="font-size:0.95em;">${tecLabel}</span><span class="rotulo">tecnologia</span></div>
+      <div class="gestao-item"><span class="icone">🤝</span><span class="valor">${p.parcerias}</span><span class="rotulo">parcerias</span></div>
+      <div class="gestao-item"><span class="icone">⚡</span><span class="valor">${estado.energia}/${estado.maxEnergia}</span><span class="rotulo">energia</span></div>
+    `;
+  }
+
+  // Indicadores — com flash e pop-up se mudaram
+  const d = estado.distrito;
+  $('v-rep').textContent = d.reparacao;    $('bar-rep').style.width = d.reparacao + '%';
+  $('v-part').textContent = d.participacao; $('bar-part').style.width = d.participacao + '%';
+  $('v-aut').textContent = d.autonomia;    $('bar-aut').style.width = d.autonomia + '%';
+  $('v-conf').textContent = d.confianca;   $('bar-conf').style.width = d.confianca + '%';
+  if (ant) {
+    flashIndicador('barra-rep', 'v-rep', 'reparação', d.reparacao - ant.reparacao, 'var(--c-verde-c)');
+    flashIndicador('barra-part', 'v-part', 'participação', d.participacao - ant.participacao, 'var(--c-laranja)');
+    flashIndicador('barra-aut', 'v-aut', 'autonomia', d.autonomia - ant.autonomia, 'var(--c-autonomia)');
+    flashIndicador('barra-conf', 'v-conf', 'confiança', d.confianca - ant.confianca, 'var(--c-azul)');
+    // Sacolejo nos recursos
+    sacudirRecurso('recurso-energia', ant.energia, estado.energia);
+    sacudirRecurso('recurso-verba', ant.verba, estado.verba);
+    sacudirRecurso('recurso-inov', ant.inov, estado.recursos.inovacao);
+    sacudirRecurso('recurso-mob', ant.mob, estado.recursos.mobilizacao);
+    sacudirRecurso('recurso-transp', ant.transp, estado.recursos.transparencia);
+  }
+
+  // Celebração de progressão (após atualizar UI pra badge já mostrar novo estágio)
+  if (progressou) celebrarProgressao(estado.projeto.estagio);
+
+  // Log — destaca a última entrada
+  const logHtml = estado.log.slice(-8).reverse()
+    .map((l, i) => `<div${i === 0 ? ' class="novo"' : ''}><b>S${l.t}:</b> ${l.txt}</div>`).join('');
+  $('log').innerHTML = logHtml;
+
+  // Auditoria
+  const audEl = $('auditoria');
+  if (estado.auditoria) {
+    const a = estado.auditoria;
+    const corVeredito = a.veredito === 'bloqueio' ? 'var(--c-vermelho)' : a.veredito === 'atencao' ? 'var(--c-laranja)' : 'var(--c-verde-e)';
+    const icone = a.veredito === 'bloqueio' ? '🚨' : a.veredito === 'atencao' ? '⚠️' : '✅';
+    audEl.className = a.veredito;   // aplica .bloqueio / .atencao / .ok
+    audEl.innerHTML = `<span class="veredito" style="color:${corVeredito};">${icone} ${a.veredito.toUpperCase()}</span>` +
+      (a.pendencias.length ? a.pendencias.map(p=>`<div class="pend">• ${p.msg}</div>`).join('') : '<div class="pend" style="color:var(--c-verde-e);">Tudo dentro das regras.</div>');
+  } else {
+    audEl.className = '';
+    audEl.innerHTML = '<span class="pend" style="color:var(--c-texto-2);">Aguardando 1ª auditoria...</span>';
+  }
+  // Badge pulsante na aba Auditoria quando há problema (atenção/bloqueio)
+  const badge = document.querySelector('.badge-aud');
+  if (badge) badge.hidden = !(estado.auditoria && (estado.auditoria.veredito === 'atencao' || estado.auditoria.veredito === 'bloqueio'));
+
+  // Botão avançar — "respira" quando há algo esperando ação (mas não durante onboarding nem dilema)
+  $('btn-avancar').disabled = !!estado.dilemaAtivo || estado.jogoFinalizado;
+  const btnAvancar = $('btn-avancar');
+  const onboardingAtivo = estado.onboardingPasso < PASSOS_ONBOARD.length;
+  if (estado.dilemaAtivo || estado.jogoFinalizado || onboardingAtivo) {
+    btnAvancar.classList.remove('respirar');
+  } else {
+    btnAvancar.classList.add('respirar');
+  }
+
+  // Dilema ativo → abre modal (a menos que o jogador tenha fechado pra olhar o mapa)
+  if (estado.dilemaAtivo) {
+    if (!overlayManualmenteFechado) abrirModalDilema(estado.dilemaAtivo);
+  } else {
+    overlayManualmenteFechado = false;
+    fecharModal();
+  }
+
+  // Fim de jogo
+  if (estado.jogoFinalizado && !estado.dilemaAtivo) abrirModalFim();
+
+  // Atualiza snapshot
+  estadoAnterior = clonar(estado);
+}
+
+function mostrarAviso(msg) {
+  const el = $('aviso');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ─── Modais ─────────────────────────────────────────────────
+function abrirOverlay(html) {
+  $('modal').innerHTML = html;
+  $('overlay').classList.add('show');
+}
+function fecharModal() { $('overlay').classList.remove('show'); }
+
+// ─── Tradução inline de jargões (B4.1) ───────────────────────
+// Função global (era arrow local em abrirModalDilema). Reaproveitada em
+// ações da semana, eventos setoriais e onboarding. Recebe texto cru e devolve
+// HTML com <span class="jargao">(parêntese explicativo)</span> após cada termo.
+// Ordem importa: termos compostos antes dos simples p/ não encavalar replaces.
+function traduzirJargao(txt) {
+  if (!txt) return txt;
+  return txt
+    .replace(/\bPOS\b/g, 'POS <span class="jargao">(o plano de sobrevivência do projeto)</span>')
+    .replace(/governança triaxial/gi, 'governança triaxial <span class="jargao">(as 3 pernas: povo + coop + fiscalização)</span>')
+    .replace(/capital de giro/gi, 'capital de giro <span class="jargao">(a reserva de curto prazo)</span>')
+    .replace(/assembleia comunitária/gi, 'assembleia comunitária <span class="jargao">(a comunidade decide junto)</span>')
+    .replace(/assist[êe]ncia t[ée]cnica/gi, 'assistência técnica <span class="jargao">(o técnico que cuida das máquinas)</span>')
+    .replace(/tecnologia livre/gi, 'tecnologia livre <span class="jargao">(código aberto: a comunidade domina e adapta)</span>')
+    .replace(/Ofício 46/g, 'Ofício 46 <span class="jargao">(as regras do jogo)</span>')
+    .replace(/Anexo 1\.1/g, 'Anexo 1.1 <span class="jargao">(o acordo de reparação)</span>')
+    .replace(/Governança Popular/g, 'Governança Popular <span class="jargao">(o povo no comando)</span>');
+}
+
+function abrirModalDilema(dilema) {
+  const ehSetorial = dilema.tipo === 'setorial';
+  const opcoesHtml = dilema.opcoes.map(op => {
+    const custoOk = podePagar(estado, op.custo).ok;
+    const custoTags = op.custo ? Object.entries(op.custo).map(([k,v]) => {
+      const label = { orcamento:`R$ ${v}`, energia:`⚡${v}`, inovacao:`💡${v}`, mobilizacao:`🤝${v}`, transparencia:`📋${v}`, tempo:`📅${v}sem` }[k] || `${v} ${k}`;
+      return `<span class="tag custo">${label}</span>`;
+    }).join('') : '';
+    const efeitoTags = op.efeitos ? Object.entries(op.efeitos).map(([k,v]) => {
+      const nomes = { reparacao:'reparação', participacao:'participação', autonomia:'autonomia', confianca:'confiança', vico:'viço', verba:'verba', divida:'dívida' };
+      const nome = nomes[k] || k;
+      return `<span class="tag efeito">${nome} ${v>0?'+':''}${v}</span>`;
+    }).join('') : '';
+    const riscoTag = op.risco ? `<span class="tag risco">⚠ ${op.risco}</span>` : '';
+    const chanceTxt = op.chanceSucesso !== undefined ? ` <span class="tag risco">🎲 ${Math.round(op.chanceSucesso*100)}% sucesso</span>` : '';
+    // Dica da mentora por opção (B2.3) — só no 1º dilema didático, não polui os demais
+    const dicaOp = (dilema.didatico && op.dicaOpcao)
+      ? `<div class="opcao-dica-mentora">👵 <i>${op.dicaOpcao}</i></div>` : '';
+    return `<button class="opcao" ${custoOk?'':'disabled'} onclick="window._resolver('${op.id}')">
+      <div class="opcao-titulo">${op.titulo}</div>
+      <div class="opcao-desc">${traduzirJargao(op.desc)}</div>
+      <div class="tags">${custoTags}${efeitoTags}${riscoTag}${chanceTxt}</div>
+      ${dicaOp}
+      ${!custoOk ? '<div class="opcao-desc" style="color:var(--c-vermelho);margin-top:4px;">Recursos insuficientes.</div>' : ''}
+    </button>`;
+  }).join('');
+
+  // Tradução inline de jargões (B4.1) — delega à função global (reaproveitada
+  // em ações, eventos e onboarding). Adiciona parênteses explicativos inline.
+
+  // Banner especial p/ o 1º dilema (didático)
+  const bannerDidatico = dilema.didatico ? `
+    <div class="banner-didatico">
+      <strong>👵 Dona Lúcia explica:</strong> Este é seu primeiro dilema! Cada botão abaixo é uma escolha real.
+      As <span class="tag custo">tags vermelhas</span> mostram o custo, as <span class="tag efeito">verdes</span> o efeito.
+      Não existe resposta errada — existe o que você aprende. Pode escolher à vontade. 🙂
+    </div>
+  ` : '';
+
+  abrirOverlay(`
+    <button class="fechar-x" onclick="window._fecharIgnorar()">✖</button>
+    ${bannerDidatico}
+    <h2>${dilema.emoji||'⚠️'} ${dilema.titulo}</h2>
+    <div class="sub">${traduzirJargao(dilema.desc)}</div>
+    ${ehSetorial ? '' : `<div class="mentora"><span class="mentora-avatar">👵</span> <i>${traduzirJargao(dilema.dica || 'Pense no coletivo antes de decidir.')}</i></div>`}
+    <div>${opcoesHtml}</div>
+    ${ehSetorial ? '<div class="dica-valor">Lutas setoriais atravessam o projeto — escolher ajudar fortalece o movimento.</div>' : ''}
+    <div style="margin-top:10px;font-size:0.8em;color:var(--c-texto-2);text-align:center;">
+      💡 Não entendeu um termo? Clique em <b>📖 Termos</b> (canto inferior).
+    </div>
+  `);
+}
+
+window._resolver = function(opcaoId) {
+  const antes = estado;
+  const novo = reduzir(estado, { type:'RESOLVER_DILEMA', opcaoId });
+  if (novo._aviso) {
+    mostrarAviso(novo._aviso);
+    return;
+  }
+  estado = novo;
+  sincronizarUI();
+};
+window._fecharIgnorar = function() {
+  // Fecha só o overlay visualmente — o dilema continua ativo no estado.
+  // O jogador pode olhar o mapa/indicadores. Reabre clicando em "Ajuda" ou avançando.
+  overlayManualmenteFechado = true;
+  fecharModal();
+  mostrarAviso('O dilema segue ativo. Clique em ℹ️ Como funciona pra reabrir.');
+};
+
+// ════════════════════════════════════════════════════════════
+// TELA DE SELEÇÃO DE PROJETO — o jogador escolhe qual empreendimento tocar
+// ════════════════════════════════════════════════════════════
+function abrirSelecaoProjeto() {
+  const cards = Object.values(PROJETOS).map(p => `
+    <button class="card-projeto" style="--cor-proj:${p.cor};" data-proj="${p.id}">
+      <div class="card-proj-emoji">${p.emoji}</div>
+      <div class="card-proj-nome">${p.nome}</div>
+      <div class="card-proj-desc">${p.descricao}</div>
+      <div class="card-proj-meta">
+        <span>💰 R$ ${p.verbaInicial.toLocaleString('pt-BR')}</span>
+        <span>${p.construcoes.length} 🏗️</span>
+      </div>
+      <div class="card-proj-frase">"${p.frase}"</div>
+    </button>
+  `).join('');
+
+  abrirOverlay(`
+    <div style="text-align:center;margin-bottom:8px;">
+      <h2>🌱 Qual projeto você vai tocar?</h2>
+      <p class="sub" style="max-width:440px;margin:0 auto;">Cada projeto é um empreendimento comunitário diferente — com seus desafios, valores iniciais e jeito de tocar. Escolha o que mais combina com sua comunidade.</p>
+    </div>
+    <div class="grid-projetos">${cards}</div>
+    <p style="text-align:center;margin-top:12px;font-size:0.85em;color:var(--c-texto-2);">
+      👵 <i>Dona Lúcia:</i> "Não tem escolha errada, meu filho. Cada projeto ensina a reparação do seu jeito."
+    </p>
+  `);
+  // Anexa listeners via addEventListener (mais robusto que onclick inline —
+  // funciona mesmo em ambientes que sanitizam handlers inline).
+  document.querySelectorAll('#modal [data-proj]').forEach(btn => {
+    btn.addEventListener('click', () => escolherProjeto(btn.dataset.proj));
+  });
+}
+// Seleção de projeto efetiva. Mantém alias window._escolherProjeto por segurança.
+function escolherProjeto(projetoId) {
+  estado = estadoInicial(projetoId);
+  overlayManualmenteFechado = false;
+  fecharModal();
+  sincronizarUI();
+  abrirOnboarding();
+}
+window._escolherProjeto = escolherProjeto;
+
+// Onboarding (mentora Dona Lúcia) — com spotlight direcional no último passo
+const PASSOS_ONBOARD = [
+  { titulo:'Bem-vinda(o) à Limalândia!', texto:'Sou a <b>Dona Lúcia</b>, mentora comunitária. Vamos tocar a Estamparia e Costura juntos. O objetivo é fazer o projeto crescer de 🌱 semente até 🍎 frutificando.' },
+  { titulo:'O tal do POS', texto:'O <b>POS</b> é o <b>P</b>lano de <b>O</b>peração e <b>S</b>ustentabilidade — em linguagem simples, é o plano que garante que o projeto <b>sobreviva depois que a verba acabar</b>. É como uma receita de bolo: sem ela, o pão não cresce. Sem o POS, a auditoria bloqueia. (No jogo, um dilema te oferece essa chance.)' },
+  { titulo:'Assembleia é tudo', texto:'Pra ser aprovado, o projeto precisa de <b>assembleia comunitária na concepção</b> — ou seja, a comunidade precisa <b>decidir junto desde o começo</b>. É regra do <b>Anexo 1.1</b> do acordo de reparação de Limalândia. Dilemas de adesão e conflito marcam isso automaticamente.' },
+  { titulo:'Recursos são limitados', texto:'<b>⚡ Energia</b> (recarrega toda semana), <b>💡 inovação</b>, <b>🤝 mobilização</b> e <b>📋 transparência</b> são seus combustíveis. Use com sabedoria — <b>tempo e energia são os desafios centrais</b> do jogo. Passe o mouse em qualquer um pra entender melhor.' },
+  { titulo:'Pronto pra começar!', texto:'Agora clique no botão <b>laranja "Avançar 1 semana"</b> aqui embaixo. Dilemas aparecem sozinhos. Cada decisão reflete uma regra real do <b>Ofício 46</b> e do <b>Anexo 1.1</b> — aqui você aprende <b>errando, sem risco real</b>.', spotlight:'#btn-avancar' }
+];
+
+function abrirOnboarding() {
+  if (estado.onboardingPasso >= PASSOS_ONBOARD.length) { sincronizarUI(); return; }
+  const p = PASSOS_ONBOARD[estado.onboardingPasso];
+  abrirOverlay(`
+    <h2>👵 Passo ${estado.onboardingPasso+1} de ${PASSOS_ONBOARD.length}</h2>
+    <div style="font-size:1.1em;color:var(--c-verde-e);margin-bottom:8px;">${p.titulo}</div>
+    <p style="margin-bottom:16px;">${p.texto}</p>
+    <button class="btn" id="btn-onb-prox">${estado.onboardingPasso === PASSOS_ONBOARD.length-1 ? '🌱 Entendi, vou jogar' : 'Entendi ✅'}</button>
+  `);
+  // Listener via addEventListener (robusto contra sanitização de onclick inline).
+  const btn = document.getElementById('btn-onb-prox');
+  if (btn) btn.addEventListener('click', proxOnb);
+}
+// Avança o onboarding. Mantém alias window._proxOnb por segurança.
+function proxOnb() {
+  estado = reduzir(estado, { type:'CONCLUIR_ONBOARDING' });
+  if (estado.onboardingPasso >= PASSOS_ONBOARD.length) {
+    fecharModal();
+    sincronizarUI();
+    // Último passo concluído → spotlight no botão avançar pra guiar a 1ª ação
+    ativarSpotlight('#btn-avancar', '👆 Comece por aqui: avance a 1ª semana');
+  } else {
+    abrirOnboarding();
+  }
+}
+window._proxOnb = proxOnb;
+
+// ─── Spotlight direcional (B2.1) ────────────────────────────
+// Escurece tudo e destaca um elemento com halo + seta
+function ativarSpotlight(seletor, texto) {
+  const alvo = document.querySelector(seletor);
+  if (!alvo) return;
+  // Cria overlay spotlight
+  let spot = document.getElementById('spotlight-overlay');
+  if (!spot) {
+    spot = document.createElement('div');
+    spot.id = 'spotlight-overlay';
+    spot.style.cssText = 'position:fixed;inset:0;z-index:150;pointer-events:none;';
+    document.body.appendChild(spot);
+  }
+  // Dica flutuante
+  let dica = document.getElementById('spotlight-dica');
+  if (!dica) {
+    dica = document.createElement('div');
+    dica.id = 'spotlight-dica';
+    dica.style.cssText = 'position:fixed;z-index:160;background:var(--c-verde);color:#fff;padding:10px 16px;border-radius:10px;font-weight:600;font-size:0.95em;box-shadow:0 4px 16px rgba(0,0,0,0.3);max-width:260px;text-align:center;animation:fadeIn 0.3s;';
+    document.body.appendChild(dica);
+  }
+  const posicionar = () => {
+    const r = alvo.getBoundingClientRect();
+    // Mascara tudo menos o alvo (4 retângulos escuros)
+    spot.innerHTML = '';
+    const cor = 'rgba(27,42,20,0.55)';
+    const halo = 8;
+    const retangulos = [
+      [0, 0, r.left - halo, window.innerHeight],
+      [r.right + halo, 0, window.innerWidth - r.right - halo, window.innerHeight],
+      [r.left - halo, 0, r.right - r.left + halo*2, r.top - halo],
+      [r.left - halo, r.bottom + halo, r.right - r.left + halo*2, window.innerHeight - r.bottom - halo]
+    ];
+    for (const [x, y, w, h] of retangulos) {
+      if (w <= 0 || h <= 0) continue;
+      const div = document.createElement('div');
+      div.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${cor};`;
+      spot.appendChild(div);
+    }
+    // Posiciona dica acima ou abaixo do alvo
+    dica.textContent = texto;
+    const dicaRect = { w: 260, h: 50 };
+    let dx = r.left + r.width/2 - dicaRect.w/2;
+    let dy = r.top - dicaRect.h - 12;
+    if (dy < 10) dy = r.bottom + 12;
+    dx = Math.max(10, Math.min(window.innerWidth - dicaRect.w - 10, dx));
+    dica.style.left = dx + 'px';
+    dica.style.top = dy + 'px';
+  };
+  posicionar();
+  window.addEventListener('resize', posicionar);
+  window._spotlightPosicionar = posicionar;
+  // Remove ao clicar no alvo
+  const remover = () => { desativarSpotlight(); alvo.removeEventListener('click', remover); };
+  alvo.addEventListener('click', remover);
+  // Auto-remove após 12s
+  setTimeout(desativarSpotlight, 12000);
+}
+function desativarSpotlight() {
+  const spot = document.getElementById('spotlight-overlay');
+  const dica = document.getElementById('spotlight-dica');
+  if (spot) spot.remove();
+  if (dica) dica.remove();
+  if (window._spotlightPosicionar) {
+    window.removeEventListener('resize', window._spotlightPosicionar);
+    window._spotlightPosicionar = null;
+  }
+}
+
+// ─── Glossário acessível (B1.3) ─────────────────────────────
+const GLOSSARIO = [
+  { termo:'POS', sigla:'Plano de Operação e Sustentabilidade', def:'O plano que garante que o projeto sobreviva depois que a verba acabar. Como uma receita de bolo: sem ela, nada cresce.' },
+  { termo:'Ofício 46', sigla:'Ofício Conjunto 46/2026', def:'Documento das Instituições de Justiça que define as regras dos projetos de reparação. É a "constituição" do jogo.' },
+  { termo:'Anexo 1.1', sigla:'Anexo I.1 do Acordo Judicial', def:'Parte do acordo de reparação de Limalândia que detalha como a reparação deve acontecer, com participação popular.' },
+  { termo:'Governança triaxial', sigla:'3 eixos de gestão', def:'Como as três pernas de um banco: (1) participativo (atingidos), (2) operacional (cooperativa), (3) controle social (fiscalização). Sem uma, cai.' },
+  { termo:'Capital de giro', sigla:'Reserva de curto prazo', def:'O dinheiro pra manter o projeto rodando mês a mês. Regra: no máximo 6 meses de apoio inicial.' },
+  { termo:'Assembleia na concepção', sigla:'Decisão coletiva inicial', def:'A comunidade precisa decidir junto desde o começo. Não é o técnico que impõe — é o povo que escolhe.' },
+  { termo:'Reparação', sigla:'Reparação integral', def:'Não é só dinheiro. É reconstruir a vida, o território e a dignidade depois de um desastre como o de Limalândia.' },
+  { termo:'Viço', sigla:'Saúde do projeto', def:'A vitalidade do seu projeto. Se chegar a zero, o projeto morre. Cuide como uma planta.' },
+  { termo:'Streak', sigla:'Sequência de participação', def:'Quando você participa várias semanas seguidas, ganha bônus. Quebrou o ritmo? Zera — mas pode recomeçar.' },
+  { termo:'Auditoria', sigla:'Verificação de regras', def:'Quando o jogo checa se você está dentro das regras do Ofício 46. Pode dar OK, atenção ou bloqueio.' }
+];
+function abrirGlossario() {
+  const itens = GLOSSARIO.map(g => `
+    <div style="margin-bottom:12px;padding:10px;background:var(--c-bege);border-radius:8px;border-left:3px solid var(--c-verde);">
+      <div style="font-weight:700;color:var(--c-verde-e);">${g.emoji||''} ${g.termo} <span style="font-weight:400;font-size:0.85em;color:var(--c-texto-2);">— ${g.sigla}</span></div>
+      <div style="font-size:0.9em;margin-top:4px;">${g.def}</div>
+    </div>
+  `).join('');
+  abrirOverlay(`
+    <button class="fechar-x" onclick="fecharModal()">✖</button>
+    <h2>📖 Termos do jogo</h2>
+    <p class="sub">Juridiquês traduzido pra linguagem de quem tá na luta. Passe o mouse nos termos durante o jogo pra lembrar.</p>
+    ${itens}
+    <button class="btn" onclick="fecharModal()" style="margin-top:8px;">Fechar</button>
+  `);
+}
+
+// ─── Menu de Ações da semana (gestão do empreendimento) ─────
+function abrirMenuAcoes() {
+  if (estado.dilemaAtivo) { mostrarAviso('Resolva o dilema antes de agir.'); return; }
+  if (estado.jogoFinalizado) return;
+
+  const acoesHtml = ACOES.map(a => {
+    const disp = a.disponivel(estado);
+    const chk = podePagar(estado, a.custo);
+    const pode = disp && chk.ok;
+    const custoTags = Object.entries(a.custo).map(([k,v]) => {
+      const label = { orcamento:`R$ ${v.toLocaleString('pt-BR')}`, energia:`⚡${v}`, inovacao:`💡${v}`, mobilizacao:`🤝${v}`, transparencia:`📋${v}` }[k] || `${v} ${k}`;
+      return `<span class="tag custo">${label}</span>`;
+    }).join('');
+    const motivo = !disp ? '<div class="opcao-desc" style="color:var(--c-texto-2);">✓ Já feito ou no máximo.</div>'
+                       : !chk.ok ? `<div class="opcao-desc" style="color:var(--c-vermelho);">Faltou ${chk.falta}.</div>` : '';
+    return `<button class="opcao" ${pode?'':'disabled'} onclick="window._executarAcao('${a.id}')">
+      <div class="opcao-titulo">${a.emoji} ${a.titulo}</div>
+      <div class="opcao-desc">${traduzirJargao(a.desc)}</div>
+      <div class="tags">${custoTags}</div>
+      ${motivo}
+    </button>`;
+  }).join('');
+
+  abrirOverlay(`
+    <button class="fechar-x" onclick="fecharModal()">✖</button>
+    <h2>🎯 Ações da semana</h2>
+    <p class="sub">O que sua equipe vai fazer <b>nesta semana</b>? Cada ação custa energia e recursos — escolha com sabedoria. Depois é só <b>avançar a semana</b>.</p>
+    <div class="banner-didatico" style="margin-bottom:8px;">
+      <strong>Estado atual:</strong> Equipe <b>${estado.projeto.equipe}</b> pessoas ·
+      Maquinário nível <b>${estado.projeto.maquinario}</b> ·
+      Tecnologia <b>${estado.projeto.tecnologia || '—'}</b> ·
+      Parcerias <b>${estado.projeto.parcerias}</b> ·
+      Energia <b>${estado.energia}/${estado.maxEnergia}</b> ⚡
+    </div>
+    ${acoesHtml}
+  `);
+}
+window._executarAcao = function(acaoId) {
+  const novo = reduzir(estado, { type:'EXECUTAR_ACAO', acaoId });
+  if (novo._aviso) { mostrarAviso(novo._aviso); return; }
+  estado = novo;
+  sincronizarUI();
+  // Reabre o menu se ainda há energia, pra permitir encadear ações
+  if (estado.energia > 0 && !estado.jogoFinalizado) abrirMenuAcoes();
+  else fecharModal();
+};
+
+// Modal de fim de jogo
+function abrirModalFim() {
+  const d = estado.distrito;
+  const p = estado.projeto;
+  const proj = PROJETOS[estado.projetoEscolhido] || { nome: 'Projeto', emoji: '🌱' };
+
+  // ── Calcula resultado final ──
+  const pts = calcularPontuacao(estado);
+  const classe = classificarScore(pts.score, estado);
+  const selos = calcularConquistas(estado);
+  const { recordeBatido } = salvarRecorde(pts.score, estado.projetoEscolhido, selos);
+  const recordes = lerRecordes();
+  const recordeProjeto = estado.projetoEscolhido
+    ? (recordes.porProjeto[estado.projetoEscolhido] ?? pts.score)
+    : pts.score;
+
+  // ── Tags de indicadores ──
+  const tagsHtml = `
+    <span class="tag efeito">🌿 Reparação ${d.reparacao}</span>
+    <span class="tag efeito">👥 Participação ${d.participacao}</span>
+    <span class="tag efeito">🌾 Autonomia ${d.autonomia}</span>
+    <span class="tag efeito">🤝 Confiança ${d.confianca}</span>`;
+
+  // ── Detalhamento da pontuação (transparência educativa) ──
+  const detalhe = (label, valor, sinal) => `
+    <div class="score-linha">
+      <span>${label}</span>
+      <span class="${sinal === '+' ? 'score-pos' : sinal === '-' ? 'score-neg' : ''}">${valor > 0 && sinal === '+' ? '+' : ''}${valor}</span>
+    </div>`;
+  const detalheHtml = `
+    ${detalhe('Média dos indicadores', pts.media, '+')}
+    ${detalhe('Estágio alcançado (' + ESTAGIO_EMOJI[p.estagio] + ')', pts.bonusEstagio, '+')}
+    ${detalhe('Veredito da auditoria', pts.bonusVeredito, pts.bonusVeredito >= 0 ? '+' : '-')}
+    ${detalhe('Viço final', pts.ajusteVico, '+')}
+    ${detalhe('Rede (equipe + parcerias)', pts.ajusteRede, '+')}
+    <div class="score-linha score-total"><span>SCORE FINAL</span><span>${pts.score}<small> / 200</small></span></div>`;
+
+  // ── Selos de conquista ──
+  const selosHtml = selos.length
+    ? selos.map(s => `<span class="selo" title="${s.nome}">${s.emoji}<small>${s.nome}</small></span>`).join('')
+    : '<span class="opcao-desc" style="color:var(--c-texto-2);">Nenhum selo desta vez. Monte governança, entregue o POS e frutifique!</span>';
+
+  // ── Badge de recorde batido ──
+  const recordeBadge = recordeBatido
+    ? `<div class="banner-celebrar" style="margin:8px 0;">🎉 <b>Novo recorde!</b> Sua melhor pontuação até aqui.</div>`
+    : '';
+
+  // ── Linha de recordes ──
+  const recordeLinha = recordes.melhorScore > 0
+    ? `<div class="recorde-linha">
+         🏆 Recorde geral: <b>${recordes.melhorScore}</b> ·
+         🏆 ${proj.nome}: <b>${recordeProjeto}</b> ·
+         🎖️ Selos totais: <b>${Object.keys(recordes.conquistas).length}</b>
+       </div>`
+    : '';
+
+  abrirOverlay(`
+    <div class="fim-cabecalho classe-${classe.classe}">
+      <div class="fim-emoji">${classe.emoji}</div>
+      <h2>${classe.titulo}</h2>
+    </div>
+    <p class="fim-projeto">${proj.emoji} <b>${proj.nome}</b> em Limalândia · semana ${Math.min(estado.semana, estado.maxSemana)}/${estado.maxSemana}</p>
+
+    ${recordeBadge}
+
+    <div class="score-card">${detalheHtml}</div>
+
+    <div class="bloco">
+      <h3>🏅 Conquistas desta partida</h3>
+      <div class="selos-grid">${selosHtml}</div>
+    </div>
+
+    <div class="bloco">
+      <h3>📊 Indicadores finais</h3>
+      <div class="tags">${tagsHtml}</div>
+    </div>
+
+    ${recordeLinha}
+
+    <div class="fim-mentora">
+      <b>👵 Dona Lúcia diz:</b><br>${classe.mentora}
+    </div>
+
+    <div class="fim-acoes">
+      <button class="btn" onclick="window._novoJogo()">🔄 Novo jogo</button>
+    </div>
+  `);
+}
+window._novoJogo = function() {
+  estado = estadoInicial();   // sem projeto → tela de seleção
+  overlayManualmenteFechado = false;
+  fecharModal();
+  sincronizarUI();
+  abrirSelecaoProjeto();
+};
+
+// Modal de ajuda
+function abrirAjuda() {
+  abrirOverlay(`
+    <button class="fechar-x" onclick="fecharModal()">✖</button>
+    <h2>ℹ️ Como funciona</h2>
+    <ol style="margin-left:18px;line-height:1.7;">
+      <li><b>Avançar semanas</b> — cada clique = 1 semana. Tempo e energia são limitados!</li>
+      <li><b>Dilemas</b> — problemas reais aparecem. Você decide gastar inovação, mobilização, transparência, energia ou verba.</li>
+      <li><b>Indicadores</b> — reparação, participação, autonomia e confiança. Eles determinam se o projeto cresce de estágio.</li>
+      <li><b> Auditoria</b> — regras do Ofício 46 (POS obrigatório, capital de giro ≤ 6 meses, governança triaxial).</li>
+      <li><b>⚡ Diagnosticar energia</b> — mostra o fluxo de energia da estamparia aos consumidores (algoritmo A*).</li>
+      <li><b>Salvar/Carregar</b> — seu progresso fica no navegador (localStorage). Na primeira abertura, saves da versão anterior são migrados automaticamente.</li>
+      <li><b>📤 Exportar / 📥 Importar .seedproj</b> — salva o jogo como arquivo portátil (JSON) pra backup, transferência entre computadores ou compartilhamento com a comunidade.</li>
+    </ol>
+    <p style="margin-top:14px;color:var(--marrom);"><b>Dona Lúcia diz:</b> "Juridiquês não é pra assustar ninguém. POS é só a receita de bolo que garante que o projeto não morre. 🙂"</p>
+  `);
+}
+
+// ─── Save/Load localStorage ─────────────────────────────────
+const SAVE_KEY = 'sementeira_jogo_save_v1';
+const SAVE_KEY_LEGADO = 'sementeira_save_v1';   // chave da versão anterior (pré-renomeação)
+const RECORDE_KEY = 'sementeira_recordes_v1';    // recordes + conquistas acumuladas
+
+// ─── Recordes (acumulam entre partidas, independentes do save) ──
+// Estrutura: { melhorScore, conquistas: { [idSelo]: true }, porProjeto: { [id]: melhorScore } }
+function lerRecordes() {
+  try {
+    const raw = localStorage.getItem(RECORDE_KEY);
+    if (!raw) return { melhorScore: 0, conquistas: {}, porProjeto: {} };
+    const r = JSON.parse(raw);
+    return {
+      melhorScore: typeof r.melhorScore === 'number' ? r.melhorScore : 0,
+      conquistas: r.conquistas && typeof r.conquistas === 'object' ? r.conquistas : {},
+      porProjeto: r.porProjeto && typeof r.porProjeto === 'object' ? r.porProjeto : {}
+    };
+  } catch (_) {
+    return { melhorScore: 0, conquistas: {}, porProjeto: {} };
+  }
+}
+
+// Registra o resultado de uma partida. Retorna { recordeBatido } pra feedback na UI.
+function salvarRecorde(score, projetoId, selos) {
+  const r = lerRecordes();
+  const recordeAnterior = r.melhorScore;
+  r.melhorScore = Math.max(r.melhorScore, score);
+  if (projetoId) {
+    const atual = r.porProjeto[projetoId] ?? 0;
+    r.porProjeto[projetoId] = Math.max(atual, score);
+  }
+  for (const s of selos) r.conquistas[s.id] = true;   // acumula selos conquistados
+  try {
+    localStorage.setItem(RECORDE_KEY, JSON.stringify(r));
+  } catch (_) { /* localStorage indisponível — ignora silenciosamente */ }
+  return { recordeBatido: score > recordeAnterior && score > 0 };
+}
+
+// Migra save antigo pra chave nova (uma única vez, automática e silenciosa)
+function migrarSaveLegado() {
+  try {
+    if (localStorage.getItem(SAVE_KEY)) return;          // já existe save novo
+    const legado = localStorage.getItem(SAVE_KEY_LEGADO);
+    if (!legado) return;
+    JSON.parse(legado);                                  // valida que não está corrompido
+    localStorage.setItem(SAVE_KEY, legado);
+    localStorage.removeItem(SAVE_KEY_LEGADO);
+    console.info('[Sementeira-Jogo] Save antigo migrado para a nova chave.');
+  } catch (err) {
+    console.warn('[Sementeira-Jogo] Save antigo corrompido, ignorando migração.', err);
+  }
+}
+function salvar() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(estado));
+    mostrarAviso('💾 Jogo salvo no navegador!');
+  } catch (err) {
+    mostrarAviso('❌ Não foi possível salvar.');
+  }
+}
+// Migração defensiva: normaliza saves antigos (pré-seleção-de-projeto, pré-ações-de-gestão).
+// Usada por carregar() e importarSeedproj(). Nunca quebra — só preenche campos faltantes.
+function migrarEstadoSalvo(e) {
+  if (!e) return e;
+  // Projeto escolhido (pré-seleção de projeto)
+  if (!e.projetoEscolhido) {
+    e.projetoEscolhido = 'estamparia';
+    e.log = e.log || [];
+    e.log.push({ t: e.semana || 1, txt: '📦 Save migrado: projeto assumido como Estamparia.' });
+  }
+  // Campos de gestão (pré-sistema de ações)
+  if (!e.projeto) e.projeto = {};
+  if (typeof e.projeto.equipe !== 'number') e.projeto.equipe = 0;
+  if (typeof e.projeto.maquinario !== 'number') e.projeto.maquinario = 0;
+  if (typeof e.projeto.assistenciaTecnica !== 'boolean') e.projeto.assistenciaTecnica = false;
+  if (e.projeto.tecnologia === undefined) e.projeto.tecnologia = null;
+  if (typeof e.projeto.parcerias !== 'number') e.projeto.parcerias = 0;
+  // Flags de auditoria (pré-ações governanca/POS/capital-de-giro)
+  if (typeof e.projeto.governancaTriaxial !== 'boolean') e.projeto.governancaTriaxial = false;
+  if (typeof e.projeto.posEntregue !== 'boolean') e.projeto.posEntregue = false;
+  if (typeof e.projeto.capitalGiroMeses !== 'number') e.projeto.capitalGiroMeses = 6;
+  // Construções vazias? (save sem projeto carregado)
+  if (!Array.isArray(e.construcoes)) e.construcoes = [];
+  return e;
+}
+
+function carregar() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) { mostrarAviso('📂 Nenhum jogo salvo encontrado.'); return; }
+    const carregado = JSON.parse(raw);
+    estado = migrarEstadoSalvo(carregado);
+    overlayManualmenteFechado = false;
+    fecharModal();
+    sincronizarUI();
+    mostrarAviso('📂 Jogo carregado!');
+  } catch (err) {
+    mostrarAviso('❌ Save corrompido.');
+    console.error(err);
+  }
+}
+
+// ─── Export/Import .seedproj (JSON portátil) ────────────────
+const SEEDPROJ_EXT = '.seedproj';
+
+// Empacota o estado num envelope versionado e baixa como arquivo
+function exportarSeedproj() {
+  try {
+    const envelope = {
+      app: 'sementeira-jogo',
+      formato: 'seedproj',
+      versao: 1,
+      exportadoEm: new Date().toISOString(),
+      estado: estado
+    };
+    const json = JSON.stringify(envelope, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    // Nome do arquivo: data + estágio + semana
+    const data = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `sementeira-jogo_${data}_sem${estado.semana}_${estado.projeto.estagio}${SEEDPROJ_EXT}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    mostrarAviso('📤 Projeto exportado como .seedproj!');
+  } catch (err) {
+    mostrarAviso('❌ Falha ao exportar.');
+    console.error(err);
+  }
+}
+
+// Valida que um objeto parseado é um envelope .seedproj legítimo
+function validarEnvelope(obj) {
+  if (!obj || typeof obj !== 'object') return { ok: false, erro: 'Arquivo vazio ou inválido.' };
+  if (obj.app !== 'sementeira-jogo' || obj.formato !== 'seedproj') {
+    return { ok: false, erro: 'Não é um arquivo .seedproj do Sementeira-Jogo.' };
+  }
+  if (!obj.estado || typeof obj.estado !== 'object') {
+    return { ok: false, erro: 'Envelope sem estado de jogo.' };
+  }
+  // Checagem mínima de campos essenciais do estado
+  const e = obj.estado;
+  const falta = [];
+  if (typeof e.semana !== 'number') falta.push('semana');
+  if (typeof e.verba !== 'number') falta.push('verba');
+  if (!e.distrito) falta.push('distrito');
+  if (!e.projeto) falta.push('projeto');
+  if (falta.length) return { ok: false, erro: `Estado incompleto (faltam: ${falta.join(', ')}).` };
+  return { ok: true };
+}
+
+// Lê o arquivo selecionado e carrega no estado
+function importarSeedproj(arquivo) {
+  if (!arquivo) return;
+  const leitor = new FileReader();
+  leitor.onload = (ev) => {
+    try {
+      const obj = JSON.parse(ev.target.result);
+      const chk = validarEnvelope(obj);
+      if (!chk.ok) { mostrarAviso('❌ ' + chk.erro); return; }
+      estado = migrarEstadoSalvo(obj.estado);
+      overlayManualmenteFechado = false;
+      fecharModal();
+      sincronizarUI();
+      mostrarAviso('📥 Projeto .seedproj importado!');
+    } catch (err) {
+      mostrarAviso('❌ Arquivo corrompido ou não é JSON válido.');
+      console.error(err);
+    }
+  };
+  leitor.onerror = () => mostrarAviso('❌ Não foi possível ler o arquivo.');
+  leitor.readAsText(arquivo);
+}
+
+// ─── Diagnosticar rede de energia (A*) ──────────────────────
+function diagnosticarEnergia() {
+  const fonte = estado.construcoes.find(c => c.tipo === 'estamparia');
+  const consumidor = estado.construcoes.find(c => c.tipo !== 'estamparia');
+  if (!fonte || !consumidor) { mostrarAviso('Faltam construções pra traçar o fluxo.'); return; }
+  const caminho = aStar({ x: fonte.x, y: fonte.y }, { x: consumidor.x, y: consumidor.y });
+  caminhoEnergia.length = 0;
+  if (caminho) {
+    caminhoEnergia.push(...caminho);
+    mostrarAviso('⚡ Rede de energia traçada! Custo do terreno respeitado (A*).');
+  } else {
+    mostrarAviso('🚫 Energia não chega — rio bloqueia o caminho. Construa ponte/outro painel.');
+  }
+  setTimeout(() => caminhoEnergia.length = 0, 5000);
+}
+
+// ─── Event listeners ────────────────────────────────────────
+$('btn-avancar').onclick = () => {
+  const novo = reduzir(estado, { type:'AVANCAR_SEMANA' });
+  if (novo._aviso) mostrarAviso(novo._aviso);
+  estado = novo;
+  sincronizarUI();
+};
+$('btn-energia').onclick = diagnosticarEnergia;
+$('btn-tema').onclick = alternarTema;
+$('btn-acoes').onclick = abrirMenuAcoes;
+$('btn-salvar').onclick = salvar;
+$('btn-carregar').onclick = carregar;
+$('btn-exportar').onclick = exportarSeedproj;
+// Import: botão abre o seletor de arquivo; o input dispara a leitura
+$('btn-importar').onclick = () => $('input-importar').click();
+$('btn-glossario').onclick = abrirGlossario;
+
+// ─── Toggle de abas do painel lateral (Estado / Diário / Auditoria) ─────
+// Aba inicial padrão = Estado. Não persiste entre sessões (escolha do usuário).
+function selecionarAba(nome) {
+  document.querySelectorAll('.aba').forEach(b => {
+    const ativa = b.dataset.aba === nome;
+    b.classList.toggle('ativa', ativa);
+    b.setAttribute('aria-selected', ativa ? 'true' : 'false');
+  });
+  document.querySelectorAll('.aba-conteudo').forEach(painel => {
+    painel.hidden = painel.dataset.aba !== nome;
+  });
+}
+document.querySelectorAll('.aba').forEach(botao => {
+  botao.addEventListener('click', () => selecionarAba(botao.dataset.aba));
+});
+$('input-importar').onchange = (ev) => {
+  importarSeedproj(ev.target.files[0]);
+  ev.target.value = '';   // permite re-importar o mesmo arquivo depois
+};
+$('btn-ajuda').onclick = () => {
+  // Se há dilema ativo e foi fechado, reabre o dilema em vez da ajuda genérica
+  if (estado.dilemaAtivo && overlayManualmenteFechado) {
+    overlayManualmenteFechado = false;
+    abrirModalDilema(estado.dilemaAtivo);
+    return;
+  }
+  abrirAjuda();
+};
+
+// Converte coords do evento de mouse (CSS pixels) pra coords internas do canvas (760x440).
+// Necessário porque o canvas é responsivo (width:100% no CSS) mas o contexto interno é fixo.
+function canvasCoords(e) {
+  const rect = canvas.getBoundingClientRect();
+  const escalaX = canvas.width / rect.width;
+  const escalaY = canvas.height / rect.height;
+  return {
+    x: (e.clientX - rect.left) * escalaX,
+    y: (e.clientY - rect.top) * escalaY
+  };
+}
+
+// Arrastar mapa (pan) — arrastando declarado aqui; referenciado no click handler acima (callback executa depois)
+// O pan mexe em panX/panY (translação da câmera). offsetX/offsetY são o centro do mundo.
+let arrastando = false, ultX = 0, ultY = 0;
+canvas.addEventListener('mousedown', e => { const c = canvasCoords(e); arrastando = true; ultX = c.x; ultY = c.y; });
+canvas.addEventListener('mousemove', e => {
+  if (!arrastando) return;
+  const c = canvasCoords(e);
+  panX += (c.x - ultX);
+  panY += (c.y - ultY);
+  ultX = c.x; ultY = c.y;
+});
+canvas.addEventListener('mouseup', () => arrastando = false);
+
+// Zoom com scroll do mouse — zoom no ponto do cursor (não no centro)
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const c = canvasCoords(e);
+  const fator = e.deltaY < 0 ? 1.12 : 0.89;   // scroll pra cima = zoom in
+  const novoZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoom * fator));
+  if (novoZoom === zoom) return;
+  // Ajusta pan pra o zoom acontecer no cursor: mantém o world-pt sob o cursor fixo
+  const wx = (c.x - panX) / zoom;
+  const wy = (c.y - panY) / zoom;
+  zoom = novoZoom;
+  panX = c.x - wx * zoom;
+  panY = c.y - wy * zoom;
+}, { passive: false });
+
+// Zoom por botões (+/-) — zoom no centro do canvas
+function zoomPorBotao(delta) {
+  const centroX = canvas.width / 2, centroY = canvas.height / 2;
+  const fator = delta > 0 ? 1.2 : 0.83;
+  const novoZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoom * fator));
+  if (novoZoom === zoom) return;
+  const wx = (centroX - panX) / zoom;
+  const wy = (centroY - panY) / zoom;
+  zoom = novoZoom;
+  panX = centroX - wx * zoom;
+  panY = centroY - wy * zoom;
+}
+function zoomReset() {
+  zoom = 1.0;
+  panX = 0; panY = 0;
+  offsetX = OFFSET_X_BASE;
+  offsetY = OFFSET_Y_BASE;
+}
+
+// Conectar botões de zoom
+$('btn-zoom-in').onclick = () => zoomPorBotao(+1);
+$('btn-zoom-out').onclick = () => zoomPorBotao(-1);
+$('btn-zoom-reset').onclick = zoomReset;
+
+// ─── Início ─────────────────────────────────────────────────
+migrarSaveLegado();      // transfere save antigo (se houver) para a chave nova
+aplicarTema(temaInicial());  // recalibra CSS + cores do canvas conforme tema salvo/SO
+sincronizarUI();
+// Se há projeto salvo, segue direto; senão mostra a seleção de projeto
+if (estado.projetoEscolhido) {
+  abrirOnboarding();
+} else {
+  abrirSelecaoProjeto();
+}
+render();
+</script>
+</body>
+</html>
