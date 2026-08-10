@@ -16,6 +16,42 @@
 import { buscarNoCatalogo, type ItemCatalogo } from "./catmat";
 import { buscarPrecosComprasGov, buscarPrecosPncp } from "./precos-fontes";
 import { montarCesta, type CestaPrecos, type PrecoObservado } from "./precos-publicos";
+import type { ReferenciaPreco } from "./types";
+
+/** Quantas compras concretas ficam gravadas por linha. Suficiente para sustentar o valor sem inchar o armazenamento local. */
+const COMPRAS_GRAVADAS = 5;
+
+/**
+ * Converte a cesta no rastro que fica **gravado na linha de orçamento**.
+ *
+ * A cesta inteira pode ter centenas de preços; guardar tudo em `localStorage` para cada linha
+ * de cada projeto estoura o armazenamento sem acrescentar nada. O que precisa sobreviver é o
+ * que responde "de onde veio esse número?": o critério, a faixa, quantos preços, o recorte
+ * regional, quando foi consultado, as ressalvas — e algumas compras nominais para conferência.
+ */
+export function referenciaDaCesta(cesta: CestaPrecos, item: ItemCatalogo | undefined, consultadoEm: Date): ReferenciaPreco {
+  return {
+    origem: "compras-publicas",
+    itemCatalogo: item?.nome,
+    codigoPdm: item?.codigoPdm,
+    criterio: cesta.criterio,
+    unidade: cesta.unidade,
+    quantidadePrecos: cesta.estatistica.n,
+    minimo: cesta.estatistica.minimo,
+    maximo: cesta.estatistica.maximo,
+    abrangenciaPreco: cesta.abrangencia,
+    consultadoEm: consultadoEm.toISOString().slice(0, 10),
+    compras: cesta.usadas.slice(0, COMPRAS_GRAVADAS).map((o) => ({
+      valor: o.precoUnitario,
+      orgao: o.orgao,
+      municipio: o.municipio,
+      uf: o.uf,
+      data: o.data,
+      fornecedor: o.fornecedor,
+    })),
+    alertas: cesta.alertas,
+  };
+}
 
 export interface ResultadoCotacaoPublica {
   ok: boolean;

@@ -59,6 +59,49 @@ export interface BudgetLine {
   vidaUtilAnos?: number;
   /** Propostas recebidas de fornecedores para esta linha — comparar antes de fixar `valor`. */
   propostas?: PropostaFornecedor[];
+  /** De onde saiu o `valor`, quando ele veio das compras públicas — ver `ReferenciaPreco`. */
+  referenciaPreco?: ReferenciaPreco;
+}
+
+/** Uma compra pública concreta que sustenta o valor da linha. */
+export interface CompraDeReferencia {
+  valor: number;
+  orgao: string;
+  municipio: string;
+  uf: string;
+  data: string;
+  fornecedor?: string;
+}
+
+/**
+ * Rastro do preço de uma linha de orçamento.
+ *
+ * Fica **gravado no projeto**, não só na tela: sem isso a referência morre no primeiro
+ * recarregamento e nunca chega ao documento exportado — que é justamente onde ela precisa
+ * estar, porque é o documento que vai à prestação de contas. Guarda um resumo mais algumas
+ * compras concretas; a cesta inteira não cabe no armazenamento local nem é necessária para
+ * sustentar o número.
+ */
+export interface ReferenciaPreco {
+  /** "compras-publicas" hoje; deixa espaço para outras origens (proposta de fornecedor, leilão). */
+  origem: "compras-publicas";
+  /** Nome do item no catálogo público (CATMAT), quando houve casamento. */
+  itemCatalogo?: string;
+  codigoPdm?: number;
+  /** Como o valor foi apurado: mediana, média ou menor preço. */
+  criterio: string;
+  unidade: string;
+  quantidadePrecos: number;
+  minimo: number;
+  maximo: number;
+  /** "paraopeba" | "mg" | "brasil" — quão perto do território atingido veio o preço. */
+  abrangenciaPreco: string;
+  /** Data da consulta (`YYYY-MM-DD`), para saber quando o preço envelhece. */
+  consultadoEm: string;
+  /** Amostra das compras que geraram o valor — o que se mostra quando alguém questiona. */
+  compras: CompraDeReferencia[];
+  /** Ressalvas que a cesta levantou (dispersão, fonte única, preço velho…). */
+  alertas: string[];
 }
 
 /** Uma pessoa/papel da equipe, com plano de trabalho próprio — não só um nome numa lista. */
@@ -323,6 +366,17 @@ export interface Project {
     anexadoEm: string;
     caminhoArquivo?: string;
   };
+  /** IPs de origem (Ideias de Projeto dos Conselhos Locais R2) que contribuíram para este projeto consolidado — drill-down na UI. Dados anonimizados (LGPD). */
+  ipsOrigem?: {
+    nome: string;
+    detalhamento: string;
+    municipio: string;
+    adesao: string;
+    status: string;
+    priorizado: string | null;
+  }[];
+  /** Região da bacia do Paraopeba de origem (R2, R3, R4, R5). Preenchido automaticamente na importação de seeds regionais. */
+  regiao?: string;
   criadoEm: string;
   atualizadoEm: string;
 }

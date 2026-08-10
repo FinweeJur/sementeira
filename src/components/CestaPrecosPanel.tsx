@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Landmark, TriangleAlert, ChevronDown, ChevronRight } from "lucide-react";
 import type { ResultadoCotacaoPublica } from "../lib/cotacao-publica";
+import type { ReferenciaPreco } from "../lib/types";
 import { formatarReal } from "../lib/precos-publicos";
 
 const ROTULO_ABRANGENCIA: Record<string, string> = {
@@ -8,6 +9,68 @@ const ROTULO_ABRANGENCIA: Record<string, string> = {
   mg: "Minas Gerais",
   brasil: "Brasil inteiro",
 };
+
+const ROTULO_CRITERIO: Record<string, string> = {
+  mediana: "valor do meio",
+  media: "média",
+  "menor-preco": "menor preço",
+};
+
+/**
+ * Referência que ficou **gravada na linha**, mostrada quando não há consulta recente na tela.
+ *
+ * É o que o usuário vê ao reabrir o projeto: sem isto, o valor apareceria sozinho e ninguém
+ * saberia de onde veio — que é justamente o problema que a cotação pública veio resolver.
+ */
+export function ReferenciaPrecoResumo({ referencia: r }: { referencia: ReferenciaPreco }) {
+  const [aberto, setAberto] = useState(false);
+
+  return (
+    <div className="mx-3 mb-2 rounded border border-[color:var(--sm-border)] bg-[color:var(--sm-panel)] px-3 py-2 text-xs">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <Landmark size={13} strokeWidth={2} aria-hidden="true" className="flex-none" />
+        <span>
+          {ROTULO_CRITERIO[r.criterio] ?? r.criterio} de {r.quantidadePrecos} compra{r.quantidadePrecos > 1 ? "s" : ""} pública{r.quantidadePrecos > 1 ? "s" : ""} de{" "}
+          {ROTULO_ABRANGENCIA[r.abrangenciaPreco] ?? r.abrangenciaPreco}
+        </span>
+        <span className="text-[color:var(--sm-text-dim)]">
+          ({formatarReal(r.minimo)} a {formatarReal(r.maximo)}, por {r.unidade} · consultado em {r.consultadoEm})
+        </span>
+      </div>
+
+      {r.itemCatalogo && <p className="mt-1 text-[color:var(--sm-text-dim)]">Item do catálogo público: {r.itemCatalogo}</p>}
+
+      {r.alertas.map((alerta) => (
+        <p key={alerta} className="mt-1 flex items-start gap-1.5 text-[color:var(--sm-amber,#b45309)]">
+          <TriangleAlert size={13} strokeWidth={2} aria-hidden="true" className="mt-px flex-none" />
+          <span>{alerta}</span>
+        </p>
+      ))}
+
+      {r.compras.length > 0 && (
+        <>
+          <button
+            onClick={() => setAberto((v) => !v)}
+            aria-expanded={aberto}
+            className="mt-1.5 inline-flex items-center gap-1 rounded px-1 py-0.5 text-[color:var(--sm-text-dim)] hover:text-[color:var(--sm-text)]"
+          >
+            {aberto ? <ChevronDown size={12} strokeWidth={2} aria-hidden="true" /> : <ChevronRight size={12} strokeWidth={2} aria-hidden="true" />}
+            {aberto ? "Esconder as compras" : `Ver ${r.compras.length} compra${r.compras.length > 1 ? "s" : ""} de referência`}
+          </button>
+          {aberto && (
+            <ul className="mt-1.5 space-y-0.5 text-[color:var(--sm-text-dim)]">
+              {r.compras.map((c, i) => (
+                <li key={`${c.orgao}-${c.data}-${i}`}>
+                  {formatarReal(c.valor)} — {c.orgao || "—"} ({c.municipio}/{c.uf}, {c.data}){c.fornecedor ? ` · ${c.fornecedor}` : ""}
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
 
 /**
  * Mostra de onde veio o preço sugerido.

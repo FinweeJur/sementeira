@@ -1,6 +1,6 @@
 import { Document, Packer, Paragraph, HeadingLevel, Table, TableRow, TableCell, TextRun } from "docx";
 import ExcelJS from "exceljs";
-import type { Project } from "./types";
+import type { Project, ReferenciaPreco } from "./types";
 import { avaliarConformidade } from "./compliance-engine";
 import { simularTodos, exigenciaPOS, calcularDepreciacaoMensal } from "./simulator";
 import { montarChecklistFinal } from "./checklist";
@@ -10,6 +10,42 @@ import { montarAbasPortfolio, type AbaTabela, type FormatoCelula } from "./portf
 // Os nomes legíveis vêm de um módulo só: a exportação e a planilha exibida na
 // tela precisam do mesmo texto, e cópias por arquivo já haviam divergido antes.
 import { nomeArquetipo, nomeDano, nomeSetor } from "./nomes";
+
+const ROTULO_ABRANGENCIA_PRECO: Record<string, string> = {
+  paraopeba: "bacia do Paraopeba",
+  mg: "Minas Gerais",
+  brasil: "Brasil",
+};
+
+const ROTULO_CRITERIO_PRECO: Record<string, string> = {
+  mediana: "valor do meio",
+  media: "média",
+  "menor-preco": "menor preço",
+};
+
+/**
+ * Resume a referência de preço numa frase para a tabela de orçamento.
+ *
+ * Sai no documento exportado de propósito: é ele que vai à prestação de contas, e um valor
+ * sem procedência é exatamente o que costuma ser questionado. Linha sem referência não mente
+ * dizendo que tem uma — declara que o valor foi estimado por outro caminho.
+ */
+export function resumirReferenciaPreco(r: ReferenciaPreco | undefined): string {
+  if (!r) return "estimado fora das compras públicas";
+  const criterio = ROTULO_CRITERIO_PRECO[r.criterio] ?? r.criterio;
+  const onde = ROTULO_ABRANGENCIA_PRECO[r.abrangenciaPreco] ?? r.abrangenciaPreco;
+  const partes = [
+    `${criterio} de ${r.quantidadePrecos} compra(s) pública(s) — ${onde}`,
+    `faixa R$ ${r.minimo.toFixed(2)} a R$ ${r.maximo.toFixed(2)} por ${r.unidade}`,
+    `consultado em ${r.consultadoEm}`,
+  ];
+  if (r.itemCatalogo) partes.push(`item de catálogo: ${r.itemCatalogo}`);
+  if (r.compras.length > 0) {
+    partes.push(`ex.: ${r.compras.slice(0, 2).map((c) => `${c.orgao} (${c.municipio}/${c.uf}, ${c.data}) R$ ${c.valor.toFixed(2)}`).join("; ")}`);
+  }
+  if (r.alertas.length > 0) partes.push(`ressalva: ${r.alertas.join(" ")}`);
+  return partes.join(" · ");
+}
 
 function baixarArquivo(blob: Blob, nomeArquivo: string) {
   const url = URL.createObjectURL(blob);
@@ -78,14 +114,14 @@ export async function exportarProjetoDocx(project: Project): Promise<void> {
           new Table({
             rows: [
               new TableRow({
-                children: ["Categoria", "Descrição", "Valor (R$)", "Prazo (meses)"].map(
+                children: ["Categoria", "Descrição", "Valor (R$)", "Prazo (meses)", "Referência do preço"].map(
                   (t) => new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: t, bold: true })] })] }),
                 ),
               }),
               ...project.orcamento.map(
                 (l) =>
                   new TableRow({
-                    children: [l.categoria, l.descricao, l.valor.toFixed(2), String(l.prazoMeses ?? "-")].map(
+                    children: [l.categoria, l.descricao, l.valor.toFixed(2), String(l.prazoMeses ?? "-"), resumirReferenciaPreco(l.referenciaPreco)].map(
                       (t) => new TableCell({ children: [new Paragraph(t)] }),
                     ),
                   }),
@@ -247,11 +283,11 @@ export async function exportarProjetoXlsx(project: Project): Promise<void> {
   ]);
 
   const orc = wb.addWorksheet("Orçamento");
-  orc.addRow(["Categoria", "Descrição", "Valor (R$)", "Prazo (meses)", "Fonte custeio futuro"]);
+  orc.addRow(["Categoria", "Descrição", "Valor (R$)", "Prazo (meses)", "Fonte custeio futuro", "Referência do preço"]);
   for (const l of project.orcamento) {
-    orc.addRow([l.categoria, l.descricao, l.valor, l.prazoMeses ?? "", l.fonteCusteioFuturo ?? ""]);
+    orc.addRow([l.categoria, l.descricao, l.valor, l.prazoMeses ?? "", l.fonteCusteioFuturo ?? "", resumirReferenciaPreco(l.referenciaPreco)]);
   }
-  orc.addRow(["", "TOTAL", project.orcamento.reduce((s, l) => s + l.valor, 0), "", ""]);
+  orc.addRow(["", "TOTAL", project.orcamento.reduce((s, l) => s + l.valor, 0), "", "", ""]);
 
   const sim = wb.addWorksheet("Simulação POS");
   sim.addRow(["Cenário", "Receita/mês", "Custo total/mês", "Saldo/mês", "Autossustentável?"]);

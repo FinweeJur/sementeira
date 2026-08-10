@@ -5,8 +5,8 @@ import { avaliarConformidade, exigeFonteCusteioFuturo } from "../lib/compliance-
 import { simularTodos, exigenciaPOS, calcularDepreciacaoMensal } from "../lib/simulator";
 import { exportarProjetoDocx, exportarProjetoXlsx } from "../lib/export";
 import { exportarSolicitacaoCotacaoDocx, sugerirFornecedoresRede } from "../lib/cotacao";
-import { cotarNasComprasPublicas, type ResultadoCotacaoPublica } from "../lib/cotacao-publica";
-import { CestaPrecosPanel } from "../components/CestaPrecosPanel";
+import { cotarNasComprasPublicas, referenciaDaCesta, type ResultadoCotacaoPublica } from "../lib/cotacao-publica";
+import { CestaPrecosPanel, ReferenciaPrecoResumo } from "../components/CestaPrecosPanel";
 import { derivarConexoes } from "../lib/mapa-estagios";
 import { MUNICIPIOS_PARAOPEBA, estimarDistanciaRota, custoLogisticoMensalEstimado, type EstimativaRota } from "../lib/geografia";
 import { sugerirDeIdeia, derivarTituloDeIdeia } from "../lib/suggestion-engine";
@@ -283,7 +283,12 @@ export function ProjectWizard({
     if (publica.ok && publica.cesta && publica.cesta.estatistica.n > 0) {
       setPesquisandoPrecoId(null);
       setCestaPorLinha((atual) => ({ ...atual, [linha.id]: publica }));
-      updateLinha(linha.id, { valor: Number(publica.cesta.valorSugerido.toFixed(2)) });
+      // A referência é gravada JUNTO com o valor: ficando só na tela, ela sumiria no
+      // recarregamento e não chegaria ao documento exportado — que é onde ela é cobrada.
+      updateLinha(linha.id, {
+        valor: Number(publica.cesta.valorSugerido.toFixed(2)),
+        referenciaPreco: referenciaDaCesta(publica.cesta, publica.itemEscolhido, new Date()),
+      });
       return;
     }
 
@@ -768,7 +773,8 @@ export function ProjectWizard({
                     </div>
                   ))}
 
-                  {cestaPorLinha[l.id] && <CestaPrecosPanel resultado={cestaPorLinha[l.id]!} />}
+                  {/* Cesta recém-consultada tem detalhe completo; sem ela, mostra o que ficou gravado na linha. */}
+                  {cestaPorLinha[l.id] ? <CestaPrecosPanel resultado={cestaPorLinha[l.id]!} /> : l.referenciaPreco ? <ReferenciaPrecoResumo referencia={l.referenciaPreco} /> : null}
 
                   <div className="flex flex-wrap items-center gap-2 border-t border-[color:var(--sm-border)] px-3 py-2">
                     <button
