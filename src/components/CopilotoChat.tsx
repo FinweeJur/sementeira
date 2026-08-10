@@ -7,6 +7,7 @@ import { montarPromptRascunho, interpretarRespostaRascunho, formatarPerguntas, t
 import { extrairTextoDeArquivo } from "../lib/file-extraction";
 import { montarBlocoDiretrizesGlobais } from "../lib/diretrizes-globais";
 import { montarBlocoDocumentosBase } from "../lib/documentos-base";
+import { montarBlocoPrecos } from "../lib/bloco-precos";
 import { ThinkingIndicator } from "./ThinkingIndicator";
 import { useTasks } from "../lib/task-context";
 import { ICONE_TIPO, ROTULO_TIPO } from "../lib/task-labels";
@@ -32,6 +33,7 @@ function montarPromptSistema(project: Project): string {
     "Catálogo de arquétipos de projeto disponíveis:\n" + listaArquetipos,
     `Estado atual do projeto sendo editado: título="${project.titulo}", ideia="${project.ideiaTexto}", dano selecionado="${project.danoId || "nenhum"}", arquétipo selecionado="${project.arquetipoId || "nenhum"}".`,
     'O app tem um botão separado chamado "Lapidar" (no topo da tela, ao lado deste chat) que roda 6 agentes de IA em sequência (escritor, orçamentista, crítico, analista de riscos, sugestor, compilador) para revisar e melhorar o projeto inteiro automaticamente — a pessoa aprova o resultado antes de aplicar. Você (Dona Lúcia, no chat) NÃO consegue disparar essa lapidação nem editar o projeto sozinha: se alguém pedir para "lapidar", "revisar tudo", "melhorar o projeto inteiro" ou algo parecido, explique que é o botão "Lapidar" no topo da tela, não uma coisa que se faz por aqui. Você ajuda em pontos específicos da conversa e, quando pedido, gera um rascunho inicial (botão "Gerar rascunho").',
+    montarBlocoPrecos(project),
     montarBlocoDocumentosBase(),
     blocoDiretrizes,
   ]

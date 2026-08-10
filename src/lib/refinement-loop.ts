@@ -7,6 +7,7 @@ import { montarBlocoDiretrizesGlobais } from "./diretrizes-globais";
 import { montarBlocoBiblioteca } from "./biblioteca";
 import { montarBlocoDocumentosBase } from "./documentos-base";
 import { parseJsonDeResposta } from "./json-parsing";
+import { preservarReferenciasPreco } from "./cotacao-publica";
 import danos from "../data/danos.json";
 import arquetipos from "../data/arquetipos.json";
 
@@ -162,7 +163,9 @@ function resumoProjeto(p: Project): string {
       missaoImpacto: p.missaoImpacto,
       cronograma: p.cronograma,
       formasArrecadacao: p.formasArrecadacao,
-      orcamento: p.orcamento.map((l) => ({ id: l.id, categoria: l.categoria, descricao: l.descricao, valor: l.valor, prazoMeses: l.prazoMeses, fonteCusteioFuturo: l.fonteCusteioFuturo, justificativaCicloProdutivo: l.justificativaCicloProdutivo, vidaUtilAnos: l.vidaUtilAnos })),
+      // `precoApuradoEmComprasPublicas` é a marca que o prompt do orçamentista manda respeitar:
+      // linha com procedência real não pode ter o valor trocado por estimativa do modelo.
+      orcamento: p.orcamento.map((l) => ({ id: l.id, categoria: l.categoria, descricao: l.descricao, valor: l.valor, prazoMeses: l.prazoMeses, fonteCusteioFuturo: l.fonteCusteioFuturo, justificativaCicloProdutivo: l.justificativaCicloProdutivo, vidaUtilAnos: l.vidaUtilAnos, precoApuradoEmComprasPublicas: l.referenciaPreco ? true : undefined })),
       equipe: p.equipe.map((m) => ({ id: m.id, nome: m.nome, formacaoNecessaria: m.formacaoNecessaria, horasSemanais: m.horasSemanais, duracaoMeses: m.duracaoMeses, planoTrabalho: m.planoTrabalho })),
       custosNaoCobertos: p.custosNaoCobertos,
       cenarios: p.cenarios,
@@ -205,6 +208,7 @@ function promptOrcamentista(p: Project): string {
     contextoBase(),
     "Papel: ORÇAMENTISTA. Revise as linhas de orçamento: valores incoerentes entre si, prazos errados, itens típicos faltando para esse tipo de projeto. Verifique o porte mínimo de R$ 100 mil (se o total está abaixo, aponte itens legítimos que faltam — implantação, equipamentos, capacitação, equipe de 2+ pessoas por 6 meses). Onde um insumo/serviço puder vir de outro projeto da rede (economia circular), anote isso na descrição da linha. Para linhas de categoria 'equipamento', sugira vidaUtilAnos (padrão 5, ajuste se o item durar mais/menos) — isso alimenta a depreciação mensal do simulador; não deixe o projeto parecer mais sustentável do que é.",
     "REGRAS ESTRITAS: você pode ajustar linhas EXISTENTES (valor/prazo/descrição) e pode ADICIONAR linhas faltantes, mas toda linha NOVA deve vir com valor 0 e a descrição terminando em '(pesquisar preço)' — NUNCA invente um valor de mercado.",
+    "NÃO ALTERE o valor de linha que já tenha referência de compras públicas (o app marca essas linhas): esse número saiu de compras que órgãos públicos realmente pagaram, com órgão, data e fornecedor registrados, e trocá-lo por estimativa sua destrói a única prova de procedência que o orçamento tem. Se achar que o valor está errado, diga isso em `observacoes` em vez de mudar. Prazo e descrição você pode ajustar.",
     "Projeto:", resumoProjeto(p),
     'Formato: ```json\n{"orcamento": [{"id": "id-existente-ou-omitir-se-nova", "categoria": "infraestrutura|equipamento|regularizacao|capacitacao|capital-giro-inicial|insumos-iniciais|equipe-implantacao|operacao-assistida|folha-permanente|outro", "descricao": "...", "valor": 0, "prazoMeses": null, "fonteCusteioFuturo": null, "justificativaCicloProdutivo": null, "vidaUtilAnos": null}], "observacoes": ["por que mudou o quê"]}\n``` — devolva a lista COMPLETA de linhas (as mantidas + ajustadas + novas).',
   ].join("\n\n");
@@ -481,7 +485,9 @@ export function aplicarLapidacao(project: Project, dados: LapidacaoDados): Proje
     cronograma: dados.cronograma ?? project.cronograma,
     cronogramaMensal: dados.cronogramaMensal ?? project.cronogramaMensal,
     formasArrecadacao: dados.formasArrecadacao ?? project.formasArrecadacao,
-    orcamento: dados.orcamento ?? project.orcamento,
+    // A IA não devolve `referenciaPreco`; sem esta reconciliação a lapidação apagaria a
+    // procedência de todo o orçamento, e valor alterado ficaria com referência mentindo.
+    orcamento: dados.orcamento ? preservarReferenciasPreco(project.orcamento, dados.orcamento) : project.orcamento,
     equipe: dados.equipe ?? project.equipe,
     riscos: dados.riscos ?? project.riscos,
     posCompleto: dados.posCompleto ?? project.posCompleto,

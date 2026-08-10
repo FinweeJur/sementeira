@@ -11,7 +11,7 @@ A aplicação codifica as regras de conformidade do Ofício Conjunto 45/2026 e 4
 1. **MVP** — Formulário guiado básico para delinear a ideia
 2. **Copiloto LLM** — IA faz perguntas clarificatórias e gera esboço automático
 3. **Análise de Riscos & POS** — Identifica riscos, valida sustentabilidade financeira
-4. **Estimador de Custos** — Pesquisa de preços via Tavily, orçamento estruturado
+4. **Cotação em compras públicas** — Preço apurado a partir de compras que órgãos públicos realmente pagaram (Compras.gov.br + PNCP), com a procedência gravada no orçamento e levada ao documento exportado; pesquisa de mercado por IA só como reserva
 5. **Ecossistema** — Análise cross-project (complementaridades/redundâncias/mercado)
 6. **Clube de Benefícios** — Programa de pontos e descontos vinculado a projetos
 
@@ -19,7 +19,8 @@ A aplicação codifica as regras de conformidade do Ofício Conjunto 45/2026 e 4
 
 - **Provedores suportados**: DeepSeek, Maritaca/Sabiá, Ollama local
 - **Detecção automática Ollama** — Identifica modelos instalados via API `GET /api/tags`
-- **Deep Research via Tavily** — Pesquisa justificativas com citações ABNT, lookup de preços, busca de programas de arrecadação
+- **Deep Research via Tavily** — Pesquisa justificativas com citações ABNT, programas de arrecadação e máquinas de produção. **Deixou de ser a fonte primária de preço** — ver "Cotação em compras públicas"
+- **Preço não passa pela IA** — o valor sai de um motor determinístico sobre compras públicas reais. O copiloto é instruído a nunca dar preço de cabeça, e valor alterado por IA **perde** a referência em vez de herdá-la: procedência falsa é pior que procedência nenhuma
 - **Review Agent independente** — Revisa drafts contra regras de conformidade em linguagem natural
 
 ### 📄 Recursos

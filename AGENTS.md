@@ -11,6 +11,11 @@ o Ofício Conjunto 45/2026, 46/2026 e a Proposta Definitiva.
   (`sabia-4`/`sabiazinho-4`), Ollama local (modelos auto-detectados via `GET /api/tags`, nunca lista
   hardcoded)
 - Deep Research via Tavily (`src/lib/websearch.ts`) — só cita o que a Tavily retornou, nunca inventa
+- Cotação em compras públicas (`src/lib/cotacao-publica.ts`) — fonte PRIMÁRIA de preço, sem chave.
+  Compras.gov.br + PNCP, cesta **determinística**: a IA não decide preço, do mesmo jeito que não
+  decide conformidade. Ao aplicar saída de IA no orçamento use `preservarReferenciasPreco()` —
+  valor alterado perde a procedência em vez de herdá-la, porque referência mentindo é pior que
+  referência nenhuma
 - PDF/DOCX: `pdfjs-dist` + `mammoth`
 
 ## Rodando

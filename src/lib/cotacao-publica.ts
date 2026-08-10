@@ -16,7 +16,7 @@
 import { buscarNoCatalogo, type ItemCatalogo } from "./catmat";
 import { buscarPrecosComprasGov, buscarPrecosPncp } from "./precos-fontes";
 import { montarCesta, type CestaPrecos, type PrecoObservado } from "./precos-publicos";
-import type { ReferenciaPreco } from "./types";
+import type { BudgetLine, ReferenciaPreco } from "./types";
 
 /** Quantas compras concretas ficam gravadas por linha. Suficiente para sustentar o valor sem inchar o armazenamento local. */
 const COMPRAS_GRAVADAS = 5;
@@ -51,6 +51,32 @@ export function referenciaDaCesta(cesta: CestaPrecos, item: ItemCatalogo | undef
     })),
     alertas: cesta.alertas,
   };
+}
+
+/**
+ * Reconcilia as referências de preço quando o orçamento volta da IA (lapidação, importação).
+ *
+ * Resolve dois estragos que acontecem em silêncio sem esta função:
+ *
+ * 1. **A IA não devolve o campo `referenciaPreco`** — ele não está no formato que ela responde.
+ *    Trocar a lista inteira apagaria toda a procedência já apurada, e o primeiro "Ciclo"
+ *    zeraria o trabalho de cotação sem ninguém perceber.
+ * 2. **A IA pode alterar o valor de uma linha existente.** Aí é pior que apagar: a referência
+ *    continuaria colada a um número que não é mais o dela, alegando "valor do meio de N compras
+ *    públicas" para algo que o modelo mudou. Procedência falsa é pior que procedência nenhuma —
+ *    por isso, valor alterado **perde** a referência e volta a precisar de cotação.
+ *
+ * É guarda determinística de propósito: não depende de o modelo obedecer à instrução do prompt.
+ */
+export function preservarReferenciasPreco(anteriores: BudgetLine[], novas: BudgetLine[]): BudgetLine[] {
+  const porId = new Map(anteriores.filter((l) => l.id).map((l) => [l.id, l]));
+  return novas.map((linha) => {
+    const antiga = linha.id ? porId.get(linha.id) : undefined;
+    if (!antiga?.referenciaPreco) return linha;
+    // Comparação em centavos: o valor faz ida e volta por JSON e por `toFixed`.
+    const mesmoValor = Math.round(antiga.valor * 100) === Math.round(linha.valor * 100);
+    return mesmoValor ? { ...linha, referenciaPreco: antiga.referenciaPreco } : { ...linha, referenciaPreco: undefined };
+  });
 }
 
 export interface ResultadoCotacaoPublica {

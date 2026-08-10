@@ -1,3 +1,4 @@
+import { preservarReferenciasPreco } from "./cotacao-publica";
 import type {
   Abrangencia,
   BudgetLine,
@@ -529,7 +530,9 @@ export function aplicarImportacaoAoProjeto(project: Project, dados: DadosImporta
     publicoAlvo: dados.publicoAlvo ?? project.publicoAlvo,
     pessoasAtendidasDiretas: dados.pessoasAtendidasDiretas ?? project.pessoasAtendidasDiretas,
     pessoasAtendidasIndiretas: dados.pessoasAtendidasIndiretas ?? project.pessoasAtendidasIndiretas,
-    orcamento: dados.orcamento ?? project.orcamento,
+    // Mesma reconciliação da lapidação: dado importado não traz `referenciaPreco`, e valor
+    // alterado não pode herdar a procedência de outro número.
+    orcamento: dados.orcamento ? preservarReferenciasPreco(project.orcamento, dados.orcamento) : project.orcamento,
     producaoEstimada: dados.producaoEstimada ?? project.producaoEstimada,
     itensNecessarios: dados.itensNecessarios ?? project.itensNecessarios,
     cronograma: dados.cronograma ?? project.cronograma,

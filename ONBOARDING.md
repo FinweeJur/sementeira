@@ -63,8 +63,23 @@ providers.ts (window.sementeira)  chamarLLM() / buscarWebTavily()
   `/api/chat`.
 - **Ollama**: modelos **auto-detectados** via `GET /api/tags` (nunca lista hardcoded). Se o modelo
   não está baixado, mensagem clara dizendo pra rodar `ollama pull <modelo>`.
-- **Deep Research via Tavily** (`src/lib/websearch.ts`): **única** fonte de "internet". Sem chave
-  → a função nem é chamada (bloqueada no renderer). **Cita só o que a Tavily retornou — nunca inventa.**
+- **Deep Research via Tavily** (`src/lib/websearch.ts`): sem chave → a função nem é chamada
+  (bloqueada no renderer). **Cita só o que a Tavily retornou — nunca inventa.**
+- **Cotação em compras públicas** (`cotacao-publica.ts`, `precos-publicos.ts`, `precos-fontes.ts`,
+  `catmat.ts`): fonte PRIMÁRIA de preço, **sem chave nenhuma**. Compras.gov.br (preço homologado;
+  **não cobre o governo de MG**) + PNCP (cobre, via a busca `/api/search/` do portal, que não está
+  no swagger e derruba a conexão de forma intermitente — daí a retentativa). A cesta é
+  **determinística**; a IA não entra na conta. Armadilhas medidas das duas APIs estão em
+  `Obsidian Vault/Projetos/Sementeira.md`.
+  - Transporte: Compras.gov.br **não manda CORS** → IPC `sementeira:precos:json` no desktop e
+    `GET /api/precos` no gateway. **Allowlist de host aplicada nos dois lados** — sem ela o handler
+    vira proxy aberto capaz de alcançar a rede interna de quem roda o app.
+  - O catálogo CATMAT (849 KB) entra por `import()` dinâmico: import estático o funde no chunk principal.
+  - `BudgetLine.referenciaPreco` guarda a procedência e sai no `.docx`/`.xlsx`. Ao aplicar saída de IA
+    no orçamento (lapidação, importação), passe por `preservarReferenciasPreco()` — a IA não devolve
+    o campo, e valor alterado tem de **perder** a referência em vez de herdá-la.
+- **Pesquisa de máquinas** (`src/lib/maquinas.ts`): vitrines brasileiras/chinesas + custo posto no
+  Brasil com ICMS por dentro. **Ainda sem tela** — plano na wiki (aba "Tecnologia").
 
 ### Pipeline de geração/revisão (dois agentes independentes)
 1. **Geração** (`src/lib/draft-generation.ts`) → rascunho JSON estruturado (ou até 3 perguntas
