@@ -24,7 +24,7 @@ const fsp = require("node:fs/promises");
 const path = require("node:path");
 const crypto = require("node:crypto");
 
-const { chamarLLM, listarModelosOllama, buscarWebTavily } = require("../electron/llm-core.cjs");
+const { chamarLLM, listarModelosOllama, buscarWebTavily, buscarJsonPublico, urlDePrecoPermitida } = require("../electron/llm-core.cjs");
 
 const RAIZ = path.join(__dirname, "..");
 const DIRETORIO_ESTATICO = path.join(RAIZ, "dist");
@@ -813,6 +813,27 @@ async function rotaModelosOllama(req, res) {
   }
 }
 
+/**
+ * Repasse para as fontes públicas de preço (Compras.gov.br / PNCP).
+ *
+ * Existe porque o Compras.gov.br não manda cabeçalho CORS e o navegador não consegue chamá-lo
+ * direto. **Não exige token**: o dado é público e o modo público da web precisa dele — mas passa
+ * pelo mesmo rate-limit das outras rotas, e a allowlist de host é reaplicada aqui (o cliente já
+ * checa, e isso não conta: quem valida é quem executa a requisição).
+ */
+async function rotaPrecos(req, res, url) {
+  if (!dentroDoLimite(req, res)) return;
+  const alvo = url.searchParams.get("url");
+  if (!alvo) return responderJson(res, 400, { ok: false, erro: "Nenhum endereço de consulta foi informado." });
+  if (!urlDePrecoPermitida(alvo)) return responderJson(res, 403, { ok: false, erro: "Endereço não permitido para consulta de preços." });
+  try {
+    // Devolve o corpo da fonte sem alterar — quem interpreta é `precos-fontes.ts` no cliente.
+    responderJson(res, 200, await buscarJsonPublico(alvo));
+  } catch (erro) {
+    responderJson(res, 502, { ok: false, erro: erro instanceof Error ? erro.message : String(erro) });
+  }
+}
+
 async function rotaBuscaWeb(req, res) {
   if (!exigirToken(req, res)) return;
   if (!dentroDoLimite(req, res)) return;
@@ -917,6 +938,7 @@ const servidor = http.createServer(async (req, res) => {
     if (rota === "/api/llm/chat" && req.method === "POST") return await rotaChat(req, res);
     if (rota === "/api/llm/ollama/modelos" && req.method === "GET") return await rotaModelosOllama(req, res);
     if (rota === "/api/websearch" && req.method === "POST") return await rotaBuscaWeb(req, res);
+    if (rota === "/api/precos" && req.method === "GET") return await rotaPrecos(req, res, url);
 
     if (rota.startsWith("/api/comunidade/")) {
       const partes = rota.slice("/api/comunidade/".length).split("/").filter(Boolean);

@@ -154,6 +154,8 @@ export interface AbrirDocumentoResposta {
       llmChat: (request: LLMRequest) => Promise<LLMResponse>;
       listarModelosOllama: (baseUrl: string) => Promise<ListarModelosResposta>;
       webSearch: (request: WebSearchRequest) => Promise<WebSearchResposta>;
+      /** GET JSON numa fonte pública de preço (Compras.gov.br / PNCP). Quem valida o host é o processo main — ver `precos-fontes.ts`. */
+      buscarJsonPublico: (url: string) => Promise<{ ok: boolean; dados?: unknown; erro?: string }>;
       exportarPdf: (sugestaoNomeArquivo?: string) => Promise<ExportarPdfResposta>;
       salvarDocumento: (dados: { projectId: string; nomeArquivo: string; conteudoBase64: string }) => Promise<SalvarDocumentoResposta>;
       abrirDocumento: (caminho: string) => Promise<AbrirDocumentoResposta>;

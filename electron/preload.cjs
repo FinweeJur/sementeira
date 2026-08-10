@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld("sementeira", {
   llmChat: (request) => ipcRenderer.invoke("sementeira:llm:chat", request),
   listarModelosOllama: (baseUrl) => ipcRenderer.invoke("sementeira:ollama:listarModelos", baseUrl),
   webSearch: (request) => ipcRenderer.invoke("sementeira:websearch", request),
+  buscarJsonPublico: (url) => ipcRenderer.invoke("sementeira:precos:json", url),
   exportarPdf: (sugestaoNomeArquivo) => ipcRenderer.invoke("sementeira:pdf:exportar", sugestaoNomeArquivo),
   salvarDocumento: (dados) => ipcRenderer.invoke("sementeira:documento:salvar", dados),
   abrirDocumento: (caminho) => ipcRenderer.invoke("sementeira:documento:abrir", caminho),

@@ -5,6 +5,8 @@ import { avaliarConformidade, exigeFonteCusteioFuturo } from "../lib/compliance-
 import { simularTodos, exigenciaPOS, calcularDepreciacaoMensal } from "../lib/simulator";
 import { exportarProjetoDocx, exportarProjetoXlsx } from "../lib/export";
 import { exportarSolicitacaoCotacaoDocx, sugerirFornecedoresRede } from "../lib/cotacao";
+import { cotarNasComprasPublicas, type ResultadoCotacaoPublica } from "../lib/cotacao-publica";
+import { CestaPrecosPanel } from "../components/CestaPrecosPanel";
 import { derivarConexoes } from "../lib/mapa-estagios";
 import { MUNICIPIOS_PARAOPEBA, estimarDistanciaRota, custoLogisticoMensalEstimado, type EstimativaRota } from "../lib/geografia";
 import { sugerirDeIdeia, derivarTituloDeIdeia } from "../lib/suggestion-engine";
@@ -47,6 +49,54 @@ const CATEGORIAS_COM_PRAZO_6M = ["capital-giro-inicial", "insumos-iniciais", "eq
 const CUSTO_POR_KM_PADRAO = 2.5;
 const FREQ_VIAGENS_MES_PADRAO = 4;
 
+function DetalheIpsOrigem({ ips, regiao }: { ips: { nome: string; detalhamento: string; municipio: string; adesao: string; status: string; priorizado: string | null }[]; regiao?: string }) {
+  const [aberto, setAberto] = useState(false);
+  if (ips.length === 0) return null;
+
+  const validadas = ips.filter((ip) => ip.status === "validado").length;
+  const pendentes = ips.filter((ip) => ip.status === "pendente").length;
+
+  return (
+    <div className="mt-2 w-full">
+      <button
+        onClick={() => setAberto(!aberto)}
+        className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-border)] px-2 py-1 text-xs hover:border-[color:var(--sm-accent)]"
+        title="Ver ideias de projeto originais dos conselhos"
+      >
+        <Sparkles size={12} strokeWidth={2} />
+        {ips.length} IP{ips.length > 1 ? "s" : ""} de origem{regiao ? ` (${regiao})` : ""}
+        <span className="ml-1 text-[10px] text-[color:var(--sm-text-dim)]">
+          ({validadas} validadas, {pendentes} pendentes)
+        </span>
+        <span className="text-[10px]">{aberto ? "▲" : "▼"}</span>
+      </button>
+      {aberto && (
+        <div className="mt-2 max-h-72 overflow-auto rounded border border-[color:var(--sm-border)] bg-[color:var(--sm-bg)] p-3">
+          <ul className="space-y-3">
+            {ips.map((ip, i) => (
+              <li key={i} className="border-b border-[color:var(--sm-border)] pb-2 last:border-0 last:pb-0">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm font-medium">{ip.nome}</p>
+                  <div className="flex shrink-0 gap-1">
+                    <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold ${ip.status === "validado" ? "bg-green-100 text-green-800" : ip.status === "verificar" ? "bg-yellow-100 text-yellow-800" : "bg-gray-100 text-gray-600"}`}>
+                      {ip.status === "validado" ? "✓ validado" : ip.status === "verificar" ? "⚠ verificar" : "pendente"}
+                    </span>
+                    {ip.priorizado === "Sim" && (
+                      <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">priorizado</span>
+                    )}
+                  </div>
+                </div>
+                <p className="mt-1 text-xs text-[color:var(--sm-text-dim)]">{ip.municipio} — {ip.adesao}</p>
+                <p className="mt-1 text-xs leading-relaxed text-[color:var(--sm-text)]">{ip.detalhamento}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ProjectWizard({
   project,
   outrosProjetos = [],
@@ -83,6 +133,8 @@ export function ProjectWizard({
   const [pesquisandoPrecoId, setPesquisandoPrecoId] = useState<string | null>(null);
   const [erroPreco, setErroPreco] = useState<string | null>(null);
   const [subperguntasPreco, setSubperguntasPreco] = useState<string[] | null>(null);
+  /** Cesta de preços públicos por linha — o rastro de onde saiu o valor. */
+  const [cestaPorLinha, setCestaPorLinha] = useState<Record<string, ResultadoCotacaoPublica | null>>({});
   const [pesquisandoArrecadacao, setPesquisandoArrecadacao] = useState(false);
   const [erroArrecadacao, setErroArrecadacao] = useState<string | null>(null);
   const [subperguntasArrecadacao, setSubperguntasArrecadacao] = useState<string[] | null>(null);
@@ -210,6 +262,13 @@ export function ProjectWizard({
     update("justificativa", resultado.dado);
   }
 
+  /**
+   * Cota a linha: compras públicas primeiro, pesquisa de mercado por IA só como reserva.
+   *
+   * A ordem não é detalhe. Preço homologado tem órgão, data e CNPJ do fornecedor — sustenta
+   * prestação de contas. Estimativa de IA não sustenta. A IA entra quando o item simplesmente
+   * não existe no catálogo público, que é o caso comum de máquina específica de produção.
+   */
   async function pesquisarPrecoLinha(linha: BudgetLine) {
     if (!linha.descricao.trim()) {
       setErroPreco("Preencha a descrição do item antes de pesquisar o preço.");
@@ -218,11 +277,22 @@ export function ProjectWizard({
     setPesquisandoPrecoId(linha.id);
     setErroPreco(null);
     setSubperguntasPreco(null);
+    setCestaPorLinha((atual) => ({ ...atual, [linha.id]: null }));
+
+    const publica = await cotarNasComprasPublicas(linha.descricao);
+    if (publica.ok && publica.cesta && publica.cesta.estatistica.n > 0) {
+      setPesquisandoPrecoId(null);
+      setCestaPorLinha((atual) => ({ ...atual, [linha.id]: publica }));
+      updateLinha(linha.id, { valor: Number(publica.cesta.valorSugerido.toFixed(2)) });
+      return;
+    }
+
     const resultado = await pesquisarPrecoItem(linha.descricao);
     setPesquisandoPrecoId(null);
     setSubperguntasPreco(resultado.subperguntas ?? null);
     if (!resultado.ok || resultado.dado?.valorEstimado == null) {
-      setErroPreco(resultado.erro ?? "Não foi possível pesquisar o preço desse item.");
+      // Mostra por que as compras públicas não serviram — sem isso o usuário só vê a falha da IA.
+      setErroPreco([publica.erro, resultado.erro].filter(Boolean).join(" ") || "Não foi possível pesquisar o preço desse item.");
       return;
     }
     updateLinha(linha.id, { valor: resultado.dado.valorEstimado });
@@ -698,6 +768,8 @@ export function ProjectWizard({
                     </div>
                   ))}
 
+                  {cestaPorLinha[l.id] && <CestaPrecosPanel resultado={cestaPorLinha[l.id]!} />}
+
                   <div className="flex flex-wrap items-center gap-2 border-t border-[color:var(--sm-border)] px-3 py-2">
                     <button
                       onClick={() => pesquisarPrecoLinha(l)}
@@ -705,7 +777,7 @@ export function ProjectWizard({
                       className="inline-flex items-center gap-1.5 rounded border border-[color:var(--sm-accent)]/40 bg-[color:var(--sm-accent)]/10 px-2 py-1 text-xs hover:bg-[color:var(--sm-accent)]/20 disabled:opacity-40"
                     >
                       {pesquisandoPrecoId !== l.id && <Search size={12} strokeWidth={2} />}
-                      {pesquisandoPrecoId === l.id ? "Pesquisando preço (várias buscas)..." : "Pesquisar preço de referência (MG/Brasil, jul/2026)"}
+                      {pesquisandoPrecoId === l.id ? "Consultando compras públicas..." : "Buscar preço em compras públicas"}
                     </button>
                     <button
                       onClick={() => gerarCotacao(l)}
@@ -1483,6 +1555,9 @@ export function ProjectWizard({
             <FileText size={12} strokeWidth={2} />
             {project.documentoOrigem.nomeArquivo}
           </button>
+        )}
+        {(project.ipsOrigem?.length ?? 0) > 0 && (
+          <DetalheIpsOrigem ips={project.ipsOrigem!} regiao={project.regiao} />
         )}
         {/* Clicar leva ao passo onde o achado se resolve. Clicar de novo passa
             ao próximo do mesmo tipo — com vários bloqueios, o selo vira a

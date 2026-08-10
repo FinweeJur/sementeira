@@ -105,4 +105,78 @@ async function buscarWebTavily({ apiKey, query }) {
   }));
 }
 
-module.exports = { chamarLLM, listarModelosOllama, buscarWebTavily };
+/**
+ * Hosts das fontes públicas de preço que o app pode consultar.
+ *
+ * A allowlist é o ponto central desta função: quem manda a URL é o renderer, e sem essa
+ * checagem o processo main (e o gateway da versão web) viraria proxy aberto, capaz de
+ * alcançar `localhost` e endereços da rede interna de quem roda o app. Só HTTPS, só estes dois.
+ */
+const HOSTS_PRECO_PERMITIDOS = ["dadosabertos.compras.gov.br", "pncp.gov.br"];
+const TIMEOUT_PRECO_MS = 25000;
+
+function urlDePrecoPermitida(url) {
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:" && HOSTS_PRECO_PERMITIDOS.includes(u.hostname);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * GET JSON numa fonte pública de preço.
+ *
+ * Precisa existir porque o Compras.gov.br não devolve cabeçalho CORS — o navegador não
+ * consegue chamá-lo direto, então a requisição sai daqui: do processo main no app instalado,
+ * do gateway na versão web.
+ */
+async function tentarUmaVez(url) {
+  const controle = new AbortController();
+  const relogio = setTimeout(() => controle.abort(), TIMEOUT_PRECO_MS);
+  try {
+    const resp = await fetch(url, { headers: { accept: "application/json" }, signal: controle.signal });
+    // 204 é resposta legítima: item de compra que ainda não teve resultado homologado.
+    if (resp.status === 204) return [];
+    if (!resp.ok) {
+      const erro = new Error(`A fonte de preços respondeu ${resp.status}.`);
+      erro.semRetentativa = true; // resposta do servidor, não falha de rede — repetir não muda nada
+      throw erro;
+    }
+    return await resp.json();
+  } finally {
+    clearTimeout(relogio);
+  }
+}
+
+/**
+ * GET JSON numa fonte pública de preço, com retentativa.
+ *
+ * Precisa existir porque o Compras.gov.br não devolve cabeçalho CORS — o navegador não consegue
+ * chamá-lo direto, então a requisição sai daqui: do processo main no app instalado, do gateway
+ * na versão web.
+ *
+ * A retentativa não é zelo genérico: a busca textual do PNCP (`/api/search/`, que é endpoint do
+ * portal e não da API documentada) **derruba a conexão de forma intermitente** — medido, duas
+ * falhas seguidas de ECONNRESET e a terceira tentativa passando, com o endpoint documentado do
+ * mesmo host respondendo normalmente o tempo todo. Sem repetir, a cotação falharia a esmo.
+ * Só falha de rede é repetida; resposta do servidor (4xx/5xx) sobe na hora.
+ */
+async function buscarJsonPublico(url) {
+  if (!urlDePrecoPermitida(url)) throw new Error("Endereço não permitido para consulta de preços.");
+
+  let ultimoErro;
+  for (let tentativa = 1; tentativa <= 3; tentativa++) {
+    try {
+      return await tentarUmaVez(url);
+    } catch (erro) {
+      if (erro && erro.name === "AbortError") throw new Error("A consulta de preços demorou demais e foi cancelada.");
+      if (erro && erro.semRetentativa) throw erro;
+      ultimoErro = erro;
+      if (tentativa < 3) await new Promise((r) => setTimeout(r, 400 * tentativa));
+    }
+  }
+  throw ultimoErro instanceof Error ? ultimoErro : new Error(String(ultimoErro));
+}
+
+module.exports = { chamarLLM, listarModelosOllama, buscarWebTavily, buscarJsonPublico, urlDePrecoPermitida, HOSTS_PRECO_PERMITIDOS };

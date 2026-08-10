@@ -16,7 +16,7 @@ let mainWindow = null;
  * pelo servidor local que serve a versão web, para as duas superfícies não
  * divergirem no comportamento nem nas mensagens de erro.
  */
-const { chamarLLM, listarModelosOllama, buscarWebTavily } = require("./llm-core.cjs");
+const { chamarLLM, listarModelosOllama, buscarWebTavily, buscarJsonPublico } = require("./llm-core.cjs");
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -61,6 +61,15 @@ ipcMain.handle("sementeira:websearch", async (_event, request) => {
   try {
     const resultados = await buscarWebTavily(request);
     return { ok: true, resultados };
+  } catch (erro) {
+    return { ok: false, erro: erro instanceof Error ? erro.message : String(erro) };
+  }
+});
+
+/** Consulta às fontes públicas de preço. A allowlist de host vive em llm-core.cjs e é aplicada aqui dentro, não no renderer. */
+ipcMain.handle("sementeira:precos:json", async (_event, url) => {
+  try {
+    return { ok: true, dados: await buscarJsonPublico(url) };
   } catch (erro) {
     return { ok: false, erro: erro instanceof Error ? erro.message : String(erro) };
   }
