@@ -2,7 +2,7 @@
   "name": "sementeira",
   "productName": "Sementeira",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Construtor guiado de projetos do Anexo I.1 com motor de conformidade e simulador de autossustentabilidade.",
   "author": "",
   "type": "module",
