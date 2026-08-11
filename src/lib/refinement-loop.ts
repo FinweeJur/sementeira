@@ -165,7 +165,7 @@ function resumoProjeto(p: Project): string {
       formasArrecadacao: p.formasArrecadacao,
       // `precoApuradoEmComprasPublicas` é a marca que o prompt do orçamentista manda respeitar:
       // linha com procedência real não pode ter o valor trocado por estimativa do modelo.
-      orcamento: p.orcamento.map((l) => ({ id: l.id, categoria: l.categoria, descricao: l.descricao, valor: l.valor, prazoMeses: l.prazoMeses, fonteCusteioFuturo: l.fonteCusteioFuturo, justificativaCicloProdutivo: l.justificativaCicloProdutivo, vidaUtilAnos: l.vidaUtilAnos, precoApuradoEmComprasPublicas: l.referenciaPreco ? true : undefined })),
+      orcamento: p.orcamento.map((l) => ({ id: l.id, categoria: l.categoria, descricao: l.descricao, valor: l.valor, prazoMeses: l.prazoMeses, fonteCusteioFuturo: l.fonteCusteioFuturo, justificativaCicloProdutivo: l.justificativaCicloProdutivo, vidaUtilAnos: l.vidaUtilAnos, precoApuradoEmComprasPublicas: l.referenciaPreco?.origem === "compras-publicas" ? true : undefined })),
       equipe: p.equipe.map((m) => ({ id: m.id, nome: m.nome, formacaoNecessaria: m.formacaoNecessaria, horasSemanais: m.horasSemanais, duracaoMeses: m.duracaoMeses, planoTrabalho: m.planoTrabalho })),
       custosNaoCobertos: p.custosNaoCobertos,
       cenarios: p.cenarios,

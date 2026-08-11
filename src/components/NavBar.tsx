@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Moon, Sun, Contrast, Sprout, Upload, Scale, Globe, Bot, RefreshCw, BookOpen, GraduationCap, Ticket, HeartHandshake, Shield, Settings, ChevronRight, ChevronLeft } from "lucide-react";
+import { Moon, Sun, Contrast, Sprout, Upload, Scale, Globe, Bot, RefreshCw, BookOpen, GraduationCap, Ticket, HeartHandshake, Shield, Factory, Settings, ChevronRight, ChevronLeft } from "lucide-react";
 import type { FontScale, Tema } from "../lib/preferences";
 import { Tooltip } from "./Tooltip";
 
@@ -30,6 +30,7 @@ export function NavBar({
   onPrivacidade,
   onClube,
   onVoluntarios,
+  onTecnologia,
 }: {
   tema: Tema;
   onTema: (t: Tema) => void;
@@ -48,6 +49,7 @@ export function NavBar({
   onPrivacidade: () => void;
   onClube: () => void;
   onVoluntarios: () => void;
+  onTecnologia: () => void;
 }) {
   const [trilhaAberta, setTrilhaAberta] = useState(false);
 
@@ -56,6 +58,7 @@ export function NavBar({
     { key: "mapa", icone: Globe, rotulo: "Mapa", dica: "Ecossistema: mapa da região e como os projetos podem se ajudar", onClick: onEcossistema, visivel: temProjeto },
     { key: "copiloto", icone: Bot, rotulo: "Copiloto", dica: "Converse por texto para lapidar, exportar ou consultar qualquer projeto", onClick: onCopiloto, visivel: temProjeto },
     { key: "ciclo", icone: RefreshCw, rotulo: "Ciclo", dica: "Revisão geral: roda 1 volta de lapidação nos projetos + atualiza ecossistema e clube", onClick: onRevisaoGeral, visivel: temProjeto },
+    { key: "tecnologia", icone: Factory, rotulo: "Tecnologia", dica: "Procura a máquina que faz o trabalho render mais, com a conta do que custa importar", onClick: onTecnologia, visivel: true },
     { key: "biblioteca", icone: BookOpen, rotulo: "Biblioteca", dica: "Documentos de referência do processo e leituras de apoio", onClick: onBiblioteca, visivel: true },
     { key: "aprender", icone: GraduationCap, rotulo: "Aprender", dica: "Currículo passo a passo de como montar um projeto na Sementeira", onClick: onAprender, visivel: true },
     { key: "clube", icone: Ticket, rotulo: "Clube", dica: "Clube de benefícios: programa que conecta produtos dos projetos às famílias atingidas", onClick: onClube, visivel: true },

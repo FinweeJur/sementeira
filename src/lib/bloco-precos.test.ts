@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { montarBlocoPrecos } from "./bloco-precos";
 import { preservarReferenciasPreco } from "./cotacao-publica";
+import { referenciaDeMercado } from "./maquinas";
 import type { BudgetLine, Project, ReferenciaPreco } from "./types";
 
 function referencia(parcial: Partial<ReferenciaPreco> = {}): ReferenciaPreco {
@@ -65,6 +66,21 @@ describe("montarBlocoPrecos", () => {
     const bloco = montarBlocoPrecos(projeto([linha({ id: "a", valor: 2758, referenciaPreco: comAlerta })]));
     expect(bloco).toContain("variam muito entre si");
     expect(bloco).toContain("ressalva registrada");
+  });
+
+  it("preço de anúncio não é descrito como compra pública — senão a IA defende como apurado um número de vitrine", () => {
+    const mercado = referenciaDeMercado({ origem: "brasil", titulo: "Despolpadeira 100 kg/h", url: "https://exemplo/anuncio", valor: 4200, consultadoEm: new Date("2026-08-11T12:00:00Z") });
+    const bloco = montarBlocoPrecos(projeto([linha({ id: "a", valor: 4200, referenciaPreco: mercado })]));
+    expect(bloco).toContain("pesquisa de mercado");
+    expect(bloco).toContain("NÃO é compra pública");
+    expect(bloco).not.toContain("compra(s) pública(s) de");
+  });
+
+  it("linha com preço de anúncio continua contando como pendente de cotação pública", () => {
+    const mercado = referenciaDeMercado({ origem: "brasil", titulo: "Despolpadeira", url: "https://exemplo/anuncio", valor: 4200, consultadoEm: new Date("2026-08-11T12:00:00Z") });
+    const bloco = montarBlocoPrecos(projeto([linha({ id: "a", valor: 4200, referenciaPreco: mercado })]));
+    expect(bloco).not.toContain("Todas as linhas têm referência");
+    expect(bloco).toContain("1 de 1 linha(s) ainda não têm referência");
   });
 
   it("orçamento vazio não inventa situação", () => {

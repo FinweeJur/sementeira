@@ -20,6 +20,7 @@
  */
 
 import type { ResultadoBusca } from "./websearch";
+import type { ReferenciaPreco } from "./types";
 
 /** Onde procurar. Cada origem tem um significado diferente para o orçamento. */
 export type OrigemMercado = "brasil" | "china" | "aberta";
@@ -176,6 +177,55 @@ export function alertasDeAquisicao(origem: OrigemMercado): string[] {
     return [...comuns, "Preço de marketplace muda com frete e com o CEP de destino. Confirme o valor final para o município do projeto antes de lançar no orçamento."];
   }
   return comuns;
+}
+
+/** O que a tela sabe sobre a máquina escolhida na hora de jogá-la no orçamento. */
+export interface FonteDeMercado {
+  origem: OrigemMercado;
+  /** Título do anúncio, como veio da busca. */
+  titulo: string;
+  url: string;
+  /** Valor que vai para a linha, em reais. */
+  valor: number;
+  /** Verdadeiro quando o valor é a estimativa de custo posto no Brasil, e não o preço do anúncio. */
+  postoNoBrasil?: boolean;
+  consultadoEm: Date;
+}
+
+/**
+ * Converte um anúncio de fornecedor no rastro que fica gravado na linha de orçamento.
+ *
+ * Existe para a linha **não mentir sobre a própria procedência**: a mesma estrutura serve à
+ * cotação em compras públicas, onde o valor é o do meio de compras que órgãos realmente
+ * pagaram. Preço de vitrine não tem essa força — pode ser promoção, pode ser de outro estado,
+ * pode nem existir em estoque —, então a origem entra marcada como `"pesquisa-mercado"`, com
+ * uma única compra (a própria), a fonte e a ressalva de que é anúncio, não compra homologada.
+ * Quem lê o documento na prestação de contas precisa ver essa diferença sem precisar perguntar.
+ */
+export function referenciaDeMercado(fonte: FonteDeMercado): ReferenciaPreco {
+  const ressalvas = ["Preço de anúncio de fornecedor, não compra pública homologada — confirme com pelo menos três cotações antes de fechar."];
+  if (fonte.origem === "china") {
+    ressalvas.push(
+      fonte.postoNoBrasil
+        ? "Valor estimado de importação (imposto, frete e despacho), não o preço FOB do anúncio; importar direto exige habilitação no Radar/Siscomex."
+        : "Preço FOB: não inclui imposto, frete nem despacho, e importar direto exige habilitação no Radar/Siscomex.",
+    );
+  }
+
+  return {
+    origem: "pesquisa-mercado",
+    criterio: fonte.postoNoBrasil ? "custo-posto-no-brasil" : "preco-anunciado",
+    unidade: "unidade",
+    quantidadePrecos: 1,
+    minimo: fonte.valor,
+    maximo: fonte.valor,
+    abrangenciaPreco: fonte.origem,
+    consultadoEm: fonte.consultadoEm.toISOString().slice(0, 10),
+    compras: [],
+    alertas: ressalvas,
+    fonte: fonte.titulo,
+    url: fonte.url,
+  };
 }
 
 export interface PesquisaMaquinas {

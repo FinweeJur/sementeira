@@ -8,6 +8,7 @@ import { ClubeBeneficios } from "./pages/ClubeBeneficios";
 import { Voluntarios } from "./pages/Voluntarios";
 import { Biblioteca } from "./pages/Biblioteca";
 import { Aprender } from "./pages/Aprender";
+import { Tecnologia } from "./pages/Tecnologia";
 import { PoliticaPrivacidade } from "./pages/PoliticaPrivacidade";
 import { CompareProjects } from "./pages/CompareProjects";
 import { PlanilhaPortfolio } from "./pages/PlanilhaPortfolio";
@@ -57,6 +58,7 @@ type Tela =
   | { nome: "voluntarios" }
   | { nome: "biblioteca" }
   | { nome: "aprender" }
+  | { nome: "tecnologia" }
   | { nome: "privacidade" }
   | { nome: "planilha" }
   | { nome: "comparacao" };
@@ -234,6 +236,8 @@ export function App() {
             onCriarProjeto={() => handleCreate(novoProjetoVazio())}
           />
         );
+      case "tecnologia":
+        return <Tecnologia projects={projects} onVoltar={voltarAoPortfolio} onAtualizarProjeto={handleChange} onAbrirConfig={() => setConfigAberta(true)} />;
       case "privacidade":
         return <PoliticaPrivacidade onVoltar={voltarAoPortfolio} />;
       case "planilha":
@@ -265,6 +269,7 @@ export function App() {
         onPrivacidade={() => setTela({ nome: "privacidade" })}
         onClube={() => setTela({ nome: "clube" })}
         onVoluntarios={() => setTela({ nome: "voluntarios" })}
+        onTecnologia={() => setTela({ nome: "tecnologia" })}
       />
       <SidebarNav
         temProjeto={projects.length > 0}
@@ -280,6 +285,7 @@ export function App() {
         onPrivacidade={() => setTela({ nome: "privacidade" })}
         onClube={() => setTela({ nome: "clube" })}
         onVoluntarios={() => setTela({ nome: "voluntarios" })}
+        onTecnologia={() => setTela({ nome: "tecnologia" })}
       />
       <div className="pl-12">{renderizarTela()}</div>
       <TaskIndicator onAbrir={() => setSidebarTarefasAberta(true)} />

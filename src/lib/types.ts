@@ -83,8 +83,13 @@ export interface CompraDeReferencia {
  * sustentar o número.
  */
 export interface ReferenciaPreco {
-  /** "compras-publicas" hoje; deixa espaço para outras origens (proposta de fornecedor, leilão). */
-  origem: "compras-publicas";
+  /**
+   * De onde saiu o valor. `"compras-publicas"` é a cesta determinística — preço que órgão
+   * público realmente pagou. `"pesquisa-mercado"` é anúncio de fornecedor encontrado na aba
+   * Tecnologia: sustenta bem menos, e por isso é apresentado em todo lugar como preço de
+   * vitrine, nunca como compra homologada. Deixa espaço para outras origens (leilão).
+   */
+  origem: "compras-publicas" | "pesquisa-mercado";
   /** Nome do item no catálogo público (CATMAT), quando houve casamento. */
   itemCatalogo?: string;
   codigoPdm?: number;
@@ -102,6 +107,10 @@ export interface ReferenciaPreco {
   compras: CompraDeReferencia[];
   /** Ressalvas que a cesta levantou (dispersão, fonte única, preço velho…). */
   alertas: string[];
+  /** Só em `"pesquisa-mercado"`: o anúncio/fornecedor de onde saiu o valor. */
+  fonte?: string;
+  /** Só em `"pesquisa-mercado"`: link do anúncio, para conferir depois. */
+  url?: string;
 }
 
 /** Uma pessoa/papel da equipe, com plano de trabalho próprio — não só um nome numa lista. */

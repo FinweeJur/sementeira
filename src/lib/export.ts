@@ -23,6 +23,18 @@ const ROTULO_CRITERIO_PRECO: Record<string, string> = {
   "menor-preco": "menor preço",
 };
 
+/** Origem do anúncio, quando o valor veio da pesquisa de máquinas (aba Tecnologia). */
+const ROTULO_ORIGEM_MERCADO: Record<string, string> = {
+  brasil: "fornecedor no Brasil",
+  china: "fornecedor na China (importação)",
+  aberta: "busca aberta",
+};
+
+const ROTULO_CRITERIO_MERCADO: Record<string, string> = {
+  "preco-anunciado": "preço anunciado por fornecedor",
+  "custo-posto-no-brasil": "custo estimado posto no Brasil (importação)",
+};
+
 /**
  * Resume a referência de preço numa frase para a tabela de orçamento.
  *
@@ -32,6 +44,19 @@ const ROTULO_CRITERIO_PRECO: Record<string, string> = {
  */
 export function resumirReferenciaPreco(r: ReferenciaPreco | undefined): string {
   if (!r) return "estimado fora das compras públicas";
+
+  // Anúncio de fornecedor não pode sair descrito como compra pública: é preço de vitrine, e
+  // quem lê o documento precisa saber disso para cobrar as três cotações.
+  if (r.origem === "pesquisa-mercado") {
+    const como = ROTULO_CRITERIO_MERCADO[r.criterio] ?? r.criterio;
+    const onde = ROTULO_ORIGEM_MERCADO[r.abrangenciaPreco] ?? r.abrangenciaPreco;
+    const partes = [`pesquisa de mercado — ${como}, ${onde}`, `R$ ${r.minimo.toFixed(2)} por ${r.unidade}`, `consultado em ${r.consultadoEm}`];
+    if (r.fonte) partes.push(`anúncio: ${r.fonte}`);
+    if (r.url) partes.push(r.url);
+    if (r.alertas.length > 0) partes.push(`ressalva: ${r.alertas.join(" ")}`);
+    return partes.join(" · ");
+  }
+
   const criterio = ROTULO_CRITERIO_PRECO[r.criterio] ?? r.criterio;
   const onde = ROTULO_ABRANGENCIA_PRECO[r.abrangenciaPreco] ?? r.abrangenciaPreco;
   const partes = [

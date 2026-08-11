@@ -1,4 +1,4 @@
-import { Sprout, Upload, Scale, Globe, Bot, RefreshCw, BookOpen, GraduationCap, Ticket, HeartHandshake, Shield, type LucideIcon } from "lucide-react";
+import { Sprout, Upload, Scale, Globe, Bot, RefreshCw, BookOpen, GraduationCap, Ticket, HeartHandshake, Shield, Factory, type LucideIcon } from "lucide-react";
 
 export interface ItemNav {
   id: string;
@@ -24,6 +24,7 @@ export interface NavAcoes {
   onPrivacidade: () => void;
   onClube: () => void;
   onVoluntarios: () => void;
+  onTecnologia: () => void;
 }
 
 /**
@@ -39,6 +40,7 @@ export function montarItensNav(acoes: NavAcoes): ItemNav[] {
     { id: "mapa", icone: Globe, rotulo: "Mapa", dica: "Ecossistema: mapa da região e como os projetos podem se ajudar", onClick: acoes.onEcossistema, visivel: acoes.temProjeto },
     { id: "copiloto", icone: Bot, rotulo: "Copiloto", dica: "Converse por texto para lapidar, exportar ou consultar qualquer projeto", onClick: acoes.onCopiloto, visivel: acoes.temProjeto },
     { id: "ciclo", icone: RefreshCw, rotulo: "Ciclo", dica: "Revisão geral: roda 1 volta de lapidação nos projetos + atualiza ecossistema e clube", onClick: acoes.onRevisaoGeral, visivel: acoes.temProjeto },
+    { id: "tecnologia", icone: Factory, rotulo: "Tecnologia", dica: "Procura a máquina que faz o trabalho render mais, com a conta do que custa importar", onClick: acoes.onTecnologia, visivel: true },
     { id: "biblioteca", icone: BookOpen, rotulo: "Biblioteca", dica: "Documentos de referência do processo e leituras de apoio", onClick: acoes.onBiblioteca, visivel: true },
     { id: "aprender", icone: GraduationCap, rotulo: "Aprender", dica: "Currículo passo a passo de como montar um projeto na Sementeira", onClick: acoes.onAprender, visivel: true },
     { id: "clube", icone: Ticket, rotulo: "Clube", dica: "Clube de benefícios: programa que conecta produtos dos projetos às famílias atingidas", onClick: acoes.onClube, visivel: true },

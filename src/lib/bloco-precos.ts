@@ -26,10 +26,25 @@ const ROTULO_CRITERIO: Record<string, string> = {
   "menor-preco": "menor preço",
 };
 
+const ROTULO_ORIGEM_MERCADO: Record<string, string> = {
+  brasil: "fornecedor no Brasil",
+  china: "fornecedor na China (importação)",
+  aberta: "busca aberta",
+};
+
 function descreverLinha(linha: BudgetLine): string {
   const descricao = linha.descricao.trim() || "(sem descrição)";
   const r = linha.referenciaPreco;
   if (!r) return `- "${descricao}": ${formatarReal(linha.valor)} — SEM referência de compras públicas.`;
+
+  // Preço de anúncio não vira "compra pública" no prompt: se virar, a IA passa a defender como
+  // apurado um número que é de vitrine — o mesmo estrago que a cotação veio evitar.
+  if (r.origem === "pesquisa-mercado") {
+    const onde = ROTULO_ORIGEM_MERCADO[r.abrangenciaPreco] ?? r.abrangenciaPreco;
+    const como = r.criterio === "custo-posto-no-brasil" ? "custo estimado posto no Brasil" : "preço anunciado";
+    const base = `- "${descricao}": ${formatarReal(linha.valor)} — pesquisa de mercado (${como}, ${onde}), NÃO é compra pública${r.fonte ? `, anúncio: ${r.fonte}` : ""}, consultado em ${r.consultadoEm}.`;
+    return r.alertas.length > 0 ? `${base} Ressalva: ${r.alertas.join(" ")}` : base;
+  }
 
   const criterio = ROTULO_CRITERIO[r.criterio] ?? r.criterio;
   const onde = ROTULO_ABRANGENCIA[r.abrangenciaPreco] ?? r.abrangenciaPreco;
@@ -58,21 +73,33 @@ export function montarBlocoPrecos(project: Project): string {
     return [regras, "O orçamento deste projeto ainda está vazio."].join("\n\n");
   }
 
-  const comReferencia = linhas.filter((l) => l.referenciaPreco);
-  const semReferencia = linhas.filter((l) => !l.referenciaPreco);
+  const comPublica = linhas.filter((l) => l.referenciaPreco?.origem === "compras-publicas");
+  const deMercado = linhas.filter((l) => l.referenciaPreco?.origem === "pesquisa-mercado");
 
   const situacao = [
     `ORÇAMENTO ATUAL DESTE PROJETO (${linhas.length} item(ns), total ${formatarReal(linhas.reduce((s, l) => s + l.valor, 0))}):`,
     linhas.map(descreverLinha).join("\n"),
   ].join("\n");
 
-  const leitura =
-    semReferencia.length === 0
-      ? "Todas as linhas têm referência de compras públicas."
-      : `${semReferencia.length} de ${linhas.length} linha(s) ainda não têm referência de compras públicas. Se a conversa passar por orçamento, vale sugerir buscar o preço dessas — valor sem procedência é o que costuma ser questionado depois.`;
+  // Conta quem não tem referência PÚBLICA, e não quem não tem referência nenhuma: linha com
+  // preço de anúncio continua precisando de cotação, e dizer "todas têm referência" a
+  // esconderia.
+  const semPublica = linhas.filter((l) => l.referenciaPreco?.origem !== "compras-publicas");
 
-  const dispersas = comReferencia.filter((l) => (l.referenciaPreco?.alertas.length ?? 0) > 0).length;
+  const leitura =
+    semPublica.length === 0
+      ? "Todas as linhas têm referência de compras públicas."
+      : `${semPublica.length} de ${linhas.length} linha(s) ainda não têm referência de compras públicas. Se a conversa passar por orçamento, vale sugerir buscar o preço dessas — valor sem procedência é o que costuma ser questionado depois.`;
+
+  // Só as ressalvas da cesta pública: a de mercado é dita no parágrafo próprio, e contá-la aqui
+  // faria toda linha de anúncio parecer uma cotação problemática.
+  const dispersas = comPublica.filter((l) => (l.referenciaPreco?.alertas.length ?? 0) > 0).length;
   const ressalvas = dispersas > 0 ? `${dispersas} linha(s) com referência têm ressalva registrada; vale olhar antes de fechar o orçamento.` : "";
 
-  return [regras, situacao, leitura, ressalvas].filter(Boolean).join("\n\n");
+  const mercado =
+    deMercado.length > 0
+      ? `${deMercado.length} linha(s) têm preço vindo de pesquisa de mercado (anúncio de fornecedor, aba Tecnologia), que NÃO é compra pública: sustenta menos e pede as três cotações antes de fechar.`
+      : "";
+
+  return [regras, situacao, leitura, mercado, ressalvas].filter(Boolean).join("\n\n");
 }

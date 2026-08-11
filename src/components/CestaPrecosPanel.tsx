@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Landmark, TriangleAlert, ChevronDown, ChevronRight } from "lucide-react";
+import { Landmark, TriangleAlert, ChevronDown, ChevronRight, Store } from "lucide-react";
 import type { ResultadoCotacaoPublica } from "../lib/cotacao-publica";
 import type { ReferenciaPreco } from "../lib/types";
 import { formatarReal } from "../lib/precos-publicos";
@@ -25,6 +25,10 @@ const ROTULO_CRITERIO: Record<string, string> = {
 export function ReferenciaPrecoResumo({ referencia: r }: { referencia: ReferenciaPreco }) {
   const [aberto, setAberto] = useState(false);
 
+  // Preço de anúncio tem painel próprio: mostrar "compra pública" aqui faria a linha alegar uma
+  // procedência que ela não tem, que é o erro que a cotação existe para evitar.
+  if (r.origem === "pesquisa-mercado") return <ReferenciaMercadoResumo referencia={r} />;
+
   return (
     <div className="mx-3 mb-2 rounded border border-[color:var(--sm-border)] bg-[color:var(--sm-panel)] px-3 py-2 text-xs">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -41,7 +45,7 @@ export function ReferenciaPrecoResumo({ referencia: r }: { referencia: Referenci
       {r.itemCatalogo && <p className="mt-1 text-[color:var(--sm-text-dim)]">Item do catálogo público: {r.itemCatalogo}</p>}
 
       {r.alertas.map((alerta) => (
-        <p key={alerta} className="mt-1 flex items-start gap-1.5 text-[color:var(--sm-amber,#b45309)]">
+        <p key={alerta} className="mt-1 flex items-start gap-1.5 text-[color:var(--sm-atencao-text)]">
           <TriangleAlert size={13} strokeWidth={2} aria-hidden="true" className="mt-px flex-none" />
           <span>{alerta}</span>
         </p>
@@ -68,6 +72,53 @@ export function ReferenciaPrecoResumo({ referencia: r }: { referencia: Referenci
           )}
         </>
       )}
+    </div>
+  );
+}
+
+const ROTULO_ORIGEM_MERCADO: Record<string, string> = {
+  brasil: "fornecedor no Brasil",
+  china: "fornecedor na China (importação)",
+  aberta: "busca aberta",
+};
+
+/** Referência vinda da pesquisa de máquinas (aba Tecnologia): preço de vitrine, dito como tal. */
+function ReferenciaMercadoResumo({ referencia: r }: { referencia: ReferenciaPreco }) {
+  const onde = ROTULO_ORIGEM_MERCADO[r.abrangenciaPreco] ?? r.abrangenciaPreco;
+  const como = r.criterio === "custo-posto-no-brasil" ? "custo estimado posto no Brasil" : "preço anunciado";
+
+  return (
+    <div className="mx-3 mb-2 rounded border border-[color:var(--sm-border)] bg-[color:var(--sm-panel)] px-3 py-2 text-xs">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <Store size={13} strokeWidth={2} aria-hidden="true" className="flex-none" />
+        <span>
+          Pesquisa de mercado — {como}, {onde}
+        </span>
+        <span className="text-[color:var(--sm-text-dim)]">
+          ({formatarReal(r.minimo)} por {r.unidade} · consultado em {r.consultadoEm})
+        </span>
+      </div>
+
+      {r.fonte && (
+        <p className="mt-1 text-[color:var(--sm-text-dim)]">
+          Anúncio: {r.fonte}
+          {r.url && (
+            <>
+              {" "}
+              <a href={r.url} target="_blank" rel="noreferrer" className="text-[color:var(--sm-accent)] hover:underline">
+                abrir
+              </a>
+            </>
+          )}
+        </p>
+      )}
+
+      {r.alertas.map((alerta) => (
+        <p key={alerta} className="mt-1 flex items-start gap-1.5 text-[color:var(--sm-atencao-text)]">
+          <TriangleAlert size={13} strokeWidth={2} aria-hidden="true" className="mt-px flex-none" />
+          <span>{alerta}</span>
+        </p>
+      ))}
     </div>
   );
 }
@@ -107,7 +158,7 @@ export function CestaPrecosPanel({ resultado }: { resultado: ResultadoCotacaoPub
       )}
 
       {cesta.alertas.map((alerta) => (
-        <p key={alerta} className="mt-1 flex items-start gap-1.5 text-[color:var(--sm-amber,#b45309)]">
+        <p key={alerta} className="mt-1 flex items-start gap-1.5 text-[color:var(--sm-atencao-text)]">
           <TriangleAlert size={13} strokeWidth={2} aria-hidden="true" className="mt-px flex-none" />
           <span>{alerta}</span>
         </p>

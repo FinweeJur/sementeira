@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { montarConsultasMaquina, estimarCustoImportacao, alertasDeAquisicao, pesquisarMaquinas } from "./maquinas";
+import { montarConsultasMaquina, estimarCustoImportacao, alertasDeAquisicao, pesquisarMaquinas, referenciaDeMercado } from "./maquinas";
+import { resumirReferenciaPreco } from "./export";
 
 describe("montarConsultasMaquina", () => {
   it("consulta as três origens por padrão", () => {
@@ -71,6 +72,48 @@ describe("alertasDeAquisicao", () => {
     const alertas = alertasDeAquisicao("china").join(" ");
     expect(alertas).toContain("FOB");
     expect(alertas).toContain("Radar/Siscomex");
+  });
+});
+
+describe("referenciaDeMercado", () => {
+  const CONSULTA = new Date("2026-08-11T12:00:00Z");
+  const ANUNCIO = { titulo: "Despolpadeira 100 kg/h", url: "https://exemplo.com.br/anuncio", consultadoEm: CONSULTA };
+
+  it("marca a origem como pesquisa de mercado — anúncio não é compra pública", () => {
+    const r = referenciaDeMercado({ ...ANUNCIO, origem: "brasil", valor: 4200 });
+    expect(r.origem).toBe("pesquisa-mercado");
+    expect(r.quantidadePrecos).toBe(1);
+    expect(r.minimo).toBe(4200);
+    expect(r.maximo).toBe(4200);
+    expect(r.alertas.join(" ")).toContain("não compra pública homologada");
+  });
+
+  it("guarda o anúncio de onde saiu o valor, para conferir depois", () => {
+    const r = referenciaDeMercado({ ...ANUNCIO, origem: "brasil", valor: 4200 });
+    expect(r.fonte).toBe("Despolpadeira 100 kg/h");
+    expect(r.url).toBe("https://exemplo.com.br/anuncio");
+    expect(r.consultadoEm).toBe("2026-08-11");
+  });
+
+  it("distingue preço FOB de custo posto no Brasil — são números diferentes na mesma tela", () => {
+    const fob = referenciaDeMercado({ ...ANUNCIO, origem: "china", valor: 6000 });
+    const posto = referenciaDeMercado({ ...ANUNCIO, origem: "china", valor: 10500, postoNoBrasil: true });
+    expect(fob.criterio).toBe("preco-anunciado");
+    expect(fob.alertas.join(" ")).toContain("FOB");
+    expect(posto.criterio).toBe("custo-posto-no-brasil");
+    expect(posto.alertas.join(" ")).toContain("Radar/Siscomex");
+  });
+
+  it("no documento exportado a linha não se apresenta como compra pública", () => {
+    const texto = resumirReferenciaPreco(referenciaDeMercado({ ...ANUNCIO, origem: "china", valor: 10500, postoNoBrasil: true }));
+    expect(texto).toContain("pesquisa de mercado");
+    expect(texto).toContain("custo estimado posto no Brasil");
+    expect(texto).not.toContain("compra(s) pública(s)");
+  });
+
+  it("sobrevive a ida e volta por JSON — é assim que fica guardado", () => {
+    const r = referenciaDeMercado({ ...ANUNCIO, origem: "aberta", valor: 999 });
+    expect(JSON.parse(JSON.stringify(r))).toEqual(r);
   });
 });
 
