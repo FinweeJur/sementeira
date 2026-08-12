@@ -204,7 +204,7 @@ a:hover { color: var(--accent); }
 .card details[open] summary::after { content: " ↑"; }
 .card ul { list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-2); }
 .card li { font: 400 var(--text-base)/1.4 var(--font-body); color: var(--text-soft); }
-.card .actions { display: flex; gap: var(--sp-3); margin-top: var(--sp-1); }
+.card .actions { display: flex; gap: var(--sp-3); margin-top: var(--sp-1); flex-wrap: wrap; }
 
 /* Hero (landings) */
 .hero { position: relative; overflow: hidden; padding: var(--sp-24) 0 var(--sp-16); }
