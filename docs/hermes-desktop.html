@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hermes Desktop — converse com um agente de IA, local ou na nuvem</title>
+<meta name="description" content="App desktop para conversar com o Hermes Agent — modelos locais via Ollama ou provedores em nuvem (DeepSeek, Maritaca), com memória de sessão e interface em português e inglês.">
+<link rel="stylesheet" href="tokens.css?v=2">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="index.html" aria-label="Voltar ao hub">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"></path></svg>
+      Hermes Desktop
+    </a>
+    <div class="nav-actions">
+      <button class="theme-toggle" id="themeBtn" type="button" aria-label="Alternar tema"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v1M12 20v1M4.2 4.2l.7.7M19.1 19.1l.7.7M3 12h1M20 12h1M4.2 19.8l.7-.7M19.1 4.9l.7-.7"></path><circle cx="12" cy="12" r="4"></circle></svg></button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="hero-blob" aria-hidden="true"></div>
+    <div class="hero-icon" aria-hidden="true">
+      <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+      </svg>
+    </div>
+    <div class="wrap-narrow">
+      <p class="eyebrow rise d1">Um agente de IA, na sua máquina</p>
+      <h1 class="rise d2">Converse com um agente de IA sem entregar a conversa a ninguém.</h1>
+      <p class="lead rise d3">Hermes Desktop é o app desktop (Electron) para conversar com o Hermes Agent — com modelos locais via Ollama ou provedores em nuvem (DeepSeek, Maritaca), memória de sessão entre conversas e interface em português e inglês. As chaves de API ficam criptografadas na própria máquina.</p>
+      <div class="cta rise d4">
+        <a class="btn btn-primary" href="#como">Como funciona</a>
+        <a class="btn btn-ghost" href="index.html">Ver os outros projetos</a>
+      </div>
+      <a class="scroll-hint" href="#como" aria-label="Rolar para o conteúdo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"></path></svg>
+      </a>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap-narrow">
+      <span class="kicker">O problema</span>
+      <h2>Um chat de IA decente ou é todo em nuvem, ou não guarda contexto nenhum.</h2>
+      <p class="desc" style="font-size:var(--text-md);line-height:1.6;">A maioria dos assistentes de IA desktop força escolher entre depender de nuvem alheia ou perder a memória da conversa a cada sessão. Hermes Desktop deixa a escolha do provedor com quem usa — local com Ollama, sem nada saindo da máquina, ou nuvem quando faz sentido — e guarda o histórico de conversa de qualquer jeito.</p>
+    </div>
+  </section>
+
+  <section class="section" id="como">
+    <div class="wrap">
+      <span class="kicker">Como funciona</span>
+      <h2>Um app, dois jeitos de rodar o modelo.</h2>
+      <div class="grid">
+        <div class="feature"><div class="fico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="6" rx="1.5"></rect><rect x="2" y="15" width="20" height="6" rx="1.5"></rect><path d="M6 7h.01M6 19h.01"></path></svg></div><h3>Local ou nuvem</h3><p>Ollama local por padrão, ou DeepSeek/Maritaca na nuvem — trocar de provedor é uma configuração, não uma reinstalação.</p></div>
+        <div class="feature"><div class="fico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></div><h3>Chaves criptografadas</h3><p>As chaves de API ficam em config.json cifradas em AES-256-GCM; o segredo de criptografia é único por instalação, então uma cópia do repositório não descriptografa as chaves de outra máquina.</p></div>
+        <div class="feature"><div class="fico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><path d="M17 21v-8H7v8M7 3v5h8"></path></svg></div><h3>Memória de sessão</h3><p>O histórico de conversas fica salvo localmente, fora do controle de versão — retomar de onde parou não depende de nenhum servidor.</p></div>
+        <div class="feature"><div class="fico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z"></path></svg></div><h3>Português e inglês</h3><p>Interface nos dois idiomas, pensada para uso no dia a dia sem fricção de tradução.</p></div>
+        <div class="feature"><div class="fico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></div><h3>Testado de ponta a ponta</h3><p>Testes unitários em Jest e testes end-to-end em Playwright cobrem o fluxo principal antes de cada mudança.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap-narrow">
+      <span class="kicker">Estado atual</span>
+      <h2>Funcional em uso local.</h2>
+      <p class="desc" style="font-size:var(--text-md);line-height:1.6;">config.json, o segredo de criptografia (.hermes-secret) e o histórico (history.json) ficam fora do git — cada instalação guarda as próprias chaves e conversas, sem backup automático.</p>
+      <div class="note" style="margin-top:var(--sp-6);">Sem instalador público ainda — uso interno, via npm install && npm start (start-hermes.bat no Windows).</div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="band">
+        <h2>Curioso sobre o Hermes Agent por trás do app?</h2>
+        <p>Hermes Desktop é a interface de conversa; o agente por trás dele é reaproveitado em outros projetos da Floresta. Vamos conversar.</p>
+        <a class="btn btn-primary" href="mailto:arturcolito@gmail.com">Falar sobre o projeto</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot"><div class="wrap">Hermes Desktop — um agente de IA, local ou na nuvem. Parte da <a href="index.html">Floresta de Apps</a>.</div></footer>
+<script>(function(){var r=document.documentElement,b=document.getElementById('themeBtn'),s=null;try{s=localStorage.getItem('sementeira-theme');}catch(e){}if(s)r.setAttribute('data-theme',s);else if(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)r.setAttribute('data-theme','dark');b&&b.addEventListener('click',function(){var n=r.getAttribute('data-theme')==='dark'?'light':'dark';r.setAttribute('data-theme',n);try{localStorage.setItem('sementeira-theme',n);}catch(e){}});})();</script>
+<script>
+  (function () {
+    var items = document.querySelectorAll('.card, .feature');
+    if (!('IntersectionObserver' in window) || !items.length) {
+      items.forEach(function (c) { c.classList.add('in-view'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in-view');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+    items.forEach(function (c) { io.observe(c); });
+  })();
+</script>
+</body>
+</html>
