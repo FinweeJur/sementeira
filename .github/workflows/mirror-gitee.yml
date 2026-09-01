@@ -1,0 +1,67 @@
+name: Espelho no Gitee
+
+# Executa a Decisão 13 (22/08/2026) e o item #29 do ESTADO.md do
+# controle-popular — o Gitee é ESPELHO, não casa: a CI segue sendo GitHub
+# Actions. Este workflow só copia o repositório para o Gitee.
+# Passo a passo completo e riscos:
+# github.com/FinweeJur/controle-popular/blob/main/docs/planos/PLANO-ESPELHO-GITEE.md
+#
+# O que ele faz: `git push --mirror` do repositório para o espelho no Gitee.
+# `--mirror` copia branches e tags, e também apaga do espelho o que foi
+# deletado aqui — é isso que mantém o Gitee igual ao GitHub.
+#
+# Segredos necessários (Settings > Secrets and variables > Actions):
+#   GITEE_USERNAME — seu usuário no Gitee
+#   GITEE_TOKEN    — Personal Access Token do Gitee com escopo `projects`
+#
+# Alternativa mais segura ao token no URL: deploy key SSH. Gere um par
+# `ssh-keygen -t ed25519`, adicione a pública como "deploy key" do repo no
+# Gitee, guarde a privada em `GITEE_SSH_KEY`, e troque o passo final por:
+#   git remote add gitee git@gitee.com:${{ secrets.GITEE_USERNAME }}/<repo>.git
+# O token no URL fica mascarado nos logs do Actions (é secret) e o próprio
+# git redige credencial em URL, mas SSH é a opção sem essa ressalva.
+on:
+  push:
+    branches: [main, master]
+  schedule:
+    # Semanal, às 04:17 UTC de domingo: pega push manual feito direto no
+    # Gitee e qualquer ref que o trigger de push não tenha visto.
+    - cron: "17 4 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mirror-gitee
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Espelho precisa do histórico inteiro, não só do último commit:
+          # `push --mirror` sem `fetch-depth: 0` subiria um repo órfão.
+          fetch-depth: 0
+
+      - name: Conferir secrets (antes de qualquer rede)
+        env:
+          GITEE_USERNAME: ${{ secrets.GITEE_USERNAME }}
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+        run: |
+          if [ -z "$GITEE_USERNAME" ] || [ -z "$GITEE_TOKEN" ]; then
+            echo "::error::secrets ausentes (GITEE_USERNAME/GITEE_TOKEN) — configurar em Settings > Secrets. O espelho fica inativo até lá."
+            exit 1
+          fi
+          echo "  OK  secrets presentes"
+
+      - name: Espelhar para o Gitee
+        env:
+          GITEE_USERNAME: ${{ secrets.GITEE_USERNAME }}
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+        run: |
+          repo="${{ github.event.repository.name }}"
+          git remote add gitee "https://${GITEE_USERNAME}:${GITEE_TOKEN}@gitee.com/${GITEE_USERNAME}/${repo}.git"
+          git push --mirror gitee
