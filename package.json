@@ -78,7 +78,7 @@
     "tailwindcss": "^4.2.4",
     "typescript": "^5.7.2",
     "vite": "^6.3.6",
-    "vitest": "^4.1.10",
+    "vitest": "^4.1.11",
     "wait-on": "^8.0.1"
   }
 }
